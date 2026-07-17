@@ -1,0 +1,16 @@
+{
+  "name": "@raven/event-monitor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Raven Module 1 — discovers and scores events/dates likely to generate accommodation demand for each property.",
+  "type": "module",
+  "scripts": {
+    "scrape": "NODE_USE_ENV_PROXY=1 tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

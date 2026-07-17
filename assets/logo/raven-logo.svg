@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" role="img" aria-label="Raven">
+  <defs>
+    <linearGradient id="featherTop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6d28d9"/>
+      <stop offset="1" stop-color="#3b2bd4"/>
+    </linearGradient>
+    <linearGradient id="featherMid" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b21b6"/>
+      <stop offset="1" stop-color="#4338ca"/>
+    </linearGradient>
+    <linearGradient id="featherLow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4c1d95"/>
+      <stop offset="1" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="featherBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+    <linearGradient id="word" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6d28d9"/>
+      <stop offset="1" stop-color="#533afd"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Blue under-feather (chest) -->
+  <path fill="url(#featherBlue)" d="M118 132
+    C150 148 178 170 190 200
+    C196 216 194 232 184 246
+    C160 236 132 216 116 190
+    C104 170 106 148 118 132 Z"/>
+
+  <!-- Lowest dark feather -->
+  <path fill="url(#featherLow)" d="M84 150
+    C120 162 158 188 172 222
+    C178 238 176 254 164 268
+    L82 236
+    C70 208 70 176 84 150 Z"/>
+
+  <!-- Middle feather -->
+  <path fill="url(#featherMid)" d="M78 96
+    C124 104 168 128 188 164
+    C196 180 196 198 186 212
+    C150 200 112 178 92 148
+    C80 130 76 112 78 96 Z"/>
+
+  <!-- Head + beak (top layer) -->
+  <path fill="url(#featherTop)" d="M96 78
+    C110 58 134 46 158 48
+    C182 50 202 62 214 78
+    L252 92
+    L208 104
+    C204 128 188 146 164 152
+    C132 160 100 142 88 116
+    C84 102 88 88 96 78 Z"/>
+
+  <!-- Eye -->
+  <circle cx="176" cy="76" r="9" fill="#ffffff"/>
+
+  <!-- Wordmark -->
+  <text x="290" y="192" font-family="Inter, 'SF Pro Display', system-ui, sans-serif" font-size="132" font-weight="600" letter-spacing="-4" fill="url(#word)">Raven</text>
+</svg>
