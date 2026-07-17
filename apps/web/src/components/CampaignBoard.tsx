@@ -1,12 +1,29 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { setCampaignStatus, recordRevenue } from '@/app/(admin)/campaigns/actions';
+import {
+  setCampaignStatus,
+  recordRevenue,
+  publishEventPage,
+  publishCampaignGbp,
+  boostCampaign,
+} from '@/app/(admin)/campaigns/actions';
+
+export interface CampaignKit {
+  guestEmail?: { subject: string; body: string };
+  organiserOutreach?: { subject: string; body: string; organiser: string | null };
+  gbpPost?: string;
+  promoCode?: string;
+  generatedAt?: string;
+}
 
 export interface CampaignRow {
   id: string;
   status: string;
   assets: Record<string, string>;
+  kit: CampaignKit;
+  landing_page_slug: string | null;
   revenue: number;
   bookings: number;
   started_at: string | null;
@@ -67,14 +84,44 @@ const NEXT_ACTIONS: Record<string, Array<{ status: string; label: string }>> = {
 };
 
 export default function CampaignBoard({ campaigns }: { campaigns: CampaignRow[] }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [notice, setNotice] = useState('');
+  const [preparing, setPreparing] = useState<string | null>(null);
+  const [openKit, setOpenKit] = useState<string | null>(null);
 
   const run = (fn: () => Promise<{ ok: boolean; message: string }>) =>
     startTransition(async () => {
       const res = await fn();
       setNotice(res.message);
     });
+
+  const prepare = async (id: string) => {
+    setPreparing(id);
+    setNotice('Generating landing page, posts, emails and outreach — 30-60 seconds…');
+    try {
+      const res = await fetch('/api/campaigns/prepare', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const json = (await res.json()) as { ok: boolean; message: string };
+      setNotice(json.message);
+      if (json.ok) {
+        setOpenKit(id);
+        router.refresh();
+      }
+    } catch (err) {
+      setNotice(`Kit generation failed: ${(err as Error).message}`);
+    } finally {
+      setPreparing(null);
+    }
+  };
+
+  const copy = async (text: string, label: string) => {
+    await navigator.clipboard.writeText(text);
+    setNotice(`${label} copied`);
+  };
 
   const editRevenue = (c: CampaignRow) => {
     const rev = window.prompt('Revenue recorded for this campaign (AUD)', String(c.revenue));
@@ -149,11 +196,33 @@ export default function CampaignBoard({ campaigns }: { campaigns: CampaignRow[] 
             <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
               <span className="caption tnum">
                 revenue ${Number(c.revenue).toFixed(2)} · {c.bookings} booking{c.bookings === 1 ? '' : 's'}
+                {c.kit?.promoCode && <> · code <strong>{c.kit.promoCode}</strong></>}
               </span>
               <button type="button" className="caption" onClick={() => editRevenue(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)' }}>
                 record revenue
               </button>
               <span style={{ flex: 1 }} />
+              {!c.kit?.generatedAt && (
+                <button
+                  type="button"
+                  disabled={preparing !== null}
+                  className="pill-primary"
+                  style={{ fontSize: 12, padding: '6px 14px' }}
+                  onClick={() => prepare(c.id)}
+                >
+                  {preparing === c.id ? 'Generating…' : '⚡ Prepare campaign kit'}
+                </button>
+              )}
+              {c.kit?.generatedAt && (
+                <button
+                  type="button"
+                  className="pill-primary"
+                  style={{ fontSize: 12, padding: '6px 14px', background: 'var(--canvas)', color: 'var(--primary)', border: '1px solid var(--primary)' }}
+                  onClick={() => setOpenKit(openKit === c.id ? null : c.id)}
+                >
+                  {openKit === c.id ? 'Hide kit' : 'View kit'}
+                </button>
+              )}
               {actions.map((a) => (
                 <button
                   key={a.status}
@@ -167,9 +236,137 @@ export default function CampaignBoard({ campaigns }: { campaigns: CampaignRow[] 
                 </button>
               ))}
             </div>
+
+            {openKit === c.id && c.kit?.generatedAt && (
+              <div style={{ marginTop: 18, display: 'grid', gap: 14, borderTop: '1px solid var(--hairline)', paddingTop: 18 }}>
+                {/* landing page */}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span className="micro-cap" style={{ width: 110, color: 'var(--ink-mute)' }}>Landing page</span>
+                  {c.landing_page_slug ? (
+                    <>
+                      <a href={`/events/${c.landing_page_slug}`} target="_blank" rel="noopener noreferrer" className="caption">
+                        /events/{c.landing_page_slug} ↗
+                      </a>
+                      {c.assets?.page !== 'published' && (
+                        <button type="button" disabled={pending} className="pill-primary" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => run(() => publishEventPage(c.id))}>
+                          Publish page
+                        </button>
+                      )}
+                      {c.assets?.page === 'published' && <span className="caption" style={{ color: '#2f9e63' }}>live</span>}
+                    </>
+                  ) : (
+                    <span className="caption">not generated</span>
+                  )}
+                </div>
+
+                {/* social */}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span className="micro-cap" style={{ width: 110, color: 'var(--ink-mute)' }}>Social</span>
+                  <a href="/social" className="caption">posts &amp; reel drafted → approve in the Social queue</a>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    className="pill-primary"
+                    style={{ fontSize: 11, padding: '4px 10px', background: 'var(--canvas)', color: 'var(--primary)', border: '1px solid var(--primary)' }}
+                    onClick={() => {
+                      const budget = window.prompt('Daily ad budget (AUD) — runs until the event, created paused for review', '25');
+                      if (budget) run(() => boostCampaign(c.id, Number(budget) || 25));
+                    }}
+                  >
+                    Boost on Meta
+                  </button>
+                </div>
+
+                {/* guest email */}
+                {c.kit.guestEmail && (
+                  <KitText
+                    label="Guest email"
+                    title={c.kit.guestEmail.subject}
+                    body={c.kit.guestEmail.body}
+                    onCopy={() => copy(`Subject: ${c.kit.guestEmail!.subject}\n\n${c.kit.guestEmail!.body}`, 'Guest email')}
+                  />
+                )}
+
+                {/* organiser outreach */}
+                {c.kit.organiserOutreach && (
+                  <KitText
+                    label={`Organiser outreach${c.kit.organiserOutreach.organiser ? ` — ${c.kit.organiserOutreach.organiser}` : ''}`}
+                    title={c.kit.organiserOutreach.subject}
+                    body={c.kit.organiserOutreach.body}
+                    onCopy={() => copy(`Subject: ${c.kit.organiserOutreach!.subject}\n\n${c.kit.organiserOutreach!.body}`, 'Outreach email')}
+                    extra={
+                      <a
+                        className="caption"
+                        href={`mailto:?subject=${encodeURIComponent(c.kit.organiserOutreach.subject)}&body=${encodeURIComponent(c.kit.organiserOutreach.body)}`}
+                      >
+                        open in mail ↗
+                      </a>
+                    }
+                  />
+                )}
+
+                {/* GBP */}
+                {c.kit.gbpPost && (
+                  <KitText
+                    label="Google Business post"
+                    body={c.kit.gbpPost}
+                    onCopy={() => copy(c.kit.gbpPost!, 'GBP post')}
+                    extra={
+                      <button type="button" disabled={pending} className="pill-primary" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => run(() => publishCampaignGbp(c.id))}>
+                        Post to GBP
+                      </button>
+                    }
+                  />
+                )}
+
+                {c.kit.promoCode && (
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span className="micro-cap" style={{ width: 110, color: 'var(--ink-mute)' }}>Promo code</span>
+                    <span className="tnum" style={{ fontSize: 15 }}><strong>{c.kit.promoCode}</strong></span>
+                    <span className="caption">create this code in Lodgify so bookings are attributable to the campaign</span>
+                  </div>
+                )}
+              </div>
+            )}
           </article>
         );
       })}
+    </div>
+  );
+}
+
+function KitText({
+  label,
+  title,
+  body,
+  onCopy,
+  extra,
+}: {
+  label: string;
+  title?: string;
+  body: string;
+  onCopy: () => void;
+  extra?: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <span className="micro-cap" style={{ width: 110, color: 'var(--ink-mute)', paddingTop: 3 }}>{label}</span>
+      <div style={{ flex: 1, minWidth: 240 }}>
+        {title && <div style={{ fontSize: 14, fontWeight: 500 }}>{title}</div>}
+        <p className="caption" style={{ whiteSpace: 'pre-wrap', maxHeight: open ? 'none' : 40, overflow: 'hidden' }}>
+          {body}
+        </p>
+        <button type="button" className="caption" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: 0 }} onClick={() => setOpen(!open)}>
+          {open ? 'collapse' : 'expand'}
+        </button>
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button type="button" className="caption" style={{ background: 'none', border: '1px solid var(--hairline)', borderRadius: 6, padding: '3px 10px', cursor: 'pointer', color: 'var(--ink-secondary)' }} onClick={onCopy}>
+          copy
+        </button>
+        {extra}
+      </div>
     </div>
   );
 }

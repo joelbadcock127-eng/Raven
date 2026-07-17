@@ -10,7 +10,7 @@ export default async function CampaignsPage() {
     const { data } = await supabase
       .from('campaigns')
       .select(
-        'id, status, assets, revenue, bookings, started_at, stopped_at, created_at, property:properties(name), event:events(title, start_date, end_date, venue_name, locality, organiser, ticket_url, url)',
+        'id, status, assets, kit, landing_page_slug, revenue, bookings, started_at, stopped_at, created_at, property:properties(name), event:events(title, start_date, end_date, venue_name, locality, organiser, ticket_url, url)',
       )
       .order('created_at', { ascending: false });
     campaigns = (data as unknown as CampaignRow[]) ?? [];
