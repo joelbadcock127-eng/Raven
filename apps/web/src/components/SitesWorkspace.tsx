@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import type { SiteDef } from '@/lib/sites';
-import { saveSiteOverrides, resetSitePage, type MirrorOverride } from '@/app/sites/actions';
+import { saveSiteOverrides, resetSitePage, type MirrorOverride } from '@/app/(admin)/sites/actions';
 
 export default function SitesWorkspace({ sites }: { sites: SiteDef[] }) {
   const [activeSiteId, setActiveSiteId] = useState(sites[0]?.propertyId ?? '');

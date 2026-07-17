@@ -5,11 +5,12 @@ import { dedupe, normalizeEvent } from './normalize.js';
 import { buildOpportunity } from './scoring.js';
 import { devonportCouncil } from './sources/devonportCouncil.js';
 import { eventbrite } from './sources/eventbrite.js';
+import { latrobeCouncil } from './sources/latrobeCouncil.js';
 import { tasCalendar } from './sources/tasCalendar.js';
 import type { EventSource } from './sources/base.js';
 import type { Opportunity } from './types.js';
 
-const SOURCES: EventSource[] = [tasCalendar, devonportCouncil, eventbrite];
+const SOURCES: EventSource[] = [tasCalendar, devonportCouncil, latrobeCouncil, eventbrite];
 
 interface CliOptions {
   sources: string[];

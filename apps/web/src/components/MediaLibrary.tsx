@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
-import { createUploadUrl, registerAsset, updateAsset, deleteAsset } from '@/app/media/actions';
+import { createUploadUrl, registerAsset, updateAsset, deleteAsset } from '@/app/(admin)/media/actions';
 
 export interface MediaAsset {
   id: string;

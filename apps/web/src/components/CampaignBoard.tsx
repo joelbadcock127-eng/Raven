@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { setCampaignStatus, recordRevenue } from '@/app/campaigns/actions';
+import { setCampaignStatus, recordRevenue } from '@/app/(admin)/campaigns/actions';
 
 export interface CampaignRow {
   id: string;

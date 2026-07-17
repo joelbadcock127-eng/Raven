@@ -22,7 +22,7 @@ const VALID_TAGS = [
   'festival', 'music', 'sports', 'conference', 'business', 'community',
   'family', 'wellness', 'nature-walking', 'food-wine', 'arts',
   'wedding-milestone', 'market', 'school-holiday', 'public-holiday',
-  'long-weekend', 'cruise', 'romantic',
+  'long-weekend', 'cruise', 'romantic', 'funeral',
 ];
 
 const ENRICH_SCHEMA = {
@@ -37,9 +37,14 @@ const ENRICH_SCHEMA = {
           tags: { type: 'array', items: { type: 'string', enum: VALID_TAGS } },
           demand: { type: 'integer', description: 'Estimated accommodation demand 0-100' },
           audience: { type: 'integer', description: 'Estimated total event attendance (people)' },
+          viable: {
+            type: 'boolean',
+            description:
+              'True only if this is a real, dated, in-person event within reach of Devonport/Port Sorell/Bakers Beach with any realistic chance of driving overnight stays. Online events, vague listings, tiny recurring meetups and things unlikely to actually happen are false.',
+          },
           summary: { type: 'string', description: 'One sentence for the property owner: what this event is and why it matters for bookings' },
         },
-        required: ['id', 'tags', 'demand', 'audience', 'summary'],
+        required: ['id', 'tags', 'demand', 'audience', 'viable', 'summary'],
         additionalProperties: false,
       },
     },
@@ -53,6 +58,7 @@ interface EnrichedEvent {
   tags: string[];
   demand: number;
   audience: number;
+  viable: boolean;
   summary: string;
 }
 
@@ -99,9 +105,19 @@ export async function enrichEvents(supabase: SupabaseClient, limit = 20): Promis
         estimated_audience: Math.max(0, Math.round(e.audience)),
         ai_summary: e.summary,
         ai_enriched_at: new Date().toISOString(),
+        dismissed: !e.viable,
       })
       .eq('id', e.id);
     if (!upErr) updated++;
+
+    // Non-viable events leave the feed entirely — dismiss their opportunities.
+    if (!e.viable) {
+      await supabase
+        .from('opportunities')
+        .update({ status: 'dismissed', updated_at: new Date().toISOString() })
+        .eq('event_id', e.id)
+        .eq('status', 'new');
+    }
   }
   return updated;
 }

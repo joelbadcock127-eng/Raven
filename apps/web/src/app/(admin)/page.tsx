@@ -1,5 +1,4 @@
 import { supabaseAdmin } from '@/lib/supabase';
-import TopNav from '@/components/TopNav';
 import OpportunityBoard, {
   type BoardOpportunity,
   type BoardProperty,
@@ -177,10 +176,7 @@ export default async function Home() {
   );
 
   return (
-    <main style={{ position: 'relative', minHeight: '100vh' }}>
-      <div className="mesh" />
-      <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: '0 24px 96px' }}>
-        <TopNav active="Feed" />
+    <>
 
         <header style={{ marginBottom: 32 }}>
           <h1 className="display-lg" style={{ marginBottom: 12 }}>
@@ -232,7 +228,6 @@ export default async function Home() {
           Raven · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie
           May. Data refreshes every 5 minutes.
         </footer>
-      </div>
-    </main>
+    </>
   );
 }

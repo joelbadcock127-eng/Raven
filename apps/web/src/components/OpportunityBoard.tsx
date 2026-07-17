@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { setOpportunityStatus } from '@/app/actions';
+import { useMemo, useState, useTransition } from 'react';
+import { setOpportunityStatus } from '@/app/(admin)/actions';
 
 export interface BoardProperty {
   id: string;
@@ -52,6 +52,21 @@ function daysUntil(date: string): number {
   return Math.round((Date.parse(date) - Date.now()) / 86_400_000);
 }
 
+/**
+ * A "golden" opportunity: close to the property, lands in the campaign
+ * sweet spot (enough lead time to market, near enough to feel urgent),
+ * and scores strongly for the column's property or shows high AI demand.
+ * Example: a horse-riding event at Bakers Beach in two months → Ten Fifty.
+ */
+function isGolden(
+  o: BoardOpportunity & { daysOut: number; distanceKm: number | null; columnScore?: number },
+): boolean {
+  if (o.daysOut < 14 || o.daysOut > 130) return false;
+  if (o.distanceKm == null || o.distanceKm > 30) return false;
+  const score = o.columnScore ?? 0;
+  return score >= 70 || (o.demand ?? 0) >= 70;
+}
+
 function fmtDate(d: string): string {
   return new Date(d + 'T12:00:00').toLocaleDateString('en-AU', {
     day: 'numeric',
@@ -82,6 +97,31 @@ export default function OpportunityBoard({
   const [maxDays, setMaxDays] = useState(DAYS_MAX);
   const [maxDist, setMaxDist] = useState(DIST_MAX);
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
+  const [handled, setHandled] = useState<Set<string>>(new Set()); // optimistic removals
+  const [notice, setNotice] = useState('');
+  const [, startTransition] = useTransition();
+
+  const act = (id: string, status: 'approved' | 'modified' | 'dismissed') => {
+    setHandled((prev) => new Set(prev).add(id)); // hide immediately
+    startTransition(async () => {
+      try {
+        const res = await setOpportunityStatus(id, status);
+        setNotice(res.message);
+        if (!res.ok) setHandled((prev) => {
+          const next = new Set(prev);
+          next.delete(id); // bring the card back on failure
+          return next;
+        });
+      } catch (err) {
+        setNotice(`Action failed: ${(err as Error).message}`);
+        setHandled((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    });
+  };
 
   const allTags = useMemo(() => {
     const counts = new Map<string, number>();
@@ -101,11 +141,15 @@ export default function OpportunityBoard({
   // Assign each opportunity to its column, then filter per-column so the
   // distance limit is measured from that column's property.
   const { columns, hiddenNoLocation } = useMemo(() => {
-    const cols = new Map<string, (BoardOpportunity & { daysOut: number; distanceKm: number | null })[]>();
+    const cols = new Map<
+      string,
+      (BoardOpportunity & { daysOut: number; distanceKm: number | null; columnScore: number })[]
+    >();
     for (const p of properties) cols.set(p.id, []);
     let noLoc = 0;
 
     for (const o of opportunities) {
+      if (handled.has(o.id)) continue;
       const daysOut = daysUntil(o.startDate);
       if (daysOut < 0) continue;
       if (maxDays < DAYS_MAX && daysOut > maxDays) continue;
@@ -126,18 +170,19 @@ export default function OpportunityBoard({
         if (distanceKm > maxDist) continue;
       }
 
-      cols.get(colId)!.push({ ...o, daysOut, distanceKm });
+      cols.get(colId)!.push({ ...o, daysOut, distanceKm, columnScore: o.scores[colId]?.total ?? 0 });
     }
 
     for (const list of cols.values())
       list.sort(
         (a, b) =>
+          Number(isGolden(b)) - Number(isGolden(a)) ||
           PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority] ||
           a.startDate.localeCompare(b.startDate),
       );
 
     return { columns: cols, hiddenNoLocation: noLoc };
-  }, [opportunities, properties, maxDays, maxDist, activeTags]);
+  }, [opportunities, properties, maxDays, maxDist, activeTags, handled]);
 
   const visibleCount = [...columns.values()].reduce((n, l) => n + l.length, 0);
 
@@ -179,6 +224,7 @@ export default function OpportunityBoard({
           <div className="caption tnum" style={{ paddingBottom: 4 }}>
             {visibleCount} of {opportunities.length} showing
             {hiddenNoLocation > 0 && ` · ${hiddenNoLocation} hidden (no location data)`}
+            {notice && <span style={{ color: 'var(--primary-deep)' }}> · {notice}</span>}
           </div>
 
           {(maxDays < DAYS_MAX || maxDist < DIST_MAX || activeTags.size > 0) && (
@@ -278,9 +324,19 @@ export default function OpportunityBoard({
                 list.map((o) => {
                   const score = o.scores[p.id];
                   const link = o.url ?? o.sourceUrl;
+                  const golden = isGolden(o);
                   return (
-                    <article key={o.id} className="card" style={{ padding: 20 }}>
+                    <article
+                      key={o.id}
+                      className="card"
+                      style={{ padding: 20, borderColor: golden ? '#d4a017' : undefined, boxShadow: golden ? '0 0 0 1px #d4a017' : undefined }}
+                    >
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                        {golden && (
+                          <span className="micro-cap" style={{ background: '#d4a017', color: '#fff', padding: '3px 8px', borderRadius: 'var(--r-pill)' }}>
+                            ★ golden
+                          </span>
+                        )}
                         <span
                           aria-hidden
                           style={{
@@ -348,30 +404,25 @@ export default function OpportunityBoard({
                       )}
 
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <form action={setOpportunityStatus} style={{ display: 'flex', gap: 6 }}>
-                          <input type="hidden" name="id" value={o.id} />
-                          <button className="pill-primary" name="status" value="approved" type="submit" style={{ fontSize: 12, padding: '6px 12px' }}>
-                            Approve
-                          </button>
-                          <button
-                            type="submit"
-                            name="status"
-                            value="modified"
-                            className="pill-primary"
-                            style={{ fontSize: 12, padding: '6px 12px', background: 'var(--canvas)', color: 'var(--primary)', border: '1px solid var(--primary)' }}
-                          >
-                            Modify
-                          </button>
-                          <button
-                            type="submit"
-                            name="status"
-                            value="dismissed"
-                            className="pill-primary"
-                            style={{ fontSize: 12, padding: '6px 12px', background: 'var(--canvas)', color: 'var(--ink-mute)', border: '1px solid var(--hairline)' }}
-                          >
-                            Dismiss
-                          </button>
-                        </form>
+                        <button type="button" onClick={() => act(o.id, 'approved')} className="pill-primary" style={{ fontSize: 12, padding: '6px 12px' }}>
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => act(o.id, 'modified')}
+                          className="pill-primary"
+                          style={{ fontSize: 12, padding: '6px 12px', background: 'var(--canvas)', color: 'var(--primary)', border: '1px solid var(--primary)' }}
+                        >
+                          Modify
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => act(o.id, 'dismissed')}
+                          className="pill-primary"
+                          style={{ fontSize: 12, padding: '6px 12px', background: 'var(--canvas)', color: 'var(--ink-mute)', border: '1px solid var(--hairline)' }}
+                        >
+                          Dismiss
+                        </button>
                         {o.sourceUrl && (
                           <a
                             href={o.sourceUrl}

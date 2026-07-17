@@ -16,6 +16,7 @@ const TAG_KEYWORDS: Array<[EventTag, RegExp]> = [
   ['wedding-milestone', /wedding|anniversary|birthday|reunion|celebration|milestone/i],
   ['market', /market|twilight market|makers/i],
   ['romantic', /romantic|couples|valentine|date night/i],
+  ['funeral', /funeral|memorial service|celebration of life|in loving memory/i],
   ['cruise', /cruise|spirit of tasmania|ship/i],
   ['school-holiday', /school holiday/i],
   ['public-holiday', /public holiday/i],

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { updatePost, setPostStatus, publishPost, draftPost } from '@/app/social/actions';
+import { updatePost, setPostStatus, publishPost, draftPost } from '@/app/(admin)/social/actions';
 
 export interface SocialPost {
   id: string;

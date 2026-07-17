@@ -17,7 +17,8 @@ export type EventTag =
   | 'public-holiday'
   | 'long-weekend'
   | 'cruise'
-  | 'romantic';
+  | 'romantic'
+  | 'funeral';
 
 /** An event as returned by a source adapter, before normalisation. */
 export interface RawEvent {

@@ -1,6 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { metaConfigured } from '@/lib/meta';
-import TopNav from '@/components/TopNav';
 import SocialQueue, { type SocialPost, type MediaRef } from '@/components/SocialQueue';
 
 export const revalidate = 0;
@@ -24,10 +23,7 @@ export default async function SocialPage() {
   }
 
   return (
-    <main style={{ position: 'relative', minHeight: '100vh' }}>
-      <div className="mesh" />
-      <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: '0 24px 96px' }}>
-        <TopNav active="Social" />
+    <>
         <header style={{ marginBottom: 32 }}>
           <h1 className="display-lg" style={{ marginBottom: 12 }}>Social queue</h1>
           <p className="caption" style={{ maxWidth: 620 }}>
@@ -39,7 +35,6 @@ export default async function SocialPage() {
         <footer className="caption" style={{ paddingTop: 64 }}>
           Raven · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie May.
         </footer>
-      </div>
-    </main>
+    </>
   );
 }

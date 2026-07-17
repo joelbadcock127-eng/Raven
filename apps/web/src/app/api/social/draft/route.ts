@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { draftPost } from '@/app/social/actions';
+import { draftPost } from '@/app/(admin)/social/actions';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;

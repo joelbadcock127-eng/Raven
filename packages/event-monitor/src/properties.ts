@@ -87,6 +87,7 @@ export const PROPERTIES: PropertyProfile[] = [
       conference: 1.0,
       business: 1.0,
       cruise: 0.95, // Spirit of Tasmania stopovers
+      funeral: 0.9, // family travelling for Devonport funerals; quiet, adults-only rooms
       romantic: 0.9,
       'wedding-milestone': 0.85,
       arts: 0.8,

@@ -1,5 +1,4 @@
 import { supabaseAdmin } from '@/lib/supabase';
-import TopNav from '@/components/TopNav';
 import CampaignBoard, { type CampaignRow } from '@/components/CampaignBoard';
 
 export const revalidate = 0;
@@ -18,10 +17,7 @@ export default async function CampaignsPage() {
   }
 
   return (
-    <main style={{ position: 'relative', minHeight: '100vh' }}>
-      <div className="mesh" />
-      <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: '0 24px 96px' }}>
-        <TopNav active="Campaigns" />
+    <>
         <header style={{ marginBottom: 32 }}>
           <h1 className="display-lg" style={{ marginBottom: 12 }}>Campaigns</h1>
           <p className="caption" style={{ maxWidth: 620 }}>
@@ -33,7 +29,6 @@ export default async function CampaignsPage() {
         <footer className="caption" style={{ paddingTop: 64 }}>
           Raven · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie May.
         </footer>
-      </div>
-    </main>
+    </>
   );
 }
