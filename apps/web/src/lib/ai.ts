@@ -36,9 +36,10 @@ const ENRICH_SCHEMA = {
           id: { type: 'string' },
           tags: { type: 'array', items: { type: 'string', enum: VALID_TAGS } },
           demand: { type: 'integer', description: 'Estimated accommodation demand 0-100' },
+          audience: { type: 'integer', description: 'Estimated total event attendance (people)' },
           summary: { type: 'string', description: 'One sentence for the property owner: what this event is and why it matters for bookings' },
         },
-        required: ['id', 'tags', 'demand', 'summary'],
+        required: ['id', 'tags', 'demand', 'audience', 'summary'],
         additionalProperties: false,
       },
     },
@@ -51,6 +52,7 @@ interface EnrichedEvent {
   id: string;
   tags: string[];
   demand: number;
+  audience: number;
   summary: string;
 }
 
@@ -78,6 +80,7 @@ export async function enrichEvents(supabase: SupabaseClient, limit = 20): Promis
       'You classify events near Devonport, Tasmania for a short-term accommodation booking platform. ' +
       'For each event: pick the applicable tags, estimate accommodation demand 0-100 ' +
       '(consider likely attendance, whether attendees travel and stay overnight, multi-day span, and seasonality), ' +
+      'estimate total attendance as a whole number of people, ' +
       'and write one owner-facing sentence on the booking opportunity. Return every event id you were given.',
     messages: [{ role: 'user', content: JSON.stringify(events) }],
     output_config: { format: { type: 'json_schema', schema: ENRICH_SCHEMA } },
@@ -93,6 +96,7 @@ export async function enrichEvents(supabase: SupabaseClient, limit = 20): Promis
       .update({
         tags: e.tags,
         ai_demand: Math.max(0, Math.min(100, e.demand)),
+        estimated_audience: Math.max(0, Math.round(e.audience)),
         ai_summary: e.summary,
         ai_enriched_at: new Date().toISOString(),
       })

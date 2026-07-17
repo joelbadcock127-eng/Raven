@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase';
+import TopNav from '@/components/TopNav';
 import OpportunityBoard, {
   type BoardOpportunity,
   type BoardProperty,
@@ -180,14 +180,7 @@ export default async function Home() {
     <main style={{ position: 'relative', minHeight: '100vh' }}>
       <div className="mesh" />
       <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: '0 24px 96px' }}>
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '24px 0 48px' }}>
-          <span className="heading-md" style={{ fontWeight: 400, letterSpacing: '-0.4px' }}>
-            Raven
-          </span>
-          <span style={{ flex: 1 }} />
-          <span className="caption" style={{ color: 'var(--ink)', fontWeight: 500 }}>Feed</span>
-          <Link href="/sites" className="caption">Sites</Link>
-        </nav>
+        <TopNav active="Feed" />
 
         <header style={{ marginBottom: 32 }}>
           <h1 className="display-lg" style={{ marginBottom: 12 }}>

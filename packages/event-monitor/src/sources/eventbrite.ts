@@ -43,6 +43,14 @@ export const eventbrite: EventSource = {
             lon: geo.longitude != null ? Number(geo.longitude) : undefined,
             url: ev.url ? String(ev.url) : undefined,
             image: typeof ev.image === 'string' ? ev.image : undefined,
+            organiser: ev.organizer?.name
+              ? decodeEntities(String(ev.organizer.name))
+              : undefined,
+            ticketUrl: (() => {
+              const offers = Array.isArray(ev.offers) ? ev.offers[0] : ev.offers;
+              const t = offers?.url ?? ev.url;
+              return t ? String(t) : undefined;
+            })(),
           });
         }
       } catch (err) {

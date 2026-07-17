@@ -35,6 +35,8 @@ export interface RawEvent {
   lon?: number;
   url?: string;
   image?: string;
+  organiser?: string;
+  ticketUrl?: string;
 }
 
 /** A cleaned, deduplicated, tagged event. */
@@ -57,6 +59,8 @@ export interface NormalizedEvent {
   lon?: number;
   url?: string;
   image?: string;
+  organiser?: string;
+  ticketUrl?: string;
   tags: EventTag[];
 }
 

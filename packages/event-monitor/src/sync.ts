@@ -52,8 +52,11 @@ async function main() {
       lon: e.lon ?? null,
       url: e.url ?? null,
       image: e.image ?? null,
+      organiser: e.organiser ?? null,
+      ticket_url: e.ticketUrl ?? null,
       tags: e.tags,
       last_seen_at: new Date().toISOString(),
+      last_checked_at: new Date().toISOString(),
     })),
     'id',
   );
