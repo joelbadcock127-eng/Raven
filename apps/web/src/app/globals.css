@@ -1,0 +1,134 @@
+/* Raven design tokens — from docs/DESIGN.md (Stripe-inspired system) */
+:root {
+  --primary: #533afd;
+  --primary-deep: #4434d4;
+  --primary-press: #2e2b8c;
+  --primary-soft: #665efd;
+  --primary-subdued: #b9b9f9;
+  --brand-dark-900: #1c1e54;
+  --ink: #0d253d;
+  --ink-secondary: #273951;
+  --ink-mute: #64748d;
+  --on-primary: #ffffff;
+  --canvas: #ffffff;
+  --canvas-soft: #f6f9fc;
+  --canvas-cream: #f5e9d4;
+  --hairline: #e3e8ee;
+  --hairline-input: #a8c3de;
+  --ruby: #ea2261;
+  --magenta: #f96bee;
+  --shadow-1: rgba(0, 55, 112, 0.08) 0 1px 3px;
+  --shadow-2: rgba(0, 55, 112, 0.08) 0 8px 24px, rgba(0, 55, 112, 0.04) 0 2px 6px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-pill: 9999px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-inter), 'SF Pro Display', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'ss01';
+  font-weight: 300;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ink);
+  background: var(--canvas-soft);
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.display-lg {
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.64px;
+}
+
+.heading-md {
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1.4;
+  letter-spacing: -0.2px;
+}
+
+.caption {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.39px;
+  color: var(--ink-mute);
+}
+
+.micro-cap {
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0.1px;
+  text-transform: uppercase;
+}
+
+.tnum {
+  font-feature-settings: 'ss01', 'tnum';
+  letter-spacing: -0.42px;
+}
+
+/* Gradient mesh band — the brand's signature hero backdrop */
+.mesh {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 260px;
+  overflow: hidden;
+  background:
+    radial-gradient(42% 90% at 8% 10%, #f5e9d4 0%, transparent 60%),
+    radial-gradient(38% 80% at 30% 60%, #f96bee33 0%, transparent 65%),
+    radial-gradient(45% 95% at 55% 15%, #665efd44 0%, transparent 60%),
+    radial-gradient(40% 85% at 78% 55%, #533afd33 0%, transparent 65%),
+    radial-gradient(35% 75% at 96% 20%, #ea226122 0%, transparent 60%),
+    var(--canvas);
+  mask-image: linear-gradient(to bottom, black 55%, transparent);
+}
+
+.pill-primary {
+  display: inline-block;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  border: none;
+  cursor: pointer;
+}
+
+.pill-primary:active {
+  background: var(--primary-press);
+}
+
+.tag-soft {
+  display: inline-block;
+  background: var(--primary-subdued);
+  color: var(--primary-deep);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.1px;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: var(--r-pill);
+}
+
+.card {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+}
