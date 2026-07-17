@@ -1,5 +1,8 @@
 import { supabaseAdmin } from '@/lib/supabase';
-import { setOpportunityStatus } from './actions';
+import OpportunityBoard, {
+  type BoardOpportunity,
+  type BoardProperty,
+} from '@/components/OpportunityBoard';
 
 export const revalidate = 300; // refresh feed every 5 minutes
 
@@ -12,6 +15,10 @@ interface EventRow {
   venue_name: string | null;
   locality: string | null;
   url: string | null;
+  source: string | null;
+  source_url: string | null;
+  lat: number | null;
+  lon: number | null;
   tags: string[];
   ai_demand: number | null;
   ai_summary: string | null;
@@ -29,7 +36,6 @@ interface OpportunityRow {
   status: string;
   recommended_property_id: string | null;
   events: (EventRow & { event_scores: ScoreRow[] }) | null;
-  properties: { name: string } | null;
 }
 
 interface GapRow {
@@ -41,18 +47,12 @@ interface GapRow {
   kind: string;
 }
 
-const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 } as const;
-const PRIORITY_DOT = { high: 'var(--ruby)', medium: 'var(--primary-soft)', low: 'var(--ink-mute)' } as const;
-
-const PROPERTY_NAMES: Record<string, string> = {
-  'ten-fifty-bakers': 'Ten Fifty Bakers',
-  'prescription-pad': 'The Prescription Pad',
-  'annie-may': 'Annie May',
-};
-
-function daysUntil(date: string): number {
-  return Math.round((Date.parse(date) - Date.now()) / 86_400_000);
-}
+// Fallback when the properties table hasn't been seeded yet.
+const FALLBACK_PROPERTIES: BoardProperty[] = [
+  { id: 'ten-fifty-bakers', name: 'Ten Fifty Bakers', locality: 'Bakers Beach', lat: -41.24, lon: 146.63 },
+  { id: 'prescription-pad', name: 'The Prescription Pad', locality: 'Shearwater', lat: -41.157, lon: 146.542 },
+  { id: 'annie-may', name: 'Annie May', locality: 'Devonport', lat: -41.18, lon: 146.36 },
+];
 
 function fmtDate(d: string): string {
   return new Date(d + 'T12:00:00').toLocaleDateString('en-AU', {
@@ -63,60 +63,13 @@ function fmtDate(d: string): string {
 }
 
 interface FeedData {
-  opportunities: OpportunityRow[];
+  properties: BoardProperty[];
+  opportunities: BoardOpportunity[];
   gaps: GapRow[];
-  availability: Map<string, { open: number; total: number }>; // key: propertyId|date
-}
-
-async function getFeedData(): Promise<FeedData | null> {
-  const supabase = supabaseAdmin();
-  if (!supabase) return null;
-  const today = new Date().toISOString().slice(0, 10);
-
-  const [oppRes, gapRes, availRes] = await Promise.all([
-    supabase
-      .from('opportunities')
-      .select(
-        'id, priority, status, recommended_property_id, events(id, title, description, start_date, end_date, venue_name, locality, url, tags, ai_demand, ai_summary, event_scores(property_id, total, rationale)), properties(name)',
-      )
-      .eq('status', 'new')
-      .gte('events.start_date', today),
-    supabase
-      .from('occupancy_gaps')
-      .select('property_id, unit_id, start_date, end_date, nights, kind')
-      .is('resolved_at', null)
-      .gte('start_date', today)
-      .order('start_date')
-      .limit(12),
-    supabase
-      .from('availability_days')
-      .select('property_id, date, is_available')
-      .gte('date', today),
-  ]);
-
-  if (oppRes.error) throw new Error(oppRes.error.message);
-
-  // Aggregate room-level rows into open/total per property+date
-  const availability = new Map<string, { open: number; total: number }>();
-  for (const row of availRes.data ?? []) {
-    const key = `${row.property_id}|${row.date}`;
-    const agg = availability.get(key) ?? { open: 0, total: 0 };
-    agg.total++;
-    if (row.is_available) agg.open++;
-    availability.set(key, agg);
-  }
-
-  const rows = (oppRes.data as unknown as OpportunityRow[]).filter((o) => o.events);
-  rows.sort(
-    (a, b) =>
-      PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority] ||
-      a.events!.start_date.localeCompare(b.events!.start_date),
-  );
-  return { opportunities: rows, gaps: (gapRes.data as GapRow[]) ?? [], availability };
 }
 
 function availabilityBadge(
-  availability: FeedData['availability'],
+  availability: Map<string, { open: number; total: number }>,
   propertyId: string,
   start: string,
   end: string,
@@ -137,21 +90,103 @@ function availabilityBadge(
   return `${open}/${total} unit-nights open`;
 }
 
+async function getFeedData(): Promise<FeedData | null> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return null;
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [propRes, oppRes, gapRes, availRes] = await Promise.all([
+    supabase.from('properties').select('id, name, locality, lat, lon'),
+    supabase
+      .from('opportunities')
+      .select(
+        'id, priority, status, recommended_property_id, events(id, title, description, start_date, end_date, venue_name, locality, url, source, source_url, lat, lon, tags, ai_demand, ai_summary, event_scores(property_id, total, rationale))',
+      )
+      .eq('status', 'new')
+      .gte('events.start_date', today),
+    supabase
+      .from('occupancy_gaps')
+      .select('property_id, unit_id, start_date, end_date, nights, kind')
+      .is('resolved_at', null)
+      .gte('start_date', today)
+      .order('start_date')
+      .limit(12),
+    supabase
+      .from('availability_days')
+      .select('property_id, date, is_available')
+      .gte('date', today),
+  ]);
+
+  if (oppRes.error) throw new Error(oppRes.error.message);
+
+  const properties: BoardProperty[] =
+    propRes.data && propRes.data.length > 0
+      ? (propRes.data as BoardProperty[])
+      : FALLBACK_PROPERTIES;
+
+  // Aggregate room-level rows into open/total per property+date
+  const availability = new Map<string, { open: number; total: number }>();
+  for (const row of availRes.data ?? []) {
+    const key = `${row.property_id}|${row.date}`;
+    const agg = availability.get(key) ?? { open: 0, total: 0 };
+    agg.total++;
+    if (row.is_available) agg.open++;
+    availability.set(key, agg);
+  }
+
+  const rows = (oppRes.data as unknown as OpportunityRow[]).filter((o) => o.events);
+
+  const opportunities: BoardOpportunity[] = rows.map((o) => {
+    const e = o.events!;
+    const scores: BoardOpportunity['scores'] = {};
+    for (const s of e.event_scores) {
+      scores[s.property_id] = { total: Number(s.total), rationale: s.rationale ?? [] };
+    }
+    return {
+      id: o.id,
+      priority: o.priority,
+      title: e.title,
+      summary: e.ai_summary,
+      startDate: e.start_date,
+      endDate: e.end_date,
+      venue: e.venue_name,
+      locality: e.locality,
+      url: e.url,
+      sourceUrl: e.source_url,
+      source: e.source,
+      tags: e.tags ?? [],
+      demand: e.ai_demand,
+      lat: e.lat,
+      lon: e.lon,
+      recommendedPropertyId: o.recommended_property_id,
+      scores,
+      availabilityBadge: o.recommended_property_id
+        ? availabilityBadge(availability, o.recommended_property_id, e.start_date, e.end_date)
+        : null,
+    };
+  });
+
+  return { properties, opportunities, gaps: (gapRes.data as GapRow[]) ?? [] };
+}
+
 export default async function Home() {
   const data = await getFeedData();
+  const propertyNames = new Map(
+    (data?.properties ?? FALLBACK_PROPERTIES).map((p) => [p.id, p.name]),
+  );
 
   return (
     <main style={{ position: 'relative', minHeight: '100vh' }}>
       <div className="mesh" />
-      <div style={{ position: 'relative', maxWidth: 1080, margin: '0 auto', padding: '0 24px 96px' }}>
-        <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 0 64px' }}>
+      <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: '0 24px 96px' }}>
+        <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 0 48px' }}>
           <span className="heading-md" style={{ fontWeight: 400, letterSpacing: '-0.4px' }}>
             Raven
           </span>
           <span className="caption">Opportunity Feed</span>
         </nav>
 
-        <header style={{ marginBottom: 48 }}>
+        <header style={{ marginBottom: 32 }}>
           <h1 className="display-lg" style={{ marginBottom: 12 }}>
             Where is the next booking likely to come from?
           </h1>
@@ -172,12 +207,12 @@ export default async function Home() {
         ) : (
           <>
             {data.gaps.length > 0 && (
-              <section className="card" style={{ padding: 32, marginBottom: 24, borderColor: 'var(--primary-subdued)' }}>
+              <section className="card" style={{ padding: '20px 24px', marginBottom: 24, borderColor: 'var(--primary-subdued)' }}>
                 <h2 className="heading-md" style={{ marginBottom: 12 }}>Vacant nights needing attention</h2>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {data.gaps.map((g, i) => (
                     <span key={i} className="tag-soft" style={{ fontSize: 12, textTransform: 'none', letterSpacing: 0 }}>
-                      {PROPERTY_NAMES[g.property_id] ?? g.property_id}
+                      {propertyNames.get(g.property_id) ?? g.property_id}
                       {g.unit_id !== 'whole' ? ` · room ${g.unit_id}` : ''} · {fmtDate(g.start_date)} ·{' '}
                       {g.nights} {g.nights === 1 ? 'night' : 'nights'} ({g.kind})
                     </span>
@@ -192,126 +227,7 @@ export default async function Home() {
                 <p className="caption">Run the event monitor to discover new demand signals.</p>
               </section>
             ) : (
-              <section style={{ display: 'grid', gap: 16 }}>
-                {data.opportunities.map((o) => {
-                  const e = o.events!;
-                  const scores = [...e.event_scores].sort((a, b) => b.total - a.total);
-                  const best = scores[0];
-                  const days = daysUntil(e.start_date);
-                  const badge = o.recommended_property_id
-                    ? availabilityBadge(data.availability, o.recommended_property_id, e.start_date, e.end_date)
-                    : null;
-                  return (
-                    <article key={o.id} className="card" style={{ padding: 32 }}>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
-                        <span
-                          aria-hidden
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            background: PRIORITY_DOT[o.priority],
-                            display: 'inline-block',
-                          }}
-                        />
-                        <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>
-                          {o.priority} priority
-                        </span>
-                        <span className="caption tnum">
-                          {fmtDate(e.start_date)}
-                          {e.end_date !== e.start_date ? ` – ${fmtDate(e.end_date)}` : ''} · in {days}{' '}
-                          {days === 1 ? 'day' : 'days'}
-                        </span>
-                        {e.ai_demand != null && (
-                          <span className="caption tnum" style={{ color: 'var(--primary-deep)' }}>
-                            demand {e.ai_demand}/100
-                          </span>
-                        )}
-                        {badge && (
-                          <span className="caption tnum" style={{ color: 'var(--ink-secondary)' }}>{badge}</span>
-                        )}
-                      </div>
-
-                      <h2 className="heading-md" style={{ marginBottom: 4 }}>
-                        {e.url ? <a href={e.url} style={{ color: 'inherit' }}>{e.title}</a> : e.title}
-                      </h2>
-                      <p className="caption" style={{ marginBottom: 12 }}>
-                        {[e.venue_name, e.locality].filter(Boolean).join(' · ')}
-                      </p>
-                      {e.ai_summary && (
-                        <p style={{ marginBottom: 16, maxWidth: 640 }}>{e.ai_summary}</p>
-                      )}
-
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-                        {e.tags.map((t) => (
-                          <span key={t} className="tag-soft">{t}</span>
-                        ))}
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
-                        {scores.map((s) => {
-                          const isBest = s.property_id === best.property_id;
-                          return (
-                            <div
-                              key={s.property_id}
-                              style={{
-                                padding: '12px 16px',
-                                borderRadius: 'var(--r-md)',
-                                border: `1px solid ${isBest ? 'var(--primary)' : 'var(--hairline)'}`,
-                                background: isBest ? 'var(--canvas-soft)' : 'var(--canvas)',
-                              }}
-                            >
-                              <div className="caption" style={{ color: 'var(--ink-secondary)' }}>
-                                {PROPERTY_NAMES[s.property_id] ?? s.property_id}
-                                {isBest ? ' · recommended' : ''}
-                              </div>
-                              <div className="tnum" style={{ fontSize: 26, letterSpacing: '-0.26px' }}>
-                                {s.total}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <details style={{ marginBottom: 20 }}>
-                        <summary className="caption" style={{ cursor: 'pointer', color: 'var(--primary)' }}>
-                          Why {o.properties?.name ?? PROPERTY_NAMES[o.recommended_property_id ?? ''] ?? 'this property'}?
-                        </summary>
-                        <ul style={{ margin: '8px 0 0 18px' }}>
-                          {best.rationale.map((r, i) => (
-                            <li key={i} className="caption" style={{ marginBottom: 4 }}>{r}</li>
-                          ))}
-                        </ul>
-                      </details>
-
-                      <form action={setOpportunityStatus} style={{ display: 'flex', gap: 8 }}>
-                        <input type="hidden" name="id" value={o.id} />
-                        <button className="pill-primary" name="status" value="approved" type="submit">
-                          Approve
-                        </button>
-                        <button
-                          type="submit"
-                          name="status"
-                          value="modified"
-                          className="pill-primary"
-                          style={{ background: 'var(--canvas)', color: 'var(--primary)', border: '1px solid var(--primary)' }}
-                        >
-                          Modify
-                        </button>
-                        <button
-                          type="submit"
-                          name="status"
-                          value="dismissed"
-                          className="pill-primary"
-                          style={{ background: 'var(--canvas)', color: 'var(--ink-mute)', border: '1px solid var(--hairline)' }}
-                        >
-                          Dismiss
-                        </button>
-                      </form>
-                    </article>
-                  );
-                })}
-              </section>
+              <OpportunityBoard properties={data.properties} opportunities={data.opportunities} />
             )}
           </>
         )}
