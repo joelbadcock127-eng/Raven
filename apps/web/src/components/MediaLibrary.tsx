@@ -85,7 +85,34 @@ export default function MediaLibrary({ assets, folders }: { assets: MediaAsset[]
   const [musicBusy, setMusicBusy] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | null>(null); // asset id with the folder picker open
   const [pickerSel, setPickerSel] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkSel, setBulkSel] = useState<Set<string>>(new Set());
   const fileInput = useRef<HTMLInputElement>(null);
+
+  const toggleSelected = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const applyBulkFolders = () =>
+    startTransition(async () => {
+      // union: every selected asset keeps its folders and gains the picked ones
+      for (const id of selected) {
+        const a = assets.find((x) => x.id === id);
+        if (!a) continue;
+        await setAssetFolders(id, [...new Set([...(a.folder_ids ?? []), ...bulkSel])]);
+      }
+      setBulkOpen(false);
+      setSelectMode(false);
+      setSelected(new Set());
+      setBulkSel(new Set());
+      setProgress('Added to folders');
+    });
 
   const openPicker = (a: MediaAsset) => {
     setPickerFor(a.id);
@@ -403,6 +430,104 @@ export default function MediaLibrary({ assets, folders }: { assets: MediaAsset[]
         </div>
       </section>
 
+      {/* ── Select / bulk bar ── */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
+        <button
+          type="button"
+          className="caption"
+          onClick={() => {
+            setSelectMode((v) => !v);
+            setSelected(new Set());
+            setBulkOpen(false);
+          }}
+          style={{
+            padding: '6px 14px',
+            borderRadius: 'var(--r-pill)',
+            cursor: 'pointer',
+            border: '1px solid',
+            borderColor: selectMode ? 'var(--primary)' : 'var(--hairline)',
+            background: selectMode ? 'var(--primary)' : 'var(--canvas)',
+            color: selectMode ? 'var(--on-primary)' : 'var(--ink-secondary)',
+          }}
+        >
+          {selectMode ? 'Done selecting' : 'Select files'}
+        </button>
+        {selectMode && (
+          <>
+            <span className="caption tnum">{selected.size} selected</span>
+            <button
+              type="button"
+              className="caption"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)' }}
+              onClick={() => setSelected(new Set(visible.map((a) => a.id)))}
+            >
+              select all shown
+            </button>
+            <button
+              type="button"
+              disabled={selected.size === 0}
+              className="pill-primary"
+              style={{ fontSize: 12, padding: '6px 14px', opacity: selected.size === 0 ? 0.5 : 1 }}
+              onClick={() => setBulkOpen((v) => !v)}
+            >
+              Add to folders
+            </button>
+          </>
+        )}
+      </div>
+
+      {selectMode && bulkOpen && (
+        <section className="card" style={{ padding: 16, marginBottom: 16, maxWidth: 460 }}>
+          <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 8 }}>
+            Add {selected.size} file{selected.size === 1 ? '' : 's'} to
+          </div>
+          <div style={{ maxHeight: 220, overflowY: 'auto', display: 'grid', gap: 2, marginBottom: 10 }}>
+            {visibleFolders.map((f) => (
+              <label key={f.id} className="caption" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: f.depth * 18, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={bulkSel.has(f.id)}
+                  onChange={() =>
+                    setBulkSel((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(f.id)) next.delete(f.id);
+                      else next.add(f.id);
+                      return next;
+                    })
+                  }
+                  style={{ accentColor: 'var(--primary)' }}
+                />
+                {f.name}
+              </label>
+            ))}
+            {visibleFolders.length === 0 && <span className="caption">No folders yet — create one above.</span>}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              className="caption"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)' }}
+              onClick={() => {
+                const name = window.prompt('New folder name');
+                if (name)
+                  startTransition(async () => {
+                    await createFolder(filter === 'all' ? null : filter, name);
+                  });
+              }}
+            >
+              + new folder
+            </button>
+            <span style={{ flex: 1 }} />
+            <button type="button" className="caption" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-mute)' }} onClick={() => setBulkOpen(false)}>
+              cancel
+            </button>
+            <button type="button" disabled={pending || bulkSel.size === 0} className="pill-primary" style={{ fontSize: 12, padding: '6px 16px' }} onClick={applyBulkFolders}>
+              {pending ? 'Adding…' : 'Add'}
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* ── Grid ── */}
       {visible.length === 0 ? (
         <section className="card" style={{ padding: 32, maxWidth: 560 }}>
@@ -418,7 +543,41 @@ export default function MediaLibrary({ assets, folders }: { assets: MediaAsset[]
           }}
         >
           {visible.map((a) => (
-            <figure key={a.id} className="card" style={{ overflow: 'hidden', opacity: pending ? 0.7 : 1 }}>
+            <figure
+              key={a.id}
+              className="card"
+              onClick={() => selectMode && toggleSelected(a.id)}
+              style={{
+                overflow: 'hidden',
+                opacity: pending ? 0.7 : 1,
+                position: 'relative',
+                cursor: selectMode ? 'pointer' : undefined,
+                outline: selectMode && selected.has(a.id) ? '2px solid var(--primary)' : 'none',
+                outlineOffset: -2,
+              }}
+            >
+              {selectMode && (
+                <span
+                  aria-hidden
+                  style={{
+                    position: 'absolute',
+                    top: 10,
+                    left: 10,
+                    zIndex: 2,
+                    width: 22,
+                    height: 22,
+                    borderRadius: '50%',
+                    display: 'grid',
+                    placeItems: 'center',
+                    fontSize: 13,
+                    background: selected.has(a.id) ? 'var(--primary)' : 'rgba(255,255,255,.85)',
+                    color: selected.has(a.id) ? '#fff' : 'transparent',
+                    border: '1px solid rgba(0,0,0,.15)',
+                  }}
+                >
+                  ✓
+                </span>
+              )}
               {a.kind === 'audio' ? (
                 <div style={{ aspectRatio: '4 / 3', display: 'grid', placeItems: 'center', background: 'var(--canvas-soft)', padding: 12 }}>
                   <audio src={a.public_url} controls preload="none" style={{ width: '100%' }} />
@@ -439,7 +598,7 @@ export default function MediaLibrary({ assets, folders }: { assets: MediaAsset[]
                   style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', display: 'block' }}
                 />
               )}
-              <figcaption style={{ padding: '10px 12px' }}>
+              <figcaption style={{ padding: '10px 12px', pointerEvents: selectMode ? 'none' : undefined }}>
                 <div className="caption" style={{ color: 'var(--ink-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {a.caption || a.file_name}
                 </div>

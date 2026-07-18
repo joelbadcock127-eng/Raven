@@ -38,11 +38,18 @@ const Icon = {
       <path d="M12 5v14M5 12h14" />
     </svg>
   ),
+  outreach: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 20c.7-3.4 2.8-5 5.5-5s4.8 1.6 5.5 5M16 4.5c1.7.6 2.8 2 2.8 3.9s-1.1 3.3-2.8 3.9M17.5 15.2c2 .7 3.2 2.3 3.6 4.8" />
+    </svg>
+  ),
 };
 
 const ITEMS = [
   { href: '/', label: 'Feed', icon: Icon.feed },
   { href: '/campaigns', label: 'Campaigns', icon: Icon.campaigns },
+  { href: '/outreach', label: 'Outreach', icon: Icon.outreach },
   { href: '/sites', label: 'Sites', icon: Icon.sites },
   { href: '/media', label: 'Media', icon: Icon.media },
   { href: '/social', label: 'Social', icon: Icon.social },

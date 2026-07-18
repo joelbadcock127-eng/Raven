@@ -181,13 +181,11 @@ export default async function Home() {
   return (
     <>
 
-        <header style={{ marginBottom: 32 }}>
-          <h1 className="display-lg" style={{ marginBottom: 12 }}>
-            Where is the next booking likely to come from?
-          </h1>
-          <p className="caption" style={{ maxWidth: 560 }}>
-            Events and demand signals discovered by the Event Monitor, scored separately for each
-            property. Every recommendation stays editable and approval-led.
+        <header style={{ marginBottom: 22 }}>
+          <h1 className="display-lg" style={{ marginBottom: 8 }}>Feed</h1>
+          <p className="caption" style={{ maxWidth: 560, color: 'var(--ink-mute)' }}>
+            Reasons people will need a bed, matched to your properties. Approve the good ones and
+            Raven builds the campaign.
           </p>
         </header>
 

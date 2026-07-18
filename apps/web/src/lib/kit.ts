@@ -66,7 +66,7 @@ const PAGE_SCHEMA = {
     whyStay: { type: 'array', items: { type: 'string' }, description: '3-5 short, concrete reasons to stay at this property for this event' },
     plan: { type: 'array', items: { type: 'string' }, description: '3-4 line suggested itinerary weaving the event and the property together' },
     heroImageUrl: { type: 'string', description: 'Pick ONE image URL from the provided media list that best sells the property' },
-    galleryUrls: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 4, description: '3-4 more image URLs from the media list, varied (rooms, grounds, details)' },
+    galleryUrls: { type: 'array', items: { type: 'string' }, description: 'Exactly 3 or 4 more image URLs from the media list, varied (rooms, grounds, details)' },
     practical: {
       type: 'array',
       items: { type: 'object', properties: { label: { type: 'string' }, value: { type: 'string' } }, required: ['label', 'value'], additionalProperties: false },
@@ -84,10 +84,8 @@ const BUNDLE_SCHEMA = {
   properties: {
     posts: {
       type: 'array',
-      minItems: 2,
-      maxItems: 2,
       items: { type: 'string' },
-      description: 'Two distinct Instagram captions (2-4 lines, soft book-direct CTA, 5-8 hashtags on the last line)',
+      description: 'Exactly two distinct Instagram captions (2-4 lines, soft book-direct CTA, 5-8 hashtags on the last line)',
     },
     reelCaption: { type: 'string', description: 'Caption for a reel about staying here for this event' },
     guestEmailSubject: { type: 'string' },
@@ -253,7 +251,7 @@ export async function generateCampaignKit(
 
   // ── Persist: social drafts tied to the campaign ──
   const socialRows = [];
-  for (const caption of bundle.posts ?? []) {
+  for (const caption of (bundle.posts ?? []).slice(0, 2)) {
     socialRows.push({
       campaign_id: campaign.id,
       property_id: propertyId,
