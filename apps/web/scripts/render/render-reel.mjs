@@ -51,6 +51,53 @@ function sh(cmd, args) {
   execFileSync(cmd, args, { stdio: 'inherit' });
 }
 
+function shOut(cmd, args) {
+  return execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+}
+
+/**
+ * Find the best-sounding start point in a music track: scan RMS loudness in
+ * one-second buckets and pick the window with the highest average energy
+ * (usually a chorus), skipping the first 10 seconds of intro. Falls back to
+ * 0 for short tracks or if the scan fails.
+ */
+function bestMusicStart(file, windowSeconds) {
+  try {
+    const durOut = shOut('ffprobe', [
+      '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file,
+    ]);
+    const total = parseFloat(durOut);
+    if (!Number.isFinite(total) || total < windowSeconds + 20) return 0;
+
+    // per-frame RMS via astats; asetnsamples makes each frame ~1s of audio
+    const scan = shOut('ffmpeg', [
+      '-i', file, '-map', '0:a:0',
+      '-af', 'asetnsamples=44100,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level',
+      '-f', 'null', '-',
+    ]);
+    const rms = [...scan.matchAll(/RMS_level=(-?[\d.]+|-inf)/g)].map((m) =>
+      m[1] === '-inf' ? -90 : parseFloat(m[1]),
+    );
+    if (rms.length < windowSeconds + 12) return 0;
+
+    const win = Math.ceil(windowSeconds);
+    let best = 10; // never start inside the first 10s
+    let bestAvg = -Infinity;
+    for (let t = 10; t + win < rms.length; t++) {
+      const avg = rms.slice(t, t + win).reduce((a, b) => a + b, 0) / win;
+      if (avg > bestAvg) {
+        bestAvg = avg;
+        best = t;
+      }
+    }
+    console.log(`music: track ${total.toFixed(0)}s, loudest ${win}s window starts at ${best}s`);
+    return best;
+  } catch (err) {
+    console.warn('music scan failed, starting from 0:', err.message);
+    return 0;
+  }
+}
+
 try {
   const clips = (spec.clips ?? []).slice(0, Math.floor(MAX_S / CLIP_S));
   if (!clips.length) throw new Error('spec has no clips');
@@ -92,15 +139,18 @@ try {
     current = 'work/captioned.mp4';
   }
 
-  // 4. music (trimmed to video length, gentle fade-out)
+  // 4. music — long tracks get their loudest section (usually the chorus),
+  // not the first N seconds of intro; fade in and out
   if (spec.musicUrl) {
     const res = await fetch(spec.musicUrl);
     if (res.ok) {
       writeFileSync('work/music', Buffer.from(await res.arrayBuffer()));
       const dur = clips.length * CLIP_S;
+      const start = bestMusicStart('work/music', dur);
       sh('ffmpeg', [
-        '-y', '-i', current, '-i', 'work/music',
-        '-filter_complex', `[1:a]atrim=0:${dur},afade=t=out:st=${Math.max(0, dur - 1.5)}:d=1.5[a]`,
+        '-y', '-i', current, '-ss', String(start), '-i', 'work/music',
+        '-filter_complex',
+        `[1:a]atrim=0:${dur},afade=t=in:st=0:d=0.8,afade=t=out:st=${Math.max(0, dur - 1.5)}:d=1.5[a]`,
         '-map', '0:v', '-map', '[a]', '-c:v', 'copy', '-c:a', 'aac', '-shortest', 'work/final.mp4',
       ]);
       current = 'work/final.mp4';

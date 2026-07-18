@@ -110,13 +110,18 @@ export function matchOffers(propertyId: string | null, tags: string[]): OfferTem
     .map(({ o }) => o);
 }
 
-/** Distribution channels every campaign works through. */
-export const DISTRIBUTION_CHANNELS: Array<{ id: string; label: string; hint: string }> = [
-  { id: 'contentPage', label: 'Content page', hint: 'Publish the event page on the property site — it does the selling.' },
-  { id: 'email', label: 'Email list', hint: 'Send the guest email to your MailerLite list.' },
-  { id: 'formerGuests', label: 'Former guests', hint: 'Personal note to past guests who match this offer.' },
-  { id: 'paidSocial', label: 'Paid social', hint: 'Boost the campaign on Meta with a small daily budget.' },
-  { id: 'travelGroups', label: 'Travel groups', hint: 'Post in Tasmania travel Facebook groups and forums (as the owner, transparently).' },
-  { id: 'localPartners', label: 'Local partners', hint: 'Ask venues, operators and organisers to share your stay link.' },
-  { id: 'directOutreach', label: 'Direct outreach', hint: 'Email the organiser / project manager with the group pitch.' },
+/**
+ * Distribution channels in escalation order: free and organic first, paid
+ * last. Each has a default "switch on" point in days before the target date;
+ * cheap channels start early, desperation moves are held back until the
+ * dates are close and still unbooked. Editable per campaign (playbook).
+ */
+export const DISTRIBUTION_CHANNELS: Array<{ id: string; label: string; hint: string; daysOut: number }> = [
+  { id: 'contentPage', label: 'Content page', daysOut: 60, hint: 'Publish the event page on the property site first — it does the selling for every later channel.' },
+  { id: 'email', label: 'Email list', daysOut: 45, hint: 'Send the guest email to your MailerLite list.' },
+  { id: 'formerGuests', label: 'Former guests', daysOut: 42, hint: 'Personal note to past guests who match this offer.' },
+  { id: 'directOutreach', label: 'Direct outreach', daysOut: 40, hint: 'Email the organiser / project manager with the group pitch.' },
+  { id: 'localPartners', label: 'Local partners', daysOut: 35, hint: 'Ask venues, operators and organisers to share your stay link.' },
+  { id: 'travelGroups', label: 'Travel groups', daysOut: 21, hint: 'Post in Tasmania travel Facebook groups and forums (as the owner, transparently).' },
+  { id: 'paidSocial', label: 'Paid social', daysOut: 10, hint: 'Last resort: boost on Meta with a small daily budget once free channels have had their shot.' },
 ];

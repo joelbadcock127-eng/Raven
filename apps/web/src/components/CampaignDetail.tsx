@@ -10,6 +10,7 @@ import {
   boostCampaign,
   saveCampaignPlan,
   setDistributionStatus,
+  setPlaybookDays,
 } from '@/app/(admin)/campaigns/actions';
 import { matchOffers, DISTRIBUTION_CHANNELS } from '@/lib/offers';
 
@@ -37,6 +38,7 @@ export interface CampaignRow {
   target_end: string | null;
   offer: { id: string; name: string; pitch: string } | null;
   distribution: Record<string, 'todo' | 'done' | 'skipped'>;
+  playbook: Record<string, number>;
   property: { name: string } | null;
   event: {
     title: string;
@@ -268,46 +270,95 @@ export default function CampaignDetail({ campaign: c }: { campaign: CampaignRow 
         {notice && <p className="caption" style={{ marginTop: 10, color: 'var(--primary-deep)' }}>{notice}</p>}
       </article>
 
-      {/* ── distribution ── */}
+      {/* ── distribution playbook: cheap channels first, escalate as dates near ── */}
       <article className="card" style={{ padding: 24 }}>
-        <h3 className="heading-md" style={{ marginBottom: 4 }}>Distribution</h3>
+        <h3 className="heading-md" style={{ marginBottom: 4 }}>Distribution playbook</h3>
         <p className="caption" style={{ marginBottom: 14 }}>
-          How the word gets out. Click a channel to cycle: to do → done → skipped.
+          Channels fire in sequence: free and organic first, paid last, each switching on a set
+          number of days before the target date. If the dates are still open when a channel comes
+          due, it lights up here. Click the days to change when a channel unlocks; click a channel
+          to cycle to do → done → skipped.
         </p>
-        <div style={{ display: 'grid', gap: 10 }}>
-          {DISTRIBUTION_CHANNELS.map((ch) => {
-            const st = c.distribution?.[ch.id] ?? 'todo';
-            const next = st === 'todo' ? 'done' : st === 'done' ? 'skipped' : 'todo';
-            return (
-              <div key={ch.id} style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => run(() => setDistributionStatus(c.id, ch.id, next))}
-                  className="caption"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    width: 150,
-                    padding: '6px 12px',
-                    borderRadius: 'var(--r-pill)',
-                    cursor: 'pointer',
-                    border: '1px solid',
-                    borderColor: st === 'done' ? 'var(--primary)' : 'var(--hairline)',
-                    background: st === 'done' ? 'var(--primary-subdued)' : 'var(--canvas)',
-                    color: st === 'skipped' ? 'var(--ink-mute)' : st === 'done' ? 'var(--primary-deep)' : 'var(--ink-secondary)',
-                    textDecoration: st === 'skipped' ? 'line-through' : 'none',
-                  }}
-                >
-                  <span style={{ fontSize: 11 }}>{st === 'done' ? '✓' : st === 'skipped' ? '–' : '○'}</span>
-                  {ch.label}
-                </button>
-                <span className="caption" style={{ color: 'var(--ink-mute)', flex: 1, minWidth: 220 }}>{ch.hint}</span>
-              </div>
-            );
-          })}
-        </div>
+        {(() => {
+          const targetStart = c.target_start ?? c.event?.start_date ?? null;
+          const daysLeft = targetStart
+            ? Math.round((Date.parse(targetStart) - Date.now()) / 86_400_000)
+            : null;
+          const rows = DISTRIBUTION_CHANNELS
+            .map((ch) => ({ ...ch, daysOut: c.playbook?.[ch.id] ?? ch.daysOut }))
+            .sort((a, b) => b.daysOut - a.daysOut);
+          return (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {daysLeft != null && (
+                <p className="caption tnum" style={{ marginBottom: 4 }}>
+                  {daysLeft >= 0 ? `${daysLeft} days until the target dates.` : 'Target dates have passed.'}
+                </p>
+              )}
+              {rows.map((ch) => {
+                const st = c.distribution?.[ch.id] ?? 'todo';
+                const next = st === 'todo' ? 'done' : st === 'done' ? 'skipped' : 'todo';
+                const due = st === 'todo' && daysLeft != null && daysLeft >= 0 && daysLeft <= ch.daysOut;
+                const waiting = st === 'todo' && daysLeft != null && daysLeft > ch.daysOut;
+                return (
+                  <div
+                    key={ch.id}
+                    style={{
+                      display: 'flex',
+                      gap: 12,
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      background: due ? '#fff3d6' : 'transparent',
+                      opacity: waiting ? 0.65 : 1,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => run(() => setDistributionStatus(c.id, ch.id, next))}
+                      className="caption"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        width: 150,
+                        padding: '6px 12px',
+                        borderRadius: 'var(--r-pill)',
+                        cursor: 'pointer',
+                        border: '1px solid',
+                        borderColor: st === 'done' ? 'var(--primary)' : due ? '#c99a1f' : 'var(--hairline)',
+                        background: st === 'done' ? 'var(--primary-subdued)' : 'var(--canvas)',
+                        color: st === 'skipped' ? 'var(--ink-mute)' : st === 'done' ? 'var(--primary-deep)' : 'var(--ink-secondary)',
+                        textDecoration: st === 'skipped' ? 'line-through' : 'none',
+                      }}
+                    >
+                      <span style={{ fontSize: 11 }}>{st === 'done' ? '✓' : st === 'skipped' ? '–' : '○'}</span>
+                      {ch.label}
+                    </button>
+                    <button
+                      type="button"
+                      className="caption tnum"
+                      title="Change when this channel unlocks"
+                      onClick={() => {
+                        const v = window.prompt(`${ch.label}: switch on how many days before the target date?`, String(ch.daysOut));
+                        if (v !== null && v.trim() !== '') run(() => setPlaybookDays(c.id, ch.id, Number(v) || ch.daysOut));
+                      }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', width: 84, textAlign: 'left' }}
+                    >
+                      {ch.daysOut}d out
+                    </button>
+                    {due && <span className="micro-cap" style={{ color: '#8a6410' }}>due now</span>}
+                    {waiting && daysLeft != null && (
+                      <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>unlocks in {daysLeft - ch.daysOut}d</span>
+                    )}
+                    <span className="caption" style={{ color: 'var(--ink-mute)', flex: 1, minWidth: 200 }}>{ch.hint}</span>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </article>
 
       {/* ── kit assets ── */}

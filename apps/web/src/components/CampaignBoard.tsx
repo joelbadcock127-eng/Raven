@@ -124,6 +124,14 @@ export default function CampaignBoard({ campaigns }: { campaigns: CampaignRow[] 
           const lead = daysUntil(targetStart);
           const distDone = DISTRIBUTION_CHANNELS.filter((ch) => c.distribution?.[ch.id] === 'done').length;
           const needsAction = c.status === 'ready_for_approval' || !c.kit?.generatedAt;
+          // the escalation ladder's next channel that is unlocked but not done
+          const dueChannel =
+            lead != null && lead >= 0
+              ? DISTRIBUTION_CHANNELS
+                  .map((ch) => ({ ...ch, daysOut: c.playbook?.[ch.id] ?? ch.daysOut }))
+                  .sort((a, b) => b.daysOut - a.daysOut)
+                  .find((ch) => (c.distribution?.[ch.id] ?? 'todo') === 'todo' && lead <= ch.daysOut)
+              : undefined;
 
           return (
             <Link
@@ -160,6 +168,9 @@ export default function CampaignBoard({ campaigns }: { campaigns: CampaignRow[] 
                 <span className="caption tnum" style={{ color: 'var(--ink-mute)' }}>
                   distribution {distDone}/{DISTRIBUTION_CHANNELS.length}
                 </span>
+                {dueChannel && (
+                  <span className="micro-cap" style={{ color: '#8a6410' }}>due: {dueChannel.label}</span>
+                )}
                 {Number(c.revenue) > 0 && (
                   <span className="caption tnum">${Number(c.revenue).toFixed(0)} · {c.bookings} bkg</span>
                 )}

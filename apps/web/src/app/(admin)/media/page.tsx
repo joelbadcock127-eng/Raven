@@ -13,7 +13,7 @@ export default async function MediaPage() {
         .from('media_assets')
         .select('id, property_id, kind, public_url, file_name, tags, caption, times_used, folder_ids, created_at')
         .order('created_at', { ascending: false }),
-      supabase.from('media_folders').select('id, property_id, name').order('name'),
+      supabase.from('media_folders').select('id, property_id, name, parent_id').order('name'),
     ]);
     assets = (assetRes.data as MediaAsset[]) ?? [];
     folders = (folderRes.data as MediaFolder[]) ?? [];

@@ -31,6 +31,7 @@ export interface BoardOpportunity {
   recommendedPropertyId: string | null;
   scores: Record<string, { total: number; rationale: string[] }>;
   availabilityBadge: string | null;
+  bookedOut: boolean;
 }
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 } as const;
@@ -97,6 +98,8 @@ export default function OpportunityBoard({
 }) {
   const [maxDays, setMaxDays] = useState(DAYS_MAX);
   const [maxDist, setMaxDist] = useState(DIST_MAX);
+  const [multiDayOnly, setMultiDayOnly] = useState(false);
+  const [hideBooked, setHideBooked] = useState(true);
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [handled, setHandled] = useState<Set<string>>(new Set()); // optimistic removals
   const [notice, setNotice] = useState('');
@@ -143,19 +146,25 @@ export default function OpportunityBoard({
 
   // Assign each opportunity to its column, then filter per-column so the
   // distance limit is measured from that column's property.
-  const { columns, hiddenNoLocation } = useMemo(() => {
+  const { columns, hiddenNoLocation, hiddenBooked } = useMemo(() => {
     const cols = new Map<
       string,
       (BoardOpportunity & { daysOut: number; distanceKm: number | null; columnScore: number })[]
     >();
     for (const p of properties) cols.set(p.id, []);
     let noLoc = 0;
+    let booked = 0;
 
     for (const o of opportunities) {
       if (handled.has(o.id)) continue;
       const daysOut = daysUntil(o.startDate);
       if (daysOut < 0) continue;
       if (maxDays < DAYS_MAX && daysOut > maxDays) continue;
+      if (multiDayOnly && o.endDate <= o.startDate) continue;
+      if (hideBooked && o.bookedOut) {
+        booked++;
+        continue;
+      }
       if (activeTags.size > 0 && !o.tags.some((t) => activeTags.has(t))) continue;
 
       const colId = columnFor(o, properties);
@@ -184,19 +193,19 @@ export default function OpportunityBoard({
           a.startDate.localeCompare(b.startDate),
       );
 
-    return { columns: cols, hiddenNoLocation: noLoc };
-  }, [opportunities, properties, maxDays, maxDist, activeTags, handled]);
+    return { columns: cols, hiddenNoLocation: noLoc, hiddenBooked: booked };
+  }, [opportunities, properties, maxDays, maxDist, multiDayOnly, hideBooked, activeTags, handled]);
 
   const visibleCount = [...columns.values()].reduce((n, l) => n + l.length, 0);
 
   return (
     <>
       {/* ─── Filter bar ─── */}
-      <section className="card" style={{ padding: '20px 24px', marginBottom: 24 }}>
-        <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label style={{ minWidth: 220 }}>
-            <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 6 }}>
-              Days out · {maxDays >= DAYS_MAX ? 'any' : `≤ ${maxDays} days`}
+      <section className="card" style={{ padding: '18px 22px', marginBottom: 24 }}>
+        <div style={{ display: 'flex', gap: '14px 28px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <label style={{ flex: '1 1 200px', maxWidth: 280 }}>
+            <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 4 }}>
+              Days out · {maxDays >= DAYS_MAX ? 'any' : `≤ ${maxDays}`}
             </div>
             <input
               type="range"
@@ -209,9 +218,9 @@ export default function OpportunityBoard({
             />
           </label>
 
-          <label style={{ minWidth: 220 }}>
-            <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 6 }}>
-              Distance from property · {maxDist >= DIST_MAX ? 'any' : `≤ ${maxDist} km`}
+          <label style={{ flex: '1 1 200px', maxWidth: 280 }}>
+            <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 4 }}>
+              Distance · {maxDist >= DIST_MAX ? 'any' : `≤ ${maxDist} km`}
             </div>
             <input
               type="range"
@@ -224,32 +233,32 @@ export default function OpportunityBoard({
             />
           </label>
 
-          <div className="caption tnum" style={{ paddingBottom: 4 }}>
-            {visibleCount} of {opportunities.length} showing
-            {hiddenNoLocation > 0 && ` · ${hiddenNoLocation} hidden (no location data)`}
-            {notice && <span style={{ color: 'var(--primary-deep)' }}> · {notice}</span>}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {(
+              [
+                ['Multi-day only', multiDayOnly, () => setMultiDayOnly((v) => !v)],
+                ['Hide booked-out', hideBooked, () => setHideBooked((v) => !v)],
+              ] as const
+            ).map(([label, on, toggle]) => (
+              <button
+                key={label}
+                type="button"
+                onClick={toggle}
+                className="caption"
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 'var(--r-pill)',
+                  cursor: 'pointer',
+                  border: '1px solid',
+                  borderColor: on ? 'var(--primary)' : 'var(--hairline)',
+                  background: on ? 'var(--primary)' : 'var(--canvas)',
+                  color: on ? 'var(--on-primary)' : 'var(--ink-secondary)',
+                }}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-
-          {(maxDays < DAYS_MAX || maxDist < DIST_MAX || activeTags.size > 0) && (
-            <button
-              type="button"
-              onClick={() => {
-                setMaxDays(DAYS_MAX);
-                setMaxDist(DIST_MAX);
-                setActiveTags(new Set());
-              }}
-              className="caption"
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--primary)',
-                cursor: 'pointer',
-                paddingBottom: 4,
-              }}
-            >
-              Reset filters
-            </button>
-          )}
 
           <button
             type="button"
@@ -259,6 +268,29 @@ export default function OpportunityBoard({
           >
             {logOpen ? 'Close' : '+ Log a signal'}
           </button>
+        </div>
+
+        <div className="caption tnum" style={{ marginTop: 10, color: 'var(--ink-mute)' }}>
+          {visibleCount} of {opportunities.length} showing
+          {hiddenBooked > 0 && ` · ${hiddenBooked} hidden (dates already booked)`}
+          {hiddenNoLocation > 0 && ` · ${hiddenNoLocation} hidden (no location data)`}
+          {(maxDays < DAYS_MAX || maxDist < DIST_MAX || activeTags.size > 0 || multiDayOnly || !hideBooked) && (
+            <button
+              type="button"
+              onClick={() => {
+                setMaxDays(DAYS_MAX);
+                setMaxDist(DIST_MAX);
+                setActiveTags(new Set());
+                setMultiDayOnly(false);
+                setHideBooked(true);
+              }}
+              className="caption"
+              style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', marginLeft: 8 }}
+            >
+              reset
+            </button>
+          )}
+          {notice && <span style={{ color: 'var(--primary-deep)' }}> · {notice}</span>}
         </div>
 
         {logOpen && (
@@ -456,7 +488,11 @@ export default function OpportunityBoard({
                       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }} className="caption tnum">
                         {score && <span style={{ color: 'var(--primary-deep)' }}>score {score.total}</span>}
                         {o.demand != null && <span>demand {o.demand}/100</span>}
-                        {o.availabilityBadge && <span>{o.availabilityBadge}</span>}
+                        {o.availabilityBadge && (
+                          <span style={{ color: o.bookedOut ? 'var(--ruby)' : undefined }}>
+                            {o.bookedOut ? 'booked out' : o.availabilityBadge}
+                          </span>
+                        )}
                       </div>
 
                       {o.tags.length > 0 && (

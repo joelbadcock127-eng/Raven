@@ -18,6 +18,23 @@ export function anthropic(): Anthropic | null {
   return new Anthropic();
 }
 
+/**
+ * House writing style, appended to every copy-writing system prompt.
+ * The owner's rules: humane English, and no dashes used as punctuation.
+ */
+export const HOUSE_STYLE =
+  ' STYLE RULES: Write like a real person who owns the place, not a marketer. Plain, humane Australian English; contractions are fine. ' +
+  'NEVER use a dash as punctuation (no em dashes, en dashes, or hyphens standing in for a pause). Use a comma, a full stop, or start a new sentence instead. ' +
+  'Hyphens inside compound words (off-grid, two-night) are fine. No rhetorical questions, no exclamation pileups, no cliches like nestled, hidden gem, or escape the hustle.';
+
+/** Belt and braces: replace punctuation dashes the model sneaks in anyway. */
+export function stripDashes(text: string): string {
+  return text
+    .replace(/\s+[—–]\s+/g, ', ')
+    .replace(/([a-zA-Z0-9])—([a-zA-Z0-9])/g, '$1, $2')
+    .replace(/\s+-\s+/g, ', ');
+}
+
 const VALID_TAGS = [
   'festival', 'music', 'sports', 'conference', 'business', 'community',
   'family', 'wellness', 'nature-walking', 'food-wine', 'arts',

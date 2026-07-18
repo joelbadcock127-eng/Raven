@@ -13,7 +13,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
   const { data } = await supabase
     .from('campaigns')
     .select(
-      'id, status, assets, kit, landing_page_slug, revenue, bookings, started_at, stopped_at, created_at, property_id, target_start, target_end, offer, distribution, property:properties(name), event:events(title, start_date, end_date, venue_name, locality, organiser, ticket_url, url, tags)',
+      'id, status, assets, kit, landing_page_slug, revenue, bookings, started_at, stopped_at, created_at, property_id, target_start, target_end, offer, distribution, playbook, property:properties(name), event:events(title, start_date, end_date, venue_name, locality, organiser, ticket_url, url, tags)',
     )
     .eq('id', id)
     .maybeSingle();

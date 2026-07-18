@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase';
-import { anthropic, MODELS } from '@/lib/ai';
+import { anthropic, MODELS, HOUSE_STYLE, stripDashes } from '@/lib/ai';
 import { defaultTheme, newSection, type Section, type SectionType } from '@/lib/siteBuilder';
 
 export interface BuilderResult {
@@ -189,7 +189,8 @@ export async function aiEditSection(
       system:
         'You edit one section of a boutique Tasmanian accommodation website. ' +
         'Return the section with the SAME id and type and the same JSON shape, changed only as instructed. ' +
-        'Keep copy warm and understated, Australian English. When asked for imagery, only use URLs from the provided media library list.',
+        'Keep copy warm and understated, Australian English. When asked for imagery, only use URLs from the provided media library list.' +
+        HOUSE_STYLE,
       messages: [
         {
           role: 'user',
@@ -204,7 +205,8 @@ export async function aiEditSection(
     };
     if (!parsed.section || parsed.section.id !== section.id || parsed.section.type !== section.type)
       return { ok: false, message: 'AI returned an invalid section — try rephrasing' };
-    return { ok: true, message: parsed.note, section: parsed.section, note: parsed.note };
+    const clean = JSON.parse(stripDashes(JSON.stringify(parsed.section))) as Section;
+    return { ok: true, message: parsed.note, section: clean, note: parsed.note };
   } catch (err) {
     return { ok: false, message: (err as Error).message };
   }

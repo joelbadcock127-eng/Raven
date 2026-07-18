@@ -177,3 +177,19 @@ export async function setDistributionStatus(
   revalidatePath('/campaigns');
   return { ok: true, message: 'Updated' };
 }
+
+/** Override when a distribution channel switches on, in days before the target date. */
+export async function setPlaybookDays(id: string, channel: string, daysOut: number): Promise<ActionResult> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase not configured' };
+  const { data: row } = await supabase.from('campaigns').select('playbook').eq('id', id).maybeSingle();
+  if (!row) return { ok: false, message: 'Campaign not found' };
+  const playbook = { ...(row.playbook as Record<string, number>), [channel]: Math.max(0, Math.round(daysOut)) };
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ playbook, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) return { ok: false, message: error.message };
+  revalidatePath('/campaigns');
+  return { ok: true, message: 'Playbook updated' };
+}

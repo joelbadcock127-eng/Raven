@@ -31,6 +31,40 @@ export interface MediaFolder {
   id: string;
   property_id: string | null;
   name: string;
+  parent_id: string | null;
+}
+
+/** Folders flattened in tree order with their depth, roots first. */
+function folderTree(folders: MediaFolder[]): Array<MediaFolder & { depth: number }> {
+  const byParent = new Map<string | null, MediaFolder[]>();
+  for (const f of folders) {
+    const key = f.parent_id ?? null;
+    byParent.set(key, [...(byParent.get(key) ?? []), f]);
+  }
+  const out: Array<MediaFolder & { depth: number }> = [];
+  const walk = (parent: string | null, depth: number) => {
+    for (const f of byParent.get(parent) ?? []) {
+      out.push({ ...f, depth });
+      walk(f.id, depth + 1);
+    }
+  };
+  walk(null, 0);
+  return out;
+}
+
+/** A folder id plus every descendant folder id. */
+function withDescendants(folders: MediaFolder[], id: string): Set<string> {
+  const ids = new Set([id]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const f of folders)
+      if (f.parent_id && ids.has(f.parent_id) && !ids.has(f.id)) {
+        ids.add(f.id);
+        grew = true;
+      }
+  }
+  return ids;
 }
 
 const PROPERTIES = [
@@ -49,36 +83,37 @@ export default function MediaLibrary({ assets, folders }: { assets: MediaAsset[]
   const [musicQuery, setMusicQuery] = useState('calm acoustic');
   const [musicResults, setMusicResults] = useState<MusicResult[]>([]);
   const [musicBusy, setMusicBusy] = useState(false);
+  const [pickerFor, setPickerFor] = useState<string | null>(null); // asset id with the folder picker open
+  const [pickerSel, setPickerSel] = useState<Set<string>>(new Set());
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const visibleFolders = folders.filter((f) => filter === 'all' || f.property_id === filter || f.property_id === null);
+  const openPicker = (a: MediaAsset) => {
+    setPickerFor(a.id);
+    setPickerSel(new Set(a.folder_ids ?? []));
+  };
+  const togglePicked = (id: string) =>
+    setPickerSel((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const savePicker = (a: MediaAsset) =>
+    startTransition(async () => {
+      await setAssetFolders(a.id, [...pickerSel]);
+      setPickerFor(null);
+    });
+
+  const visibleFolders = folderTree(
+    folders.filter((f) => filter === 'all' || f.property_id === filter || f.property_id === null),
+  );
+  // selecting a folder shows its files and everything in its subfolders
+  const folderScope = folderFilter ? withDescendants(folders, folderFilter) : null;
   const visible = assets.filter(
     (a) =>
       (filter === 'all' || a.property_id === filter) &&
-      (!folderFilter || a.folder_ids?.includes(folderFilter)),
+      (!folderScope || a.folder_ids?.some((id) => folderScope.has(id))),
   );
-
-  const editFolders = (a: MediaAsset) => {
-    const names = folders.filter((f) => a.folder_ids?.includes(f.id)).map((f) => f.name);
-    const next = window.prompt(
-      `Folders for this file (comma separated). Existing: ${folders.map((f) => f.name).join(', ') || 'none yet'}`,
-      names.join(', '),
-    );
-    if (next === null) return;
-    startTransition(async () => {
-      const wanted = next.split(',').map((n) => n.trim()).filter(Boolean);
-      const ids: string[] = [];
-      for (const name of wanted) {
-        const existing = folders.find((f) => f.name.toLowerCase() === name.toLowerCase());
-        if (existing) ids.push(existing.id);
-        else {
-          const created = await createFolder(a.property_id, name);
-          if (created.ok && created.id) ids.push(created.id);
-        }
-      }
-      await setAssetFolders(a.id, ids);
-    });
-  };
 
   const runMusicSearch = async () => {
     setMusicBusy(true);
@@ -270,63 +305,103 @@ export default function MediaLibrary({ assets, folders }: { assets: MediaAsset[]
         })}
       </div>
 
-      {/* folder chips */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Folders</span>
-        {visibleFolders.map((f) => {
-          const on = folderFilter === f.id;
-          return (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setFolderFilter(on ? null : f.id)}
-              className="tag-soft"
-              style={{
-                cursor: 'pointer',
-                border: '1px solid',
-                borderColor: on ? 'var(--primary)' : 'transparent',
-                background: on ? 'var(--primary)' : 'var(--primary-subdued)',
-                color: on ? '#fff' : 'var(--primary-deep)',
-                textTransform: 'none',
-                letterSpacing: 0,
-                fontSize: 12,
-              }}
-            >
-              {f.name} ({assets.filter((a) => a.folder_ids?.includes(f.id)).length})
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          className="caption"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)' }}
-          onClick={() => {
-            const name = window.prompt('New folder name (e.g. Winter shots, Sauna, Hero images)');
-            if (name)
-              startTransition(async () => {
-                await createFolder(filter === 'all' ? null : filter, name);
-              });
-          }}
-        >
-          + folder
-        </button>
-        {folderFilter && (
+      {/* ── Folder tree ── */}
+      <section className="card" style={{ padding: '14px 18px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: visibleFolders.length ? 8 : 0 }}>
+          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Folders</span>
           <button
             type="button"
             className="caption"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ruby)' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)' }}
             onClick={() => {
-              if (window.confirm('Delete this folder? Files stay in the library.'))
+              const name = window.prompt('New folder name (e.g. Winter shots, One-shot story pics)');
+              if (name)
                 startTransition(async () => {
-                  await deleteFolder(folderFilter);
-                  setFolderFilter(null);
+                  await createFolder(filter === 'all' ? null : filter, name);
                 });
             }}
           >
-            delete folder
+            + folder
           </button>
+          {folderFilter && (
+            <>
+              <button
+                type="button"
+                className="caption"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)' }}
+                onClick={() => {
+                  const parent = folders.find((f) => f.id === folderFilter);
+                  const name = window.prompt(`New subfolder inside “${parent?.name}”`);
+                  if (name)
+                    startTransition(async () => {
+                      await createFolder(parent?.property_id ?? null, name, folderFilter);
+                    });
+                }}
+              >
+                + subfolder
+              </button>
+              <button
+                type="button"
+                className="caption"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ruby)' }}
+                onClick={() => {
+                  if (window.confirm('Delete this folder (and its subfolders)? Files stay in the library.'))
+                    startTransition(async () => {
+                      await deleteFolder(folderFilter);
+                      setFolderFilter(null);
+                    });
+                }}
+              >
+                delete
+              </button>
+              <button
+                type="button"
+                className="caption"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-mute)' }}
+                onClick={() => setFolderFilter(null)}
+              >
+                clear
+              </button>
+            </>
+          )}
+        </div>
+        {visibleFolders.length === 0 && (
+          <p className="caption" style={{ margin: 0 }}>No folders yet. Make one like “Ten Fifty / one-shot story pics” and drop files in from any card.</p>
         )}
-      </div>
+        <div style={{ display: 'grid', gap: 2 }}>
+          {visibleFolders.map((f) => {
+            const on = folderFilter === f.id;
+            const scope = withDescendants(folders, f.id);
+            const count = assets.filter((a) => a.folder_ids?.some((id) => scope.has(id))).length;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFolderFilter(on ? null : f.id)}
+                className="caption"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  textAlign: 'left',
+                  padding: '6px 10px',
+                  paddingLeft: 10 + f.depth * 22,
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background: on ? 'var(--primary-subdued)' : 'transparent',
+                  color: on ? 'var(--primary-deep)' : 'var(--ink-secondary)',
+                  fontWeight: on ? 500 : 400,
+                }}
+              >
+                <span style={{ opacity: 0.55, fontSize: 12 }}>{f.depth > 0 ? '└' : '▸'}</span>
+                {f.name}
+                <span className="tnum" style={{ marginLeft: 'auto', opacity: 0.55, fontSize: 12 }}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       {/* ── Grid ── */}
       {visible.length === 0 ? (
@@ -384,9 +459,53 @@ export default function MediaLibrary({ assets, folders }: { assets: MediaAsset[]
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button type="button" onClick={() => editTags(a)} className="caption" style={linkBtn}>tags</button>
                   <button type="button" onClick={() => editCaption(a)} className="caption" style={linkBtn}>caption</button>
-                  <button type="button" onClick={() => editFolders(a)} className="caption" style={linkBtn}>folders</button>
+                  <button type="button" onClick={() => (pickerFor === a.id ? setPickerFor(null) : openPicker(a))} className="caption" style={linkBtn}>
+                    folders{a.folder_ids?.length ? ` (${a.folder_ids.length})` : ''}
+                  </button>
                   <button type="button" onClick={() => remove(a)} className="caption" style={{ ...linkBtn, color: 'var(--ruby)', marginLeft: 'auto' }}>delete</button>
                 </div>
+
+                {pickerFor === a.id && (
+                  <div style={{ marginTop: 8, borderTop: '1px solid var(--hairline)', paddingTop: 8 }}>
+                    <div style={{ maxHeight: 180, overflowY: 'auto', display: 'grid', gap: 2 }}>
+                      {folderTree(folders.filter((f) => f.property_id === a.property_id || f.property_id === null)).map((f) => (
+                        <label
+                          key={f.id}
+                          className="caption"
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: f.depth * 18, cursor: 'pointer' }}
+                        >
+                          <input type="checkbox" checked={pickerSel.has(f.id)} onChange={() => togglePicked(f.id)} style={{ accentColor: 'var(--primary)' }} />
+                          {f.name}
+                        </label>
+                      ))}
+                      {folders.filter((f) => f.property_id === a.property_id || f.property_id === null).length === 0 && (
+                        <span className="caption" style={{ color: 'var(--ink-mute)' }}>No folders for this property yet.</span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        className="caption"
+                        style={linkBtn}
+                        onClick={() => {
+                          const name = window.prompt('New folder name');
+                          if (name)
+                            startTransition(async () => {
+                              const created = await createFolder(a.property_id, name);
+                              if (created.ok && created.id) togglePicked(created.id);
+                            });
+                        }}
+                      >
+                        + new folder
+                      </button>
+                      <span style={{ flex: 1 }} />
+                      <button type="button" className="caption" style={{ ...linkBtn, color: 'var(--ink-mute)' }} onClick={() => setPickerFor(null)}>cancel</button>
+                      <button type="button" disabled={pending} className="pill-primary" style={{ fontSize: 11, padding: '4px 12px' }} onClick={() => savePicker(a)}>
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                )}
               </figcaption>
             </figure>
           ))}

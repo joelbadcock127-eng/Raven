@@ -68,12 +68,12 @@ interface FeedData {
   gaps: GapRow[];
 }
 
-function availabilityBadge(
+function availabilityCheck(
   availability: Map<string, { open: number; total: number }>,
   propertyId: string,
   start: string,
   end: string,
-): string | null {
+): { badge: string | null; bookedOut: boolean } {
   let open = 0;
   let total = 0;
   const d = new Date(start + 'T00:00:00Z');
@@ -86,8 +86,8 @@ function availabilityBadge(
     }
     d.setUTCDate(d.getUTCDate() + 1);
   }
-  if (!total) return null;
-  return `${open}/${total} unit-nights open`;
+  if (!total) return { badge: null, bookedOut: false };
+  return { badge: `${open}/${total} unit-nights open`, bookedOut: open === 0 };
 }
 
 async function getFeedData(): Promise<FeedData | null> {
@@ -160,9 +160,12 @@ async function getFeedData(): Promise<FeedData | null> {
       lon: e.lon,
       recommendedPropertyId: o.recommended_property_id,
       scores,
-      availabilityBadge: o.recommended_property_id
-        ? availabilityBadge(availability, o.recommended_property_id, e.start_date, e.end_date)
-        : null,
+      ...(o.recommended_property_id
+        ? (() => {
+            const a = availabilityCheck(availability, o.recommended_property_id, e.start_date, e.end_date);
+            return { availabilityBadge: a.badge, bookedOut: a.bookedOut };
+          })()
+        : { availabilityBadge: null, bookedOut: false }),
     };
   });
 

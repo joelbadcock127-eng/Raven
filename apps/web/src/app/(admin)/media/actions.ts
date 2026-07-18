@@ -64,12 +64,16 @@ export async function updateAsset(
 
 // ── Folders ──
 
-export async function createFolder(propertyId: string | null, name: string): Promise<{ ok: boolean; message?: string; id?: string }> {
+export async function createFolder(
+  propertyId: string | null,
+  name: string,
+  parentId?: string | null,
+): Promise<{ ok: boolean; message?: string; id?: string }> {
   const supabase = supabaseAdmin();
   if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
   const { data, error } = await supabase
     .from('media_folders')
-    .insert({ property_id: propertyId, name: name.trim() })
+    .insert({ property_id: propertyId, name: name.trim(), parent_id: parentId ?? null })
     .select('id')
     .single();
   if (error) return { ok: false, message: error.message };

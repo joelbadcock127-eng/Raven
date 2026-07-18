@@ -1,5 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { anthropic, MODELS } from './ai';
+import { anthropic, MODELS, HOUSE_STYLE, stripDashes } from './ai';
+
+/** stripDashes over every string in a JSON-ish structure. */
+function deepStrip<T>(value: T): T {
+  if (typeof value === 'string') return stripDashes(value) as T;
+  if (Array.isArray(value)) return value.map(deepStrip) as T;
+  if (value && typeof value === 'object')
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, deepStrip(v)])) as T;
+  return value;
+}
 
 /**
  * One-click campaign kit: from an approved campaign, generate every asset
@@ -172,7 +181,8 @@ export async function generateCampaignKit(
       'You write landing pages for boutique Tasmanian accommodation, aimed at people travelling for a specific local event or reason. ' +
       'The page must be genuinely useful content, not thin SEO filler: concrete detail about the property, honest logistics, and a clear picture of the trip. ' +
       'Warm, plain, understated — no hype clichés (no "nestled", "hidden gem", "escape the hustle"). Never copy source text — write fresh from the facts given. ' +
-      'Never mention prices or rates. For imagery, choose URLs ONLY from the provided media list, matching captions to the copy. Australian English.',
+      'Never mention prices or rates. For imagery, choose URLs ONLY from the provided media list, matching captions to the copy. Australian English.' +
+      HOUSE_STYLE,
     messages: [
       {
         role: 'user',
@@ -185,7 +195,9 @@ export async function generateCampaignKit(
     ],
     output_config: { format: { type: 'json_schema', schema: PAGE_SCHEMA } },
   });
-  const pageContent = JSON.parse(pageRes.content.find((b) => b.type === 'text')?.text ?? '{}') as Record<string, unknown> & {
+  const pageContent = deepStrip(
+    JSON.parse(pageRes.content.find((b) => b.type === 'text')?.text ?? '{}'),
+  ) as Record<string, unknown> & {
     heroImageUrl?: string;
     galleryUrls?: string[];
   };
@@ -200,7 +212,8 @@ export async function generateCampaignKit(
     max_tokens: 2500,
     system:
       'You write marketing copy for boutique Tasmanian accommodation. Understated, warm, book-direct. ' +
-      'Write original copy from the facts given — never reuse source text. Never mention prices. Australian English.',
+      'Write original copy from the facts given, never reuse source text. Never mention prices. Australian English.' +
+      HOUSE_STYLE,
     messages: [
       {
         role: 'user',
@@ -212,7 +225,7 @@ export async function generateCampaignKit(
     ],
     output_config: { format: { type: 'json_schema', schema: BUNDLE_SCHEMA } },
   });
-  const bundle = JSON.parse(bundleRes.content.find((b) => b.type === 'text')?.text ?? '{}');
+  const bundle = deepStrip(JSON.parse(bundleRes.content.find((b) => b.type === 'text')?.text ?? '{}'));
 
   // ── Persist: landing page ──
   const slug = `${slugify(event.title)}-${event.start_date.slice(0, 7)}`;
