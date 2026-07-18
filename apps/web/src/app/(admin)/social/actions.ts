@@ -125,6 +125,7 @@ export interface DraftOptions {
   direction?: string; // freeform style guidance
   reuseCooldownDays?: number; // skip assets used within this window
   allowReuse?: boolean; // false = only never-used assets
+  alsoStory?: boolean; // additionally draft the same media as a story
   planId?: string;
 }
 
@@ -203,8 +204,22 @@ export async function draftPost(
     scheduled_for: new Date().toISOString().slice(0, 10),
   });
   if (error) return { ok: false, message: error.message };
+
+  // optional story cross-post: same lead media, first caption line only
+  if (options.alsoStory && kind !== 'story') {
+    await supabase.from('social_posts').insert({
+      property_id: propertyId,
+      kind: 'story',
+      platform: options.platform ?? 'instagram',
+      caption: caption.split('\n')[0] ?? '',
+      media_ids: [assets[0].id],
+      status: 'draft',
+      scheduled_for: new Date().toISOString().slice(0, 10),
+    });
+  }
+
   revalidatePath('/social');
-  return { ok: true, message: 'Draft created' };
+  return { ok: true, message: options.alsoStory && kind !== 'story' ? 'Draft + story created' : 'Draft created' };
 }
 
 // ── Posting plans ──
@@ -218,6 +233,7 @@ export interface PlanInput {
   direction?: string;
   reuseCooldownDays?: number;
   allowReuse?: boolean;
+  alsoStory?: boolean;
 }
 
 export async function savePlan(input: PlanInput, id?: string): Promise<ActionResult> {
@@ -232,6 +248,7 @@ export async function savePlan(input: PlanInput, id?: string): Promise<ActionRes
     direction: input.direction ?? null,
     reuse_cooldown_days: input.reuseCooldownDays ?? 60,
     allow_reuse: input.allowReuse ?? true,
+    also_story: input.alsoStory ?? false,
   };
   const { error } = id
     ? await supabase.from('posting_plans').update(row).eq('id', id)

@@ -28,26 +28,46 @@ export default function SitesHub({
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        {(
-          [
-            ['mirror', 'Current sites'],
-            ['builder', 'Site builder'],
-          ] as const
-        ).map(([m, label]) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => setMode(m)}
-            className="pill-primary"
-            style={{
-              background: mode === m ? 'var(--brand-dark-900)' : 'var(--canvas)',
-              color: mode === m ? '#fff' : 'var(--ink-secondary)',
-              border: `1px solid ${mode === m ? 'var(--brand-dark-900)' : 'var(--hairline)'}`,
-            }}
-          >
-            {label}
-          </button>
-        ))}
+        {/* single segmented pill */}
+        <div
+          role="tablist"
+          style={{
+            display: 'inline-flex',
+            padding: 3,
+            borderRadius: 'var(--r-pill)',
+            background: 'var(--canvas)',
+            border: '1px solid var(--hairline)',
+            boxShadow: 'var(--shadow-1)',
+          }}
+        >
+          {(
+            [
+              ['mirror', 'Current sites'],
+              ['builder', 'Site builder'],
+            ] as const
+          ).map(([m, label]) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={mode === m}
+              onClick={() => setMode(m)}
+              style={{
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: mode === m ? 500 : 400,
+                padding: '8px 18px',
+                borderRadius: 'var(--r-pill)',
+                background: mode === m ? 'var(--brand-dark-900)' : 'transparent',
+                color: mode === m ? '#fff' : 'var(--ink-secondary)',
+                transition: 'background .15s, color .15s',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         {mode === 'builder' && (
           <>
             <span style={{ width: 8 }} />

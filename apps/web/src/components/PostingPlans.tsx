@@ -13,6 +13,7 @@ export interface Plan {
   direction: string | null;
   reuse_cooldown_days: number;
   allow_reuse: boolean;
+  also_story: boolean;
   active: boolean;
   next_run_at: string;
 }
@@ -45,6 +46,7 @@ export default function PostingPlans({ plans }: { plans: Plan[] }) {
     direction: '',
     reuseCooldownDays: 60,
     allowReuse: true,
+    alsoStory: false,
   });
 
   const run = (fn: () => Promise<{ ok: boolean; message: string }>) =>
@@ -117,6 +119,16 @@ export default function PostingPlans({ plans }: { plans: Plan[] }) {
             />
             days
           </label>
+          {form.format !== 'story' && (
+            <label className="caption" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={form.alsoStory ?? false}
+                onChange={(e) => setForm({ ...form, alsoStory: e.target.checked })}
+              />
+              also post to story
+            </label>
+          )}
           <input
             value={form.direction ?? ''}
             onChange={(e) => setForm({ ...form, direction: e.target.value })}
@@ -159,7 +171,8 @@ export default function PostingPlans({ plans }: { plans: Plan[] }) {
           />
           <span style={{ fontSize: 14 }}>{p.name}</span>
           <span className="caption tnum">
-            {p.format} · {p.platform} · every {p.every_days}d · next {p.next_run_at}
+            {p.format}
+            {p.also_story ? ' + story' : ''} · {p.platform} · every {p.every_days}d · next {p.next_run_at}
             {p.direction ? ` · “${p.direction}”` : ''}
           </span>
           <span style={{ flex: 1 }} />
@@ -175,6 +188,7 @@ export default function PostingPlans({ plans }: { plans: Plan[] }) {
                   direction: p.direction ?? undefined,
                   reuseCooldownDays: p.reuse_cooldown_days,
                   allowReuse: p.allow_reuse,
+                  alsoStory: p.also_story,
                 }),
               )
             }
