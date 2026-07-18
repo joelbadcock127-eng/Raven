@@ -1,10 +1,23 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { Cormorant_Garamond, Jost } from 'next/font/google';
 import { supabaseAdmin } from '@/lib/supabase';
 import { defaultTheme, type SitePageV2, type SiteTheme } from '@/lib/siteBuilder';
 import SiteRenderer from '@/components/SiteRenderer';
 
 export const revalidate = 0;
+
+const siteSerif = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  style: ['normal', 'italic'],
+  variable: '--font-site-serif',
+});
+const siteSans = Jost({
+  subsets: ['latin'],
+  weight: ['300', '400', '500'],
+  variable: '--font-site-sans',
+});
 
 const NAMES: Record<string, string> = {
   'ten-fifty-bakers': 'Ten Fifty Bakers',
@@ -83,14 +96,17 @@ export default async function SiteV2Page({
   };
 
   return (
-    <SiteRenderer
-      propertyName={NAMES[property] ?? property}
-      pages={data.pages}
-      currentSlug={q.page ?? 'home'}
-      theme={theme}
-      editable={q.edit === '1'}
-      selectedId={q.section ?? null}
-      standalone={q.standalone === '1'}
-    />
+    <div className={`${siteSerif.variable} ${siteSans.variable}`}>
+      <SiteRenderer
+        propertyName={NAMES[property] ?? property}
+        pages={data.pages}
+        currentSlug={q.page ?? 'home'}
+        theme={theme}
+        editable={q.edit === '1'}
+        selectedId={q.section ?? null}
+        standalone={q.standalone === '1'}
+        versionParam={q.version ?? null}
+      />
+    </div>
   );
 }

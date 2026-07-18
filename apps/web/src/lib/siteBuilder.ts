@@ -17,8 +17,11 @@ export interface SiteTheme {
 }
 
 export type Section =
-  | { id: string; type: 'hero'; headline: string; subheadline?: string; imageUrl?: string; ctaText?: string; ctaHref?: string }
+  | { id: string; type: 'hero'; kicker?: string; headline: string; subheadline?: string; imageUrl?: string; ctaText?: string; ctaHref?: string }
   | { id: string; type: 'text'; heading?: string; body: string }
+  | { id: string; type: 'split'; kicker?: string; heading: string; body: string; imageUrl?: string; align?: 'left' | 'right'; ctaText?: string; ctaHref?: string }
+  | { id: string; type: 'fullbleed'; imageUrl: string; kicker?: string; headline?: string }
+  | { id: string; type: 'stats'; items: { value: string; label: string }[] }
   | { id: string; type: 'gallery'; heading?: string; images: { url: string; alt?: string }[] }
   | { id: string; type: 'features'; heading?: string; items: { title: string; body: string; imageUrl?: string }[] }
   | { id: string; type: 'quote'; text: string; attribution?: string }
@@ -48,14 +51,14 @@ export interface SiteVersion {
 
 export const DEFAULT_THEMES: Record<string, SiteTheme> = {
   'ten-fifty-bakers': {
-    headingFont: "Georgia, 'Times New Roman', serif",
-    bodyFont: "system-ui, -apple-system, sans-serif",
-    bg: '#faf7f2',
-    ink: '#26211a',
-    soft: '#f1ebe1',
+    headingFont: "var(--font-site-serif), 'Cormorant Garamond', Georgia, serif",
+    bodyFont: "var(--font-site-sans), 'Jost', system-ui, sans-serif",
+    bg: '#f7f4ee',
+    ink: '#211d16',
+    soft: '#eee9df',
     accent: '#8a6d3b',
     accentInk: '#ffffff',
-    radius: 10,
+    radius: 0,
   },
   'prescription-pad': {
     headingFont: "system-ui, -apple-system, sans-serif",
@@ -87,9 +90,15 @@ export function newSection(type: SectionType): Section {
   const id = crypto.randomUUID().slice(0, 8);
   switch (type) {
     case 'hero':
-      return { id, type, headline: 'Headline', subheadline: 'Subheadline', ctaText: 'Book now', ctaHref: '#' };
+      return { id, type, kicker: 'Somewhere, Tasmania', headline: 'Headline', subheadline: 'Subheadline', ctaText: 'Book now', ctaHref: '#' };
     case 'text':
       return { id, type, heading: 'Heading', body: 'Write something…' };
+    case 'split':
+      return { id, type, kicker: 'Kicker', heading: 'Heading', body: 'Write something…', align: 'right' };
+    case 'fullbleed':
+      return { id, type, imageUrl: '', kicker: '', headline: 'A wide moment' };
+    case 'stats':
+      return { id, type, items: [{ value: '10', label: 'guests' }] };
     case 'gallery':
       return { id, type, heading: 'Gallery', images: [] };
     case 'features':
@@ -103,4 +112,4 @@ export function newSection(type: SectionType): Section {
   }
 }
 
-export const SECTION_TYPES: SectionType[] = ['hero', 'text', 'gallery', 'features', 'quote', 'faq', 'cta'];
+export const SECTION_TYPES: SectionType[] = ['hero', 'fullbleed', 'split', 'text', 'gallery', 'features', 'stats', 'quote', 'faq', 'cta'];
