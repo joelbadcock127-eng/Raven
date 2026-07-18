@@ -6,9 +6,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <Sidebar />
       <main style={{ position: 'relative', flex: 1, minWidth: 0 }}>
         <div className="mesh" />
-        <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: '40px 32px 96px' }}>
-          {children}
-        </div>
+        <div className="admin-content">{children}</div>
       </main>
     </div>
   );

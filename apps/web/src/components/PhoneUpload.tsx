@@ -168,6 +168,8 @@ export default function PhoneUpload() {
             Uploads go to the {PROPERTIES.find((p) => p.id === property)?.name} library.
             <br />
             Tip: Share → “Add to Home Screen” makes this an app.
+            <br />
+            Want “Send to Raven” in the iOS share sheet? <a href="/u/shortcut">Set up the shortcut →</a>
           </p>
         )}
       </div>

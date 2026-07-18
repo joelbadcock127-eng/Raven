@@ -132,3 +132,88 @@ a {
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-1);
 }
+
+/* ── Responsive admin shell ─────────────────────────────────────────── */
+
+.admin-content {
+  position: relative;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 40px 32px 96px;
+}
+
+/* Desktop sidebar vs mobile bottom tab bar */
+.bottomnav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .sidebar-desktop {
+    display: none !important;
+  }
+
+  .admin-content {
+    padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .display-lg {
+    font-size: 26px;
+    letter-spacing: -0.5px;
+  }
+
+  .bottomnav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    background: var(--canvas);
+    border-top: 1px solid var(--hairline);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    justify-content: space-around;
+    align-items: flex-end;
+  }
+
+  .bottomnav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 52px;
+    padding: 4px 2px;
+    font-size: 10px;
+    letter-spacing: 0.1px;
+    color: var(--ink-mute);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .bottomnav a.active {
+    color: var(--primary-deep);
+    font-weight: 500;
+  }
+
+  .bottomnav a .navicon {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  /* the prominent centre upload button */
+  .bottomnav a.upload-cta .navicon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    margin-top: -22px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-size: 24px;
+    box-shadow: var(--shadow-2);
+    border: 3px solid var(--canvas);
+  }
+
+  .bottomnav a.upload-cta {
+    color: var(--primary-deep);
+  }
+}
