@@ -60,28 +60,7 @@ export async function GET(req: NextRequest) {
     await supabase.from('posting_plans').update({ next_run_at: next }).eq('id', plan.id);
   }
 
-  // legacy fallback for properties with no plans configured
-  const { data: allPlans } = await supabase.from('posting_plans').select('property_id');
-  const planned = new Set((allPlans ?? []).map((p) => p.property_id));
-  for (const pid of ['ten-fifty-bakers', 'prescription-pad', 'annie-may']) {
-    if (planned.has(pid)) continue;
-    const { count } = await supabase
-      .from('social_posts')
-      .select('id', { count: 'exact', head: true })
-      .eq('property_id', pid)
-      .in('status', ['draft', 'approved']);
-    if ((count ?? 0) > 0) continue;
-    const { data: video } = await supabase
-      .from('media_assets')
-      .select('id')
-      .eq('property_id', pid)
-      .eq('kind', 'video')
-      .eq('retired', false)
-      .order('times_used', { ascending: true })
-      .limit(1);
-    const res = await draftPost(pid, video?.length ? 'reel' : 'post');
-    results[`default:${pid}`] = res.message;
-  }
-
+  // No plans, no posts — drafting only happens on owner-configured plans
+  // (or manual quick drafts in the Social tab).
   return NextResponse.json({ ok: true, results });
 }

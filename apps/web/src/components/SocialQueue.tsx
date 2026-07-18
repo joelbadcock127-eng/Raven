@@ -93,7 +93,14 @@ export default function SocialQueue({
             label: p.name.replace('The Prescription Pad', 'Rx Pad').replace(' Bakers', ''),
           }))}
           activeId={null}
-          onSelect={(id) => !pending && run(() => draftPost(id, 'post'))}
+          onSelect={(id) => {
+            if (pending) return;
+            const direction = window.prompt(
+              'What do you want this post to be? (optional — e.g. "sauna at dusk, moody, couples")',
+            );
+            if (direction === null) return; // cancelled
+            run(() => draftPost(id, 'post', { direction: direction.trim() || undefined }));
+          }}
         />
         {notice && <span className="caption">{notice}</span>}
       </div>
@@ -210,7 +217,8 @@ export default function SocialQueue({
                             const filter = (window.prompt('Filter: warm, cool, mono, punchy or none', 'warm') ?? 'warm') as 'warm' | 'cool' | 'mono' | 'punchy' | 'none';
                             const caption = window.prompt('Overlay caption on the video (optional)') ?? undefined;
                             const max = Number(window.prompt('Max clips to use (uses fewer if fewer exist)', '5')) || 5;
-                            run(() => renderReel(p.id, { filter, caption, clipCount: max }));
+                            const musicHint = window.prompt('Music vibe (optional — matched against your track tags, e.g. "calm piano")') ?? undefined;
+                            run(() => renderReel(p.id, { filter, caption, clipCount: max, musicHint: musicHint?.trim() || undefined }));
                           }}
                         >
                           Render multi-clip reel

@@ -208,6 +208,7 @@ export async function draftPost(
     kind,
     platform: options.platform ?? 'instagram',
     caption,
+    direction: options.direction ?? null,
     media_ids: assets.map((a) => a.id),
     status: 'draft',
     scheduled_for: new Date().toISOString().slice(0, 10),
@@ -287,14 +288,19 @@ export async function setPlanActive(id: string, active: boolean): Promise<Action
  */
 export async function renderReel(
   postId: string,
-  options: { filter?: 'none' | 'warm' | 'cool' | 'mono' | 'punchy'; caption?: string; clipCount?: number } = {},
+  options: {
+    filter?: 'none' | 'warm' | 'cool' | 'mono' | 'punchy';
+    caption?: string;
+    clipCount?: number;
+    musicHint?: string; // matches against music tags/captions; defaults to the post's direction
+  } = {},
 ): Promise<ActionResult> {
   const supabase = supabaseAdmin();
   if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
 
   const { data: post } = await supabase
     .from('social_posts')
-    .select('id, property_id, kind')
+    .select('id, property_id, kind, direction')
     .eq('id', postId)
     .maybeSingle();
   if (!post?.property_id) return { ok: false, message: 'Post not found.' };
@@ -311,26 +317,26 @@ export async function renderReel(
     .limit(Math.min(options.clipCount ?? 5, 8));
   if (!videos?.length) return { ok: false, message: 'No source videos in the library for this property.' };
 
-  // music is automatic: least-recently-used library asset tagged "music"
-  // (property-specific first, falling back to shared/unassigned tracks)
-  let { data: music } = await supabase
+  // Music selection follows the style direction: hint words are matched
+  // against each track's tags/caption; best match wins, least-used breaks
+  // ties. No hint → least-used rotation. No matching mood → least-used.
+  const hint = (options.musicHint ?? post.direction ?? '').toLowerCase();
+  const hintWords = hint.split(/[^a-z0-9]+/).filter((w) => w.length > 2);
+  const { data: allMusic } = await supabase
     .from('media_assets')
-    .select('id, public_url')
-    .eq('property_id', post.property_id)
+    .select('id, public_url, tags, caption, times_used, property_id')
     .contains('tags', ['music'])
     .eq('retired', false)
+    .or(`property_id.eq.${post.property_id},property_id.is.null`)
     .order('times_used', { ascending: true })
-    .limit(1);
-  if (!music?.length) {
-    ({ data: music } = await supabase
-      .from('media_assets')
-      .select('id, public_url')
-      .is('property_id', null)
-      .contains('tags', ['music'])
-      .eq('retired', false)
-      .order('times_used', { ascending: true })
-      .limit(1));
-  }
+    .limit(24);
+  const scored = (allMusic ?? [])
+    .map((m) => {
+      const hay = `${(m.tags ?? []).join(' ')} ${m.caption ?? ''}`.toLowerCase();
+      return { m, score: hintWords.filter((w) => hay.includes(w)).length };
+    })
+    .sort((a, b) => b.score - a.score || a.m.times_used - b.m.times_used);
+  const music = scored.length ? [scored[0].m] : [];
 
   const { enqueueRenderJob } = await import('@/lib/render');
   const res = await enqueueRenderJob(supabase, {
