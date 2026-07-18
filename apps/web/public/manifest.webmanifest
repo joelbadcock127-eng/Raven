@@ -1,0 +1,18 @@
+{
+  "name": "Raven",
+  "short_name": "Raven",
+  "description": "Booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie May.",
+  "start_url": "/u",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f9fc",
+  "theme_color": "#533afd",
+  "icons": [
+    { "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "share_target": {
+    "action": "/u",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  }
+}

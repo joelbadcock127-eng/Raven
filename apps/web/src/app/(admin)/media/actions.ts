@@ -2,38 +2,24 @@
 
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase';
+import {
+  createStorageUploadUrl,
+  deleteStorageObject,
+  type StorageProvider,
+  type UploadTicket,
+} from '@/lib/storage';
 
-export interface UploadTicket {
-  ok: boolean;
-  message?: string;
-  signedUrl?: string;
-  storagePath?: string;
-  publicUrl?: string;
-}
+export type { UploadTicket };
 
-/** Issue a signed URL the browser can PUT the file to directly (no size limit through Vercel). */
+/** Issue a signed URL the browser PUTs the file to directly (no size limit through Vercel). */
 export async function createUploadUrl(fileName: string, mimeType: string): Promise<UploadTicket> {
-  const supabase = supabaseAdmin();
-  if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
-
-  const clean = fileName.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/-+/g, '-');
-  const storagePath = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID().slice(0, 8)}-${clean}`;
-
-  const { data, error } = await supabase.storage.from('media').createSignedUploadUrl(storagePath);
-  if (error || !data) return { ok: false, message: error?.message ?? 'Could not create upload URL' };
-
-  const { data: pub } = supabase.storage.from('media').getPublicUrl(storagePath);
-  return {
-    ok: true,
-    signedUrl: data.signedUrl,
-    storagePath,
-    publicUrl: pub.publicUrl,
-  };
+  return createStorageUploadUrl(fileName, mimeType);
 }
 
-/** Record the asset row after the browser finishes uploading to storage. */
+/** Record the asset row after the client finishes uploading to storage. */
 export async function registerAsset(input: {
   propertyId: string | null;
+  provider?: StorageProvider;
   storagePath: string;
   publicUrl: string;
   fileName: string;
@@ -47,6 +33,7 @@ export async function registerAsset(input: {
   const { error } = await supabase.from('media_assets').insert({
     property_id: input.propertyId,
     kind,
+    storage_provider: input.provider ?? 'supabase',
     storage_path: input.storagePath,
     public_url: input.publicUrl,
     file_name: input.fileName,
@@ -60,7 +47,7 @@ export async function registerAsset(input: {
 
 export async function updateAsset(
   id: string,
-  patch: { tags?: string[]; caption?: string; propertyId?: string | null },
+  patch: { tags?: string[]; caption?: string; propertyId?: string | null; retired?: boolean },
 ): Promise<{ ok: boolean; message?: string }> {
   const supabase = supabaseAdmin();
   if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
@@ -68,6 +55,7 @@ export async function updateAsset(
   if (patch.tags) update.tags = patch.tags;
   if (patch.caption !== undefined) update.caption = patch.caption;
   if (patch.propertyId !== undefined) update.property_id = patch.propertyId;
+  if (patch.retired !== undefined) update.retired = patch.retired;
   const { error } = await supabase.from('media_assets').update(update).eq('id', id);
   if (error) return { ok: false, message: error.message };
   revalidatePath('/media');
@@ -77,8 +65,18 @@ export async function updateAsset(
 export async function deleteAsset(id: string): Promise<{ ok: boolean; message?: string }> {
   const supabase = supabaseAdmin();
   if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
-  const { data } = await supabase.from('media_assets').select('storage_path').eq('id', id).maybeSingle();
-  if (data?.storage_path) await supabase.storage.from('media').remove([data.storage_path]);
+  const { data } = await supabase
+    .from('media_assets')
+    .select('storage_path, storage_provider')
+    .eq('id', id)
+    .maybeSingle();
+  if (data?.storage_path) {
+    try {
+      await deleteStorageObject((data.storage_provider as StorageProvider) ?? 'supabase', data.storage_path);
+    } catch {
+      // blob delete is best-effort; the row removal below is what matters
+    }
+  }
   const { error } = await supabase.from('media_assets').delete().eq('id', id);
   if (error) return { ok: false, message: error.message };
   revalidatePath('/media');

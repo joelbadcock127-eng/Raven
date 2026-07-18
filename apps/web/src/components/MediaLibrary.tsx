@@ -47,6 +47,7 @@ export default function MediaLibrary({ assets }: { assets: MediaAsset[] }) {
         if (!put.ok) throw new Error(`upload failed (${put.status})`);
         const reg = await registerAsset({
           propertyId: uploadProperty || null,
+          provider: ticket.provider,
           storagePath: ticket.storagePath!,
           publicUrl: ticket.publicUrl!,
           fileName: file.name,
@@ -122,8 +123,10 @@ export default function MediaLibrary({ assets }: { assets: MediaAsset[] }) {
           {progress && <span className="caption">{progress}</span>}
         </div>
         <p className="caption" style={{ marginTop: 10 }}>
-          Photos and videos land in Raven&apos;s media library (Supabase storage). Tag the good ones
-          — campaign reels and the social regular pull from here, preferring least-used assets.
+          Photos and videos land in Raven&apos;s media library (Cloudflare R2). Tag the good ones —
+          campaign reels and the social regular pull from here, preferring least-used assets. On
+          your phone, use <a href="/u">raven…/u</a> (add it to your home screen) or the &quot;Send to
+          Raven&quot; shortcut.
         </p>
       </section>
 

@@ -99,11 +99,20 @@ export async function publishPost(id: string): Promise<ActionResult> {
     .eq('id', id);
 
   if (ok && post.media_ids?.length) {
+    // reuse-rule bookkeeping: bump use count and stamp last use
     for (const mid of post.media_ids) {
-      await supabase.rpc('increment_media_use', { asset_id: mid }).then(
-        () => undefined,
-        () => undefined, // rpc optional; ignore if missing
-      );
+      const { data: asset } = await supabase
+        .from('media_assets')
+        .select('times_used')
+        .eq('id', mid)
+        .maybeSingle();
+      await supabase
+        .from('media_assets')
+        .update({
+          times_used: (asset?.times_used ?? 0) + 1,
+          last_used_at: new Date().toISOString(),
+        })
+        .eq('id', mid);
     }
   }
 
@@ -119,12 +128,13 @@ export async function draftPost(propertyId: string, kind: 'post' | 'reel'): Prom
   const supabase = supabaseAdmin();
   if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
 
-  // least-used, newest-first media of the right type
+  // least-used, newest-first media of the right type; benched assets excluded
   const { data: assets } = await supabase
     .from('media_assets')
     .select('id, kind, public_url, tags, caption, times_used')
     .eq('property_id', propertyId)
     .eq('kind', kind === 'reel' ? 'video' : 'image')
+    .eq('retired', false)
     .order('times_used', { ascending: true })
     .order('created_at', { ascending: false })
     .limit(kind === 'reel' ? 1 : 3);
