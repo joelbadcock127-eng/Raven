@@ -105,8 +105,19 @@ export default function PhoneUpload() {
       <button
         type="button"
         onClick={() => cameraInput.current?.click()}
-        className="pill-primary"
-        style={{ width: '100%', padding: '22px', fontSize: 17, borderRadius: 'var(--r-lg)', marginBottom: 10 }}
+        style={{
+          width: '100%',
+          padding: '22px',
+          fontSize: 17,
+          fontWeight: 500,
+          borderRadius: 18,
+          border: 'none',
+          color: '#fff',
+          background: 'linear-gradient(140deg, var(--primary-soft), var(--primary) 55%, var(--primary-deep))',
+          boxShadow: '0 8px 24px rgba(83, 58, 253, 0.35)',
+          marginBottom: 12,
+          cursor: 'pointer',
+        }}
       >
         📷 Shoot now
       </button>
@@ -117,11 +128,14 @@ export default function PhoneUpload() {
           width: '100%',
           padding: '22px',
           fontSize: 17,
-          borderRadius: 'var(--r-lg)',
-          border: '2px solid var(--primary)',
+          fontWeight: 500,
+          borderRadius: 18,
+          border: '1.5px solid var(--primary-subdued)',
           background: 'var(--canvas)',
-          color: 'var(--primary)',
+          color: 'var(--primary-deep)',
+          boxShadow: 'var(--shadow-1)',
           marginBottom: 20,
+          cursor: 'pointer',
         }}
       >
         🖼 From camera roll

@@ -135,6 +135,12 @@ a {
 
 /* ── Responsive admin shell ─────────────────────────────────────────── */
 
+.sidebar-desktop svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 1.7;
+}
+
 .admin-content {
   position: relative;
   max-width: 1240px;
@@ -168,9 +174,11 @@ a {
     right: 0;
     bottom: 0;
     z-index: 50;
-    background: var(--canvas);
-    border-top: 1px solid var(--hairline);
-    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.82);
+    -webkit-backdrop-filter: blur(18px) saturate(1.6);
+    backdrop-filter: blur(18px) saturate(1.6);
+    border-top: 0.5px solid rgba(13, 37, 61, 0.1);
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
     justify-content: space-around;
     align-items: flex-end;
   }
@@ -179,13 +187,30 @@ a {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    min-width: 52px;
-    padding: 4px 2px;
+    gap: 3px;
+    min-width: 54px;
+    padding: 4px 2px 2px;
     font-size: 10px;
+    font-weight: 400;
     letter-spacing: 0.1px;
     color: var(--ink-mute);
     -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s;
+  }
+
+  .bottomnav a .navicon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 26px;
+    border-radius: 13px;
+    transition: background 0.2s;
+  }
+
+  .bottomnav a .navicon svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 1.7;
   }
 
   .bottomnav a.active {
@@ -193,27 +218,46 @@ a {
     font-weight: 500;
   }
 
-  .bottomnav a .navicon {
-    font-size: 18px;
-    line-height: 1;
+  .bottomnav a.active .navicon {
+    background: var(--primary-subdued);
   }
 
   /* the prominent centre upload button */
   .bottomnav a.upload-cta .navicon {
-    display: grid;
-    place-items: center;
-    width: 46px;
-    height: 46px;
-    margin-top: -22px;
+    width: 50px;
+    height: 50px;
+    margin-top: -26px;
     border-radius: 50%;
-    background: var(--primary);
+    background: linear-gradient(140deg, var(--primary-soft), var(--primary) 55%, var(--primary-deep));
     color: var(--on-primary);
-    font-size: 24px;
-    box-shadow: var(--shadow-2);
-    border: 3px solid var(--canvas);
+    box-shadow:
+      0 8px 20px rgba(83, 58, 253, 0.38),
+      0 2px 6px rgba(83, 58, 253, 0.25);
+    border: 3px solid rgba(255, 255, 255, 0.9);
+  }
+
+  .bottomnav a.upload-cta .navicon svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 2.2;
   }
 
   .bottomnav a.upload-cta {
     color: var(--primary-deep);
+    font-weight: 500;
+  }
+
+  .bottomnav a:active .navicon {
+    transform: scale(0.92);
+  }
+
+  /* softer, more modern cards on phones */
+  .card {
+    border-radius: 16px;
+    box-shadow: rgba(0, 55, 112, 0.06) 0 2px 12px;
+  }
+
+  .pill-primary {
+    padding: 10px 18px;
   }
 }

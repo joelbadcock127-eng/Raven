@@ -3,12 +3,49 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+/** Minimal stroke icons (24×24 viewBox, stroke = currentColor). */
+const Icon = {
+  feed: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12h4l3-8 4 16 3-8h4" />
+    </svg>
+  ),
+  campaigns: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 11l17-7-7 17-2.5-7.5L3 11z" />
+    </svg>
+  ),
+  sites: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z" />
+    </svg>
+  ),
+  media: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <circle cx="8.5" cy="10" r="1.6" />
+      <path d="M21 15.5l-4.8-4.8L6 21" />
+    </svg>
+  ),
+  social: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.8 8.6a5 5 0 0 0-8.8-3.2A5 5 0 0 0 3.2 8.6c0 5 8.8 10.4 8.8 10.4s8.8-5.4 8.8-10.4z" />
+    </svg>
+  ),
+  upload: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  ),
+};
+
 const ITEMS = [
-  { href: '/', label: 'Feed', icon: '◈' },
-  { href: '/campaigns', label: 'Campaigns', icon: '➤' },
-  { href: '/sites', label: 'Sites', icon: '⌂' },
-  { href: '/media', label: 'Media', icon: '▤' },
-  { href: '/social', label: 'Social', icon: '✦' },
+  { href: '/', label: 'Feed', icon: Icon.feed },
+  { href: '/campaigns', label: 'Campaigns', icon: Icon.campaigns },
+  { href: '/sites', label: 'Sites', icon: Icon.sites },
+  { href: '/media', label: 'Media', icon: Icon.media },
+  { href: '/social', label: 'Social', icon: Icon.social },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -60,7 +97,9 @@ export default function Sidebar() {
                 border: active ? '1px solid var(--hairline)' : '1px solid transparent',
               }}
             >
-              <span aria-hidden style={{ width: 16, textAlign: 'center', opacity: 0.75 }}>{item.icon}</span>
+              <span aria-hidden style={{ width: 18, height: 18, opacity: 0.8, display: 'inline-flex' }}>
+                {item.icon}
+              </span>
               {item.label}
             </Link>
           );
@@ -82,7 +121,7 @@ export default function Sidebar() {
           </Link>
         ))}
         <Link href="/u" className="upload-cta">
-          <span className="navicon" aria-hidden>＋</span>
+          <span className="navicon" aria-hidden>{Icon.upload}</span>
           Upload
         </Link>
         {ITEMS.slice(2).map((item) => (

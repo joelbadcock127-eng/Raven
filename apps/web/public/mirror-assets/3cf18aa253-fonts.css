@@ -1,0 +1,26 @@
+:root {
+--gp-font--things: "Things", serif;
+--gp-font--didact-gothic: "Didact Gothic", sans-serif;
+}
+
+@font-face {
+	font-display: swap;
+	font-family: "Things";
+	font-style: italic;
+	font-weight: 400;
+	src: url('/mirror-assets/596e37eab8-Things-Italic.woff') format('woff');
+}
+@font-face {
+	font-display: swap;
+	font-family: "Things";
+	font-style: normal;
+	font-weight: 400;
+	src: url('/mirror-assets/fdd50766ca-Things-Regular.woff') format('woff');
+}
+@font-face {
+	font-display: swap;
+	font-family: "Didact Gothic";
+	font-style: normal;
+	font-weight: 400;
+	src: url('/mirror-assets/53beb5ad75-ahcfv8qz1zt6hCC5G4F_P4ASlUuYpg.woff2') format('woff2');
+}
