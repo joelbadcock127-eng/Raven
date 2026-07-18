@@ -22,9 +22,10 @@ export default function SitesHub({
   builder: Record<string, BuilderData>;
 }) {
   const [mode, setMode] = useState<'mirror' | 'builder'>('mirror');
-  const [builderProperty, setBuilderProperty] = useState(sites[0]?.propertyId ?? '');
-  const site = sites.find((s) => s.propertyId === builderProperty) ?? sites[0];
-  const data = builder[builderProperty] ?? { versions: [], pagesByVersion: {}, liveVersionId: null, domains: [] };
+  // one property selection shared by both views, so the pill never jumps
+  const [property, setProperty] = useState(sites[0]?.propertyId ?? '');
+  const site = sites.find((s) => s.propertyId === property) ?? sites[0];
+  const data = builder[property] ?? { versions: [], pagesByVersion: {}, liveVersionId: null, domains: [] };
 
   return (
     <div>
@@ -69,22 +70,20 @@ export default function SitesHub({
             </button>
           ))}
         </div>
-        {mode === 'builder' && (
-          <Segmented
-            items={sites.map((s) => ({ id: s.propertyId, label: s.name }))}
-            activeId={builderProperty}
-            onSelect={setBuilderProperty}
-          />
-        )}
+        <Segmented
+          items={sites.map((s) => ({ id: s.propertyId, label: s.name }))}
+          activeId={property}
+          onSelect={setProperty}
+        />
       </div>
 
       {mode === 'mirror' ? (
-        <SitesWorkspace sites={sites} />
+        <SitesWorkspace sites={sites} activeSiteId={property} />
       ) : (
         <SiteBuilder
-          key={builderProperty}
-          propertyId={builderProperty}
-          propertyName={site?.name ?? builderProperty}
+          key={property}
+          propertyId={property}
+          propertyName={site?.name ?? property}
           versions={data.versions}
           pagesByVersion={data.pagesByVersion}
           liveVersionId={data.liveVersionId}

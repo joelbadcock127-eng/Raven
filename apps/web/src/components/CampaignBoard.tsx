@@ -8,7 +8,10 @@ import {
   publishEventPage,
   publishCampaignGbp,
   boostCampaign,
+  saveCampaignPlan,
+  setDistributionStatus,
 } from '@/app/(admin)/campaigns/actions';
+import { matchOffers, DISTRIBUTION_CHANNELS } from '@/lib/offers';
 
 export interface CampaignKit {
   guestEmail?: { subject: string; body: string };
@@ -29,6 +32,11 @@ export interface CampaignRow {
   started_at: string | null;
   stopped_at: string | null;
   created_at: string;
+  property_id: string | null;
+  target_start: string | null;
+  target_end: string | null;
+  offer: { id: string; name: string; pitch: string } | null;
+  distribution: Record<string, 'todo' | 'done' | 'skipped'>;
   property: { name: string } | null;
   event: {
     title: string;
@@ -39,6 +47,7 @@ export interface CampaignRow {
     organiser: string | null;
     ticket_url: string | null;
     url: string | null;
+    tags: string[] | null;
   } | null;
 }
 
@@ -159,7 +168,7 @@ export default function CampaignBoard({ campaigns }: { campaigns: CampaignRow[] 
                 {c.event && c.event.end_date !== c.event.start_date ? ` – ${c.event.end_date}` : ''}
               </span>
             </div>
-            <p className="caption" style={{ marginBottom: 14 }}>
+            <p className="caption" style={{ marginBottom: 10 }}>
               {[c.event?.venue_name, c.event?.locality, c.event?.organiser ? `organiser: ${c.event.organiser}` : null]
                 .filter(Boolean)
                 .join(' · ')}
@@ -170,6 +179,49 @@ export default function CampaignBoard({ campaigns }: { campaigns: CampaignRow[] 
                 </>
               )}
             </p>
+
+            {/* goal + offer — what this campaign exists to do */}
+            <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14, padding: '10px 14px', background: 'var(--canvas-soft)', borderRadius: 10 }}>
+              <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Goal</span>
+              <span className="caption tnum">
+                fill{' '}
+                <strong>
+                  {c.target_start ?? c.event?.start_date ?? '?'}
+                  {(c.target_end ?? c.event?.end_date) !== (c.target_start ?? c.event?.start_date)
+                    ? ` → ${c.target_end ?? c.event?.end_date}`
+                    : ''}
+                </strong>
+              </span>
+              <button
+                type="button"
+                className="caption"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)' }}
+                onClick={() => {
+                  const s = window.prompt('Target dates to fill — start (yyyy-mm-dd)', c.target_start ?? c.event?.start_date ?? '');
+                  if (s === null) return;
+                  const e2 = window.prompt('End (yyyy-mm-dd)', c.target_end ?? c.event?.end_date ?? s);
+                  if (e2 === null) return;
+                  run(() => saveCampaignPlan(c.id, { targetStart: s, targetEnd: e2 }));
+                }}
+              >
+                edit dates
+              </button>
+              <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--hairline)' }} />
+              <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Offer</span>
+              <select
+                value={c.offer?.id ?? ''}
+                disabled={pending}
+                onChange={(e) => run(() => saveCampaignPlan(c.id, { offerId: e.target.value || null }))}
+                className="caption"
+                style={{ border: '1px solid var(--hairline)', borderRadius: 8, padding: '5px 8px', background: 'var(--canvas)', color: 'var(--ink)', maxWidth: 260 }}
+              >
+                <option value="">No offer — plain event stay</option>
+                {matchOffers(c.property_id, c.event?.tags ?? []).map((o) => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+              {c.offer && <span className="caption" style={{ flexBasis: '100%', color: 'var(--ink-secondary)' }}>{c.offer.pitch}</span>}
+            </div>
 
             {/* pipeline strip */}
             <ol style={{ display: 'flex', gap: 4, flexWrap: 'wrap', listStyle: 'none', margin: '0 0 14px' }}>
@@ -235,6 +287,43 @@ export default function CampaignBoard({ campaigns }: { campaigns: CampaignRow[] 
                   {a.label}
                 </button>
               ))}
+            </div>
+
+            {/* distribution — how the word gets out, channel by channel */}
+            <div style={{ marginTop: 16 }}>
+              <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 8 }}>Distribution</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {DISTRIBUTION_CHANNELS.map((ch) => {
+                  const st = c.distribution?.[ch.id] ?? 'todo';
+                  const next = st === 'todo' ? 'done' : st === 'done' ? 'skipped' : 'todo';
+                  return (
+                    <button
+                      key={ch.id}
+                      type="button"
+                      disabled={pending}
+                      title={`${ch.hint} (click: ${next})`}
+                      onClick={() => run(() => setDistributionStatus(c.id, ch.id, next))}
+                      className="caption"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 12px',
+                        borderRadius: 'var(--r-pill)',
+                        cursor: 'pointer',
+                        border: '1px solid',
+                        borderColor: st === 'done' ? 'var(--primary)' : 'var(--hairline)',
+                        background: st === 'done' ? 'var(--primary-subdued)' : 'var(--canvas)',
+                        color: st === 'skipped' ? 'var(--ink-mute)' : st === 'done' ? 'var(--primary-deep)' : 'var(--ink-secondary)',
+                        textDecoration: st === 'skipped' ? 'line-through' : 'none',
+                      }}
+                    >
+                      <span style={{ fontSize: 11 }}>{st === 'done' ? '✓' : st === 'skipped' ? '–' : '○'}</span>
+                      {ch.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {openKit === c.id && c.kit?.generatedAt && (

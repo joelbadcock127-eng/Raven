@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SITES } from '@/lib/sites';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,10 +22,20 @@ export async function GET(req: NextRequest) {
 
   if (!site) return new NextResponse('Not found', { status: 404 });
 
-  const urls = site.pages
-    .map((slug) => `https://${host}${slug === 'home' ? '/' : '/' + slug}`)
-    .map((loc) => `  <url><loc>${loc}</loc></url>`)
-    .join('\n');
+  const locs = site.pages.map((slug) => `https://${host}${slug === 'home' ? '/' : '/' + slug}`);
+
+  // published event/campaign content pages for this property are indexable too
+  const supabase = supabaseAdmin();
+  if (supabase) {
+    const { data: eventPages } = await supabase
+      .from('event_pages')
+      .select('slug')
+      .eq('property_id', site.propertyId)
+      .eq('published', true);
+    for (const p of eventPages ?? []) locs.push(`https://${host}/events/${p.slug}`);
+  }
+
+  const urls = locs.map((loc) => `  <url><loc>${loc}</loc></url>`).join('\n');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
   return new NextResponse(xml, {

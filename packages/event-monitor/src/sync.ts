@@ -80,6 +80,27 @@ async function main() {
     'event_id,property_id',
   );
 
+  // Open a feed opportunity for any event that doesn't have one yet
+  // (unique index on event_id makes this idempotent; dismissed ones stay dismissed).
+  const oppRows = opportunities.map((o) => ({
+    event_id: o.event.id,
+    recommended_property_id: o.recommended.propertyId,
+    priority: o.priority,
+    status: 'new',
+  }));
+  const res = await fetch(`${url}/rest/v1/opportunities?on_conflict=event_id`, {
+    method: 'POST',
+    headers: {
+      apikey: key!,
+      authorization: `Bearer ${key}`,
+      'content-type': 'application/json',
+      prefer: 'resolution=ignore-duplicates,return=minimal',
+    },
+    body: JSON.stringify(oppRows),
+  });
+  if (!res.ok) throw new Error(`opportunities: HTTP ${res.status} — ${await res.text()}`);
+  console.log(`  ensured ${oppRows.length} opportunities exist`);
+
   console.log(`Synced ${opportunities.length} opportunities to Supabase.`);
 }
 

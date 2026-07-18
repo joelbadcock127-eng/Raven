@@ -3,10 +3,14 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import type { SiteDef } from '@/lib/sites';
 import { saveSiteOverrides, resetSitePage, type MirrorOverride } from '@/app/(admin)/sites/actions';
-import Segmented from '@/components/Segmented';
 
-export default function SitesWorkspace({ sites }: { sites: SiteDef[] }) {
-  const [activeSiteId, setActiveSiteId] = useState(sites[0]?.propertyId ?? '');
+export default function SitesWorkspace({
+  sites,
+  activeSiteId,
+}: {
+  sites: SiteDef[];
+  activeSiteId: string;
+}) {
   const [currentSlug, setCurrentSlug] = useState('home');
   const [editMode, setEditMode] = useState(false);
   const [dirty, setDirty] = useState<Set<string>>(new Set()); // `${pid}/${slug}`
@@ -83,23 +87,20 @@ export default function SitesWorkspace({ sites }: { sites: SiteDef[] }) {
       }
     });
 
-  const switchSite = (pid: string) => {
-    setActiveSiteId(pid);
+  // property changed from the shared pill in SitesHub: reset the frame
+  const shownSiteRef = useRef(activeSiteId);
+  useEffect(() => {
+    if (shownSiteRef.current === activeSiteId) return;
+    shownSiteRef.current = activeSiteId;
     setCurrentSlug('home');
     setEditMode(false);
-    if (iframeRef.current) iframeRef.current.src = `/mirror/${pid}/home.html`;
-  };
+    if (iframeRef.current) iframeRef.current.src = `/mirror/${activeSiteId}/home.html`;
+  }, [activeSiteId]);
 
   return (
     <div>
-      {/* ── Property tabs + edit controls ── */}
+      {/* ── Edit controls ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <Segmented
-          items={sites.map((s) => ({ id: s.propertyId, label: s.name }))}
-          activeId={site.propertyId}
-          onSelect={switchSite}
-        />
-
         <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
           <span className="caption">Edit mode</span>
           <span

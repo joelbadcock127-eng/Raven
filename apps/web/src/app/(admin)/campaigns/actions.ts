@@ -16,7 +16,7 @@ export async function publishEventPage(campaignId: string): Promise<ActionResult
   if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
   const { data: c } = await supabase
     .from('campaigns')
-    .select('landing_page_slug, assets')
+    .select('landing_page_slug, assets, distribution')
     .eq('id', campaignId)
     .maybeSingle();
   if (!c?.landing_page_slug) return { ok: false, message: 'No landing page generated yet.' };
@@ -27,7 +27,11 @@ export async function publishEventPage(campaignId: string): Promise<ActionResult
   if (error) return { ok: false, message: error.message };
   await supabase
     .from('campaigns')
-    .update({ assets: { ...(c.assets ?? {}), page: 'published' }, updated_at: new Date().toISOString() })
+    .update({
+      assets: { ...(c.assets ?? {}), page: 'published' },
+      distribution: { ...(c.distribution ?? {}), contentPage: 'done' },
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', campaignId);
   revalidatePath('/campaigns');
   revalidatePath(`/events/${c.landing_page_slug}`);
@@ -125,4 +129,51 @@ export async function recordRevenue(id: string, revenue: number, bookings: numbe
   if (error) return { ok: false, message: error.message };
   revalidatePath('/campaigns');
   return { ok: true, message: 'Recorded' };
+}
+
+/** Save the campaign's goal — the dates it exists to fill — and its offer. */
+export async function saveCampaignPlan(
+  id: string,
+  plan: { targetStart?: string; targetEnd?: string; offerId?: string | null },
+): Promise<ActionResult> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase not configured' };
+
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (plan.targetStart !== undefined)
+    patch.target_start = /^\d{4}-\d{2}-\d{2}$/.test(plan.targetStart) ? plan.targetStart : null;
+  if (plan.targetEnd !== undefined)
+    patch.target_end = /^\d{4}-\d{2}-\d{2}$/.test(plan.targetEnd) ? plan.targetEnd : null;
+  if (plan.offerId !== undefined) {
+    const { OFFER_TEMPLATES } = await import('@/lib/offers');
+    const offer = OFFER_TEMPLATES.find((o) => o.id === plan.offerId) ?? null;
+    patch.offer = offer ? { id: offer.id, name: offer.name, pitch: offer.pitch } : null;
+  }
+
+  const { error } = await supabase.from('campaigns').update(patch).eq('id', id);
+  if (error) return { ok: false, message: error.message };
+  revalidatePath('/campaigns');
+  return { ok: true, message: 'Plan saved' };
+}
+
+/** Tick a distribution channel: todo → done → skipped → todo. */
+export async function setDistributionStatus(
+  id: string,
+  channel: string,
+  status: 'todo' | 'done' | 'skipped',
+): Promise<ActionResult> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase not configured' };
+
+  const { data: row } = await supabase.from('campaigns').select('distribution').eq('id', id).maybeSingle();
+  if (!row) return { ok: false, message: 'Campaign not found' };
+  const distribution = { ...(row.distribution as Record<string, unknown>), [channel]: status };
+
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ distribution, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) return { ok: false, message: error.message };
+  revalidatePath('/campaigns');
+  return { ok: true, message: 'Updated' };
 }

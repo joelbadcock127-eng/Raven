@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { setOpportunityStatus } from '@/app/(admin)/actions';
+import { useRouter } from 'next/navigation';
+import { setOpportunityStatus, logSignal } from '@/app/(admin)/actions';
 
 export interface BoardProperty {
   id: string;
@@ -99,7 +100,9 @@ export default function OpportunityBoard({
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [handled, setHandled] = useState<Set<string>>(new Set()); // optimistic removals
   const [notice, setNotice] = useState('');
+  const [logOpen, setLogOpen] = useState(false);
   const [, startTransition] = useTransition();
+  const router = useRouter();
 
   const act = (id: string, status: 'approved' | 'modified' | 'dismissed') => {
     setHandled((prev) => new Set(prev).add(id)); // hide immediately
@@ -247,7 +250,81 @@ export default function OpportunityBoard({
               Reset filters
             </button>
           )}
+
+          <button
+            type="button"
+            className="pill-primary"
+            style={{ fontSize: 12, padding: '7px 14px', marginLeft: 'auto' }}
+            onClick={() => setLogOpen((v) => !v)}
+          >
+            {logOpen ? 'Close' : '+ Log a signal'}
+          </button>
         </div>
+
+        {logOpen && (
+          <form
+            style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--hairline)' }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              const f = new FormData(e.currentTarget);
+              const form = e.currentTarget;
+              startTransition(async () => {
+                const res = await logSignal({
+                  kind: String(f.get('kind') ?? 'other'),
+                  title: String(f.get('title') ?? ''),
+                  start: String(f.get('start') ?? ''),
+                  end: String(f.get('end') ?? '') || undefined,
+                  venue: String(f.get('venue') ?? '') || undefined,
+                  propertyId: String(f.get('property') ?? '') || undefined,
+                  notes: String(f.get('notes') ?? '') || undefined,
+                });
+                setNotice(res.message);
+                if (res.ok) {
+                  form.reset();
+                  setLogOpen(false);
+                  router.refresh();
+                }
+              });
+            }}
+          >
+            <SignalField label="What is it">
+              <select name="kind" defaultValue="wedding" style={fieldStyle}>
+                <option value="wedding">Wedding</option>
+                <option value="funeral">Funeral</option>
+                <option value="corporate">Corporate / crew in town</option>
+                <option value="construction">Construction project</option>
+                <option value="sports">Sporting event</option>
+                <option value="other">Other</option>
+              </select>
+            </SignalField>
+            <SignalField label="Name it" grow>
+              <input name="title" placeholder="e.g. Wedding at Ghost Rock — 120 guests" required style={fieldStyle} />
+            </SignalField>
+            <SignalField label="Date">
+              <input name="start" type="date" required style={fieldStyle} />
+            </SignalField>
+            <SignalField label="End (optional)">
+              <input name="end" type="date" style={fieldStyle} />
+            </SignalField>
+            <SignalField label="Where">
+              <input name="venue" placeholder="venue / locality" style={fieldStyle} />
+            </SignalField>
+            <SignalField label="Best property">
+              <select name="property" defaultValue="" style={fieldStyle}>
+                <option value="">Auto</option>
+                {properties.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </SignalField>
+            <SignalField label="Notes" grow>
+              <input name="notes" placeholder="who told you, expected numbers, anything useful" style={fieldStyle} />
+            </SignalField>
+            <button type="submit" className="pill-primary" style={{ fontSize: 12, padding: '9px 18px' }}>
+              Add to feed
+            </button>
+          </form>
+        )}
 
         {allTags.length > 0 && (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 16 }}>
@@ -444,5 +521,24 @@ export default function OpportunityBoard({
         })}
       </section>
     </>
+  );
+}
+
+const fieldStyle: React.CSSProperties = {
+  border: '1px solid var(--hairline)',
+  borderRadius: 8,
+  padding: '8px 10px',
+  fontSize: 13,
+  background: 'var(--canvas)',
+  color: 'var(--ink)',
+  width: '100%',
+};
+
+function SignalField({ label, grow, children }: { label: string; grow?: boolean; children: React.ReactNode }) {
+  return (
+    <label style={{ display: 'grid', gap: 4, flex: grow ? '1 1 220px' : '0 1 auto', minWidth: grow ? 220 : 130 }}>
+      <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>{label}</span>
+      {children}
+    </label>
   );
 }
