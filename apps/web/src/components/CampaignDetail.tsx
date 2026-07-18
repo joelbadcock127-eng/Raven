@@ -11,8 +11,17 @@ import {
   saveCampaignPlan,
   setDistributionStatus,
   setPlaybookDays,
+  setPlaybookOrder,
+  sendGuestEmail,
 } from '@/app/(admin)/campaigns/actions';
-import { matchOffers, DISTRIBUTION_CHANNELS } from '@/lib/offers';
+import { matchOffers, channelPlan, type PlaybookEntry } from '@/lib/offers';
+
+export interface OutreachRecipient {
+  id: string;
+  organisation: string;
+  contact_name: string | null;
+  email: string | null;
+}
 
 export interface CampaignKit {
   guestEmail?: { subject: string; body: string };
@@ -38,7 +47,7 @@ export interface CampaignRow {
   target_end: string | null;
   offer: { id: string; name: string; pitch: string } | null;
   distribution: Record<string, 'todo' | 'done' | 'skipped'>;
-  playbook: Record<string, number>;
+  playbook: Record<string, PlaybookEntry>;
   property: { name: string } | null;
   event: {
     title: string;
@@ -94,7 +103,13 @@ const NEXT_ACTIONS: Record<string, Array<{ status: string; label: string }>> = {
   stopped: [{ status: 'completed', label: 'Mark completed' }],
 };
 
-export default function CampaignDetail({ campaign: c }: { campaign: CampaignRow }) {
+export default function CampaignDetail({
+  campaign: c,
+  outreachContacts = [],
+}: {
+  campaign: CampaignRow;
+  outreachContacts?: OutreachRecipient[];
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [notice, setNotice] = useState('');
@@ -213,27 +228,48 @@ export default function CampaignDetail({ campaign: c }: { campaign: CampaignRow 
           {c.offer && <span className="caption" style={{ flexBasis: '100%', color: 'var(--ink-secondary)' }}>{c.offer.pitch}</span>}
         </div>
 
-        {/* pipeline strip */}
-        <ol style={{ display: 'flex', gap: 4, flexWrap: 'wrap', listStyle: 'none', margin: '14px 0 0' }}>
-          {PIPELINE.map((s, i) => {
-            const done = i <= step;
-            return (
-              <li
-                key={s.key}
-                className="micro-cap"
-                style={{
-                  padding: '5px 10px',
-                  borderRadius: 'var(--r-pill)',
-                  background: done ? 'var(--primary)' : 'var(--canvas-soft)',
-                  color: done ? 'var(--on-primary)' : 'var(--ink-mute)',
-                  border: `1px solid ${done ? 'var(--primary)' : 'var(--hairline)'}`,
-                }}
-              >
-                {i + 1}. {s.label}
-              </li>
-            );
-          })}
-        </ol>
+        {/* pipeline: a slim stepper, not a wall of tabs */}
+        <div style={{ margin: '18px 0 4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {PIPELINE.map((s, i) => {
+              const done = i < step;
+              const current = i === step;
+              return (
+                <div key={s.key} style={{ display: 'flex', alignItems: 'center', flex: i === PIPELINE.length - 1 ? '0 0 auto' : 1, minWidth: 0 }}>
+                  <span
+                    title={`${i + 1}. ${s.label}`}
+                    style={{
+                      width: current ? 26 : 20,
+                      height: current ? 26 : 20,
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      display: 'grid',
+                      placeItems: 'center',
+                      fontSize: 10.5,
+                      fontWeight: 500,
+                      transition: 'all .2s',
+                      background: done || current ? 'var(--primary)' : 'var(--canvas-soft)',
+                      color: done || current ? 'var(--on-primary)' : 'var(--ink-mute)',
+                      border: `1px solid ${done || current ? 'var(--primary)' : 'var(--hairline)'}`,
+                      boxShadow: current ? '0 0 0 4px var(--primary-subdued)' : 'none',
+                    }}
+                  >
+                    {done ? '✓' : i + 1}
+                  </span>
+                  {i < PIPELINE.length - 1 && (
+                    <span style={{ height: 2, flex: 1, minWidth: 8, background: done ? 'var(--primary)' : 'var(--hairline)', margin: '0 4px' }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="caption" style={{ marginTop: 8, color: 'var(--ink-secondary)' }}>
+            Step {step + 1} of {PIPELINE.length}: <strong style={{ fontWeight: 500 }}>{PIPELINE[step]?.label}</strong>
+            {step < PIPELINE.length - 1 && (
+              <span style={{ color: 'var(--ink-mute)' }}> · next: {PIPELINE[step + 1]?.label}</span>
+            )}
+          </div>
+        </div>
 
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', marginTop: 14 }}>
           <span className="caption tnum">
@@ -284,9 +320,18 @@ export default function CampaignDetail({ campaign: c }: { campaign: CampaignRow 
           const daysLeft = targetStart
             ? Math.round((Date.parse(targetStart) - Date.now()) / 86_400_000)
             : null;
-          const rows = DISTRIBUTION_CHANNELS
-            .map((ch) => ({ ...ch, daysOut: c.playbook?.[ch.id] ?? ch.daysOut }))
-            .sort((a, b) => b.daysOut - a.daysOut);
+          const rows = channelPlan(c.playbook);
+          const unlockDate = (daysOut: number) =>
+            targetStart
+              ? new Date(Date.parse(targetStart) - daysOut * 86_400_000).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+              : null;
+          const move = (index: number, dir: -1 | 1) => {
+            const order = rows.map((r) => r.id);
+            const j = index + dir;
+            if (j < 0 || j >= order.length) return;
+            [order[index], order[j]] = [order[j], order[index]];
+            run(() => setPlaybookOrder(c.id, order));
+          };
           return (
             <div style={{ display: 'grid', gap: 8 }}>
               {daysLeft != null && (
@@ -294,11 +339,12 @@ export default function CampaignDetail({ campaign: c }: { campaign: CampaignRow 
                   {daysLeft >= 0 ? `${daysLeft} days until the target dates.` : 'Target dates have passed.'}
                 </p>
               )}
-              {rows.map((ch) => {
+              {rows.map((ch, index) => {
                 const st = c.distribution?.[ch.id] ?? 'todo';
                 const next = st === 'todo' ? 'done' : st === 'done' ? 'skipped' : 'todo';
                 const due = st === 'todo' && daysLeft != null && daysLeft >= 0 && daysLeft <= ch.daysOut;
                 const waiting = st === 'todo' && daysLeft != null && daysLeft > ch.daysOut;
+                const when = unlockDate(ch.daysOut);
                 return (
                   <div
                     key={ch.id}
@@ -313,6 +359,34 @@ export default function CampaignDetail({ campaign: c }: { campaign: CampaignRow 
                       opacity: waiting ? 0.65 : 1,
                     }}
                   >
+                    <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 1 }}>
+                      {(
+                        [
+                          ['up', -1],
+                          ['down', 1],
+                        ] as const
+                      ).map(([dir, delta]) => (
+                        <button
+                          key={dir}
+                          type="button"
+                          disabled={pending || (delta === -1 ? index === 0 : index === rows.length - 1)}
+                          onClick={() => move(index, delta)}
+                          aria-label={`move ${ch.label} ${dir}`}
+                          style={{
+                            border: 'none',
+                            background: 'none',
+                            cursor: 'pointer',
+                            fontSize: 9,
+                            lineHeight: 1,
+                            padding: 1,
+                            color: 'var(--ink-mute)',
+                            opacity: (delta === -1 ? index === 0 : index === rows.length - 1) ? 0.25 : 1,
+                          }}
+                        >
+                          {dir === 'up' ? '▲' : '▼'}
+                        </button>
+                      ))}
+                    </span>
                     <button
                       type="button"
                       disabled={pending}
@@ -344,9 +418,9 @@ export default function CampaignDetail({ campaign: c }: { campaign: CampaignRow 
                         const v = window.prompt(`${ch.label}: switch on how many days before the target date?`, String(ch.daysOut));
                         if (v !== null && v.trim() !== '') run(() => setPlaybookDays(c.id, ch.id, Number(v) || ch.daysOut));
                       }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', width: 84, textAlign: 'left' }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', width: 130, textAlign: 'left' }}
                     >
-                      {ch.daysOut}d out
+                      {ch.daysOut}d out{when ? ` · ${when}` : ''}
                     </button>
                     {due && <span className="micro-cap" style={{ color: '#8a6410' }}>due now</span>}
                     {waiting && daysLeft != null && (
@@ -413,6 +487,17 @@ export default function CampaignDetail({ campaign: c }: { campaign: CampaignRow 
                 title={c.kit.guestEmail.subject}
                 body={c.kit.guestEmail.body}
                 onCopy={() => copy(`Subject: ${c.kit.guestEmail!.subject}\n\n${c.kit.guestEmail!.body}`, 'Guest email')}
+                extra={
+                  <button
+                    type="button"
+                    disabled={pending}
+                    className="pill-primary"
+                    style={{ fontSize: 11, padding: '4px 10px' }}
+                    onClick={() => run(() => sendGuestEmail(c.id))}
+                  >
+                    Send via MailerLite
+                  </button>
+                }
               />
             )}
 
@@ -423,12 +508,35 @@ export default function CampaignDetail({ campaign: c }: { campaign: CampaignRow 
                 body={c.kit.organiserOutreach.body}
                 onCopy={() => copy(`Subject: ${c.kit.organiserOutreach!.subject}\n\n${c.kit.organiserOutreach!.body}`, 'Outreach email')}
                 extra={
-                  <a
-                    className="caption"
-                    href={`mailto:?subject=${encodeURIComponent(c.kit.organiserOutreach.subject)}&body=${encodeURIComponent(c.kit.organiserOutreach.body)}`}
-                  >
-                    open in mail ↗
-                  </a>
+                  <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    {outreachContacts.length > 0 && (
+                      <select
+                        className="caption"
+                        defaultValue=""
+                        style={{ border: '1px solid var(--hairline)', borderRadius: 8, padding: '4px 8px', background: 'var(--canvas)', color: 'var(--ink)', maxWidth: 190 }}
+                        onChange={(e) => {
+                          const r = outreachContacts.find((x) => x.id === e.target.value);
+                          if (!r) return;
+                          const o = c.kit.organiserOutreach!;
+                          window.location.href = `mailto:${r.email ?? ''}?subject=${encodeURIComponent(o.subject)}&body=${encodeURIComponent(o.body)}`;
+                          e.target.value = '';
+                        }}
+                      >
+                        <option value="" disabled>Send to outreach contact…</option>
+                        {outreachContacts.map((r) => (
+                          <option key={r.id} value={r.id} disabled={!r.email}>
+                            {r.organisation}{r.contact_name ? ` — ${r.contact_name}` : ''}{r.email ? '' : ' (no email)'}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <a
+                      className="caption"
+                      href={`mailto:?subject=${encodeURIComponent(c.kit.organiserOutreach.subject)}&body=${encodeURIComponent(c.kit.organiserOutreach.body)}`}
+                    >
+                      open in mail ↗
+                    </a>
+                  </span>
                 }
               />
             )}

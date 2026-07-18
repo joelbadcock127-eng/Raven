@@ -109,7 +109,7 @@ export default function OpportunityBoard({
   const [multiDayOnly, setMultiDayOnly] = useState(false);
   const [hideBooked, setHideBooked] = useState(true);
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
-  const [tagsOpen, setTagsOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [handled, setHandled] = useState<Set<string>>(new Set()); // optimistic removals
   const [notice, setNotice] = useState('');
   const [logOpen, setLogOpen] = useState(false);
@@ -201,25 +201,21 @@ export default function OpportunityBoard({
     return { columns: cols, flat: all, hiddenNoLocation: noLoc, hiddenBooked: booked };
   }, [opportunities, properties, maxDays, maxDist, multiDayOnly, hideBooked, activeTags, handled]);
 
-  const topPicks = useMemo(
-    () =>
-      flat
-        .filter((o) => isGolden(o) || (isHot(o) && o.columnScore >= 60))
-        .sort((a, b) => b.columnScore + (b.demand ?? 0) - (a.columnScore + (a.demand ?? 0)))
-        .slice(0, 6),
-    [flat],
-  );
-
   const visibleCount = flat.length;
   const nameOf = (pid: string) => properties.find((p) => p.id === pid)?.name ?? pid;
+  const activeFilterCount =
+    (maxDays < DAYS_MAX ? 1 : 0) +
+    (maxDist < DIST_MAX ? 1 : 0) +
+    (multiDayOnly ? 1 : 0) +
+    (!hideBooked ? 1 : 0) +
+    activeTags.size;
 
   return (
     <>
-      {/* ─── Controls ─── */}
-      <section className="card" style={{ padding: '16px 20px', marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: '12px 24px', flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* view toggle */}
-          <div style={{ display: 'inline-flex', padding: 3, borderRadius: 'var(--r-pill)', background: 'var(--canvas-soft)', border: '1px solid var(--hairline)' }}>
+      {/* ─── Controls: one quiet row ─── */}
+      <section style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'inline-flex', padding: 3, borderRadius: 'var(--r-pill)', background: 'var(--canvas)', border: '1px solid var(--hairline)', boxShadow: 'var(--shadow-1)' }}>
             {(
               [
                 ['list', 'Board'],
@@ -234,12 +230,12 @@ export default function OpportunityBoard({
                 style={{
                   border: 'none',
                   cursor: 'pointer',
-                  padding: '6px 14px',
+                  padding: '7px 16px',
                   borderRadius: 'var(--r-pill)',
-                  background: view === v ? 'var(--canvas)' : 'transparent',
-                  color: view === v ? 'var(--ink)' : 'var(--ink-mute)',
-                  boxShadow: view === v ? 'var(--shadow-1)' : 'none',
+                  background: view === v ? 'var(--brand-dark-900)' : 'transparent',
+                  color: view === v ? '#fff' : 'var(--ink-mute)',
                   fontWeight: view === v ? 500 : 400,
+                  transition: 'background .15s, color .15s',
                 }}
               >
                 {label}
@@ -247,100 +243,123 @@ export default function OpportunityBoard({
             ))}
           </div>
 
-          <label style={{ flex: '1 1 170px', maxWidth: 240 }}>
-            <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 4 }}>
-              Days out · {maxDays >= DAYS_MAX ? 'any' : `≤ ${maxDays}`}
-            </div>
-            <input type="range" min={7} max={DAYS_MAX} step={1} value={maxDays} onChange={(e) => setMaxDays(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--primary)' }} />
-          </label>
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((v) => !v)}
+            className="caption"
+            style={{
+              padding: '8px 16px',
+              borderRadius: 'var(--r-pill)',
+              cursor: 'pointer',
+              border: '1px solid',
+              borderColor: activeFilterCount > 0 || filtersOpen ? 'var(--primary)' : 'var(--hairline)',
+              background: 'var(--canvas)',
+              color: activeFilterCount > 0 ? 'var(--primary-deep)' : 'var(--ink-secondary)',
+              boxShadow: 'var(--shadow-1)',
+            }}
+          >
+            Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
+          </button>
 
-          <label style={{ flex: '1 1 170px', maxWidth: 240 }}>
-            <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 4 }}>
-              Distance · {maxDist >= DIST_MAX ? 'any' : `≤ ${maxDist} km`}
-            </div>
-            <input type="range" min={5} max={DIST_MAX} step={5} value={maxDist} onChange={(e) => setMaxDist(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--primary)' }} />
-          </label>
+          <span className="caption tnum" style={{ color: 'var(--ink-mute)' }}>
+            {visibleCount} of {opportunities.length}
+            {notice && <span style={{ color: 'var(--primary-deep)' }}> · {notice}</span>}
+          </span>
 
-          {(
-            [
-              ['Multi-day', multiDayOnly, () => setMultiDayOnly((v) => !v)],
-              ['Hide booked-out', hideBooked, () => setHideBooked((v) => !v)],
-              [`Tags${activeTags.size ? ` (${activeTags.size})` : ''}`, tagsOpen, () => setTagsOpen((v) => !v)],
-            ] as const
-          ).map(([label, on, toggle]) => (
-            <button
-              key={label}
-              type="button"
-              onClick={toggle}
-              className="caption"
-              style={{
-                padding: '6px 12px',
-                borderRadius: 'var(--r-pill)',
-                cursor: 'pointer',
-                border: '1px solid',
-                borderColor: on ? 'var(--primary)' : 'var(--hairline)',
-                background: on ? 'var(--primary)' : 'var(--canvas)',
-                color: on ? 'var(--on-primary)' : 'var(--ink-secondary)',
-              }}
-            >
-              {label}
-            </button>
-          ))}
-
-          <button type="button" className="pill-primary" style={{ fontSize: 12, padding: '7px 14px', marginLeft: 'auto' }} onClick={() => setLogOpen((v) => !v)}>
+          <button type="button" className="pill-primary" style={{ fontSize: 12, padding: '8px 16px', marginLeft: 'auto' }} onClick={() => setLogOpen((v) => !v)}>
             {logOpen ? 'Close' : '+ Log a signal'}
           </button>
         </div>
 
-        {tagsOpen && allTags.length > 0 && (
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 12 }}>
-            {allTags.map((t) => {
-              const on = activeTags.has(t);
-              return (
+        {filtersOpen && (
+          <div className="card" style={{ padding: '16px 20px', marginTop: 10 }}>
+            <div style={{ display: 'flex', gap: '14px 28px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <label style={{ flex: '1 1 180px', maxWidth: 260 }}>
+                <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 4 }}>
+                  Days out · {maxDays >= DAYS_MAX ? 'any' : `≤ ${maxDays}`}
+                </div>
+                <input type="range" min={7} max={DAYS_MAX} step={1} value={maxDays} onChange={(e) => setMaxDays(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--primary)' }} />
+              </label>
+              <label style={{ flex: '1 1 180px', maxWidth: 260 }}>
+                <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 4 }}>
+                  Distance · {maxDist >= DIST_MAX ? 'any' : `≤ ${maxDist} km`}
+                </div>
+                <input type="range" min={5} max={DIST_MAX} step={5} value={maxDist} onChange={(e) => setMaxDist(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--primary)' }} />
+              </label>
+              {(
+                [
+                  ['Multi-day only', multiDayOnly, () => setMultiDayOnly((v) => !v)],
+                  ['Hide booked-out', hideBooked, () => setHideBooked((v) => !v)],
+                ] as const
+              ).map(([label, on, toggle]) => (
                 <button
-                  key={t}
+                  key={label}
                   type="button"
-                  onClick={() => toggleTag(t)}
-                  className="micro-cap"
+                  onClick={toggle}
+                  className="caption"
                   style={{
-                    cursor: 'pointer',
-                    padding: '4px 10px',
+                    padding: '6px 12px',
                     borderRadius: 'var(--r-pill)',
+                    cursor: 'pointer',
                     border: '1px solid',
-                    borderColor: on ? 'var(--primary)' : 'transparent',
-                    background: on ? 'var(--primary)' : 'var(--primary-subdued)',
-                    color: on ? 'var(--on-primary)' : 'var(--primary-deep)',
+                    borderColor: on ? 'var(--primary)' : 'var(--hairline)',
+                    background: on ? 'var(--primary)' : 'var(--canvas)',
+                    color: on ? 'var(--on-primary)' : 'var(--ink-secondary)',
                   }}
                 >
-                  {t}
+                  {label}
                 </button>
-              );
-            })}
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setMaxDays(DAYS_MAX);
+                  setMaxDist(DIST_MAX);
+                  setActiveTags(new Set());
+                  setMultiDayOnly(false);
+                  setHideBooked(true);
+                }}
+                className="caption"
+                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}
+              >
+                reset
+              </button>
+            </div>
+            {allTags.length > 0 && (
+              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 12 }}>
+                {allTags.map((t) => {
+                  const on = activeTags.has(t);
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => toggleTag(t)}
+                      className="micro-cap"
+                      style={{
+                        cursor: 'pointer',
+                        padding: '4px 10px',
+                        borderRadius: 'var(--r-pill)',
+                        border: '1px solid',
+                        borderColor: on ? 'var(--primary)' : 'transparent',
+                        background: on ? 'var(--primary)' : 'var(--primary-subdued)',
+                        color: on ? 'var(--on-primary)' : 'var(--primary-deep)',
+                      }}
+                    >
+                      {t}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {(hiddenBooked > 0 || hiddenNoLocation > 0) && (
+              <div className="caption" style={{ marginTop: 10, color: 'var(--ink-mute)' }}>
+                {hiddenBooked > 0 && `${hiddenBooked} hidden (dates already booked)`}
+                {hiddenBooked > 0 && hiddenNoLocation > 0 && ' · '}
+                {hiddenNoLocation > 0 && `${hiddenNoLocation} hidden (no location data)`}
+              </div>
+            )}
           </div>
         )}
-
-        <div className="caption tnum" style={{ marginTop: 10, color: 'var(--ink-mute)' }}>
-          {visibleCount} of {opportunities.length} showing
-          {hiddenBooked > 0 && ` · ${hiddenBooked} hidden (dates already booked)`}
-          {hiddenNoLocation > 0 && ` · ${hiddenNoLocation} hidden (no location data)`}
-          {(maxDays < DAYS_MAX || maxDist < DIST_MAX || activeTags.size > 0 || multiDayOnly || !hideBooked) && (
-            <button
-              type="button"
-              onClick={() => {
-                setMaxDays(DAYS_MAX);
-                setMaxDist(DIST_MAX);
-                setActiveTags(new Set());
-                setMultiDayOnly(false);
-                setHideBooked(true);
-              }}
-              className="caption"
-              style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', marginLeft: 8 }}
-            >
-              reset
-            </button>
-          )}
-          {notice && <span style={{ color: 'var(--primary-deep)' }}> · {notice}</span>}
-        </div>
 
         {logOpen && (
           <form
@@ -408,47 +427,6 @@ export default function OpportunityBoard({
         )}
       </section>
 
-      {/* ─── Top picks: the ones actually worth running with ─── */}
-      {topPicks.length > 0 && view === 'list' && (
-        <section style={{ marginBottom: 24 }}>
-          <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 10 }}>
-            Top picks · school holidays, big dates and near, high-scoring events
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-            {topPicks.map((o) => (
-              <article
-                key={o.id}
-                className="card"
-                style={{ padding: 18, borderLeft: `3px solid ${PROPERTY_HUES[o.columnId] ?? 'var(--primary)'}` }}
-              >
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
-                  <span className="micro-cap" style={{ background: '#d4a017', color: '#fff', padding: '3px 9px', borderRadius: 'var(--r-pill)' }}>
-                    Top pick
-                  </span>
-                  <span className="micro-cap" style={{ color: PROPERTY_HUES[o.columnId] }}>{nameOf(o.columnId)}</span>
-                  <span className="caption tnum" style={{ marginLeft: 'auto', color: 'var(--ink-mute)' }}>in {o.daysOut}d</span>
-                </div>
-                <h3 style={{ fontSize: 15.5, fontWeight: 500, lineHeight: 1.3, marginBottom: 4 }}>{o.title}</h3>
-                <p className="caption" style={{ color: 'var(--ink-mute)', marginBottom: 10 }}>
-                  {fmtDate(o.startDate)}
-                  {o.endDate !== o.startDate ? ` – ${fmtDate(o.endDate)}` : ''}
-                  {o.venue ? ` · ${o.venue}` : o.locality ? ` · ${o.locality}` : ''}
-                </p>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <button type="button" onClick={() => act(o.id, 'approved')} className="pill-primary" style={{ fontSize: 12, padding: '6px 14px' }}>
-                    Approve
-                  </button>
-                  <button type="button" onClick={() => act(o.id, 'dismissed')} className="caption" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-mute)' }}>
-                    Dismiss
-                  </button>
-                  <span className="caption tnum" style={{ marginLeft: 'auto', color: 'var(--primary-deep)' }}>score {o.columnScore}</span>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
-
       {view === 'calendar' ? (
         <OpportunityCalendar rows={flat} nameOf={nameOf} act={act} />
       ) : (
@@ -481,7 +459,6 @@ export default function OpportunityBoard({
                 ) : (
                   list.map((o) => {
                     const score = o.scores[p.id];
-                    const link = o.url ?? o.sourceUrl;
                     const golden = isGolden(o);
                     const hot = isHot(o);
                     return (
@@ -489,83 +466,69 @@ export default function OpportunityBoard({
                         key={o.id}
                         className="card"
                         style={{
-                          padding: 16,
-                          borderLeft: golden || hot ? `3px solid ${golden ? '#d4a017' : PROPERTY_HUES[p.id] ?? 'var(--primary)'}` : undefined,
+                          padding: '14px 16px',
+                          borderLeft: golden ? '3px solid #d4a017' : undefined,
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                        <div className="caption tnum" style={{ color: 'var(--ink-mute)', marginBottom: 3, display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                          <span>
+                            {fmtDate(o.startDate)}
+                            {o.endDate !== o.startDate ? ` – ${fmtDate(o.endDate)}` : ''} · in {o.daysOut}d
+                          </span>
                           {(golden || hot) && (
-                            <span className="micro-cap" style={{ color: golden ? '#a87d0d' : PROPERTY_HUES[p.id], fontWeight: 500 }}>
+                            <span className="micro-cap" style={{ marginLeft: 'auto', color: golden ? '#a87d0d' : 'var(--primary-deep)', fontWeight: 500 }}>
                               {golden ? 'Top pick' : 'Big date'}
                             </span>
                           )}
-                          <span className="caption tnum" style={{ color: 'var(--ink-mute)' }}>
-                            {fmtDate(o.startDate)}
-                            {o.endDate !== o.startDate ? ` – ${fmtDate(o.endDate)}` : ''} · in {o.daysOut}d
-                            {o.distanceKm != null && ` · ${Math.round(o.distanceKm)} km`}
-                          </span>
+                          {o.bookedOut && (
+                            <span className="micro-cap" style={{ marginLeft: golden || hot ? 0 : 'auto', color: 'var(--ruby)' }}>booked out</span>
+                          )}
                         </div>
 
-                        <h3 style={{ fontSize: 15.5, fontWeight: 500, letterSpacing: '-0.1px', lineHeight: 1.3, marginBottom: 2 }}>
-                          {link ? (
-                            <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>{o.title}</a>
-                          ) : (
-                            o.title
-                          )}
-                        </h3>
+                        <h3 style={{ fontSize: 15, fontWeight: 500, letterSpacing: '-0.1px', lineHeight: 1.35 }}>{o.title}</h3>
                         {(o.venue || o.locality) && (
-                          <p className="caption" style={{ color: 'var(--ink-mute)', marginBottom: 6 }}>
+                          <p className="caption" style={{ color: 'var(--ink-mute)', marginTop: 1 }}>
                             {[o.venue, o.locality].filter(Boolean).join(' · ')}
                           </p>
                         )}
 
-                        {o.summary && (
-                          <p className="caption" style={{ color: 'var(--ink-secondary)', marginBottom: 8, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                            {o.summary}
-                          </p>
-                        )}
-
-                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10, alignItems: 'center' }} className="caption tnum">
-                          {score && <span style={{ color: 'var(--primary-deep)' }}>score {score.total}</span>}
-                          {o.demand != null && <span style={{ color: 'var(--ink-mute)' }}>demand {o.demand}</span>}
-                          {o.availabilityBadge && (
-                            <span style={{ color: o.bookedOut ? 'var(--ruby)' : 'var(--ink-mute)' }}>
-                              {o.bookedOut ? 'booked out' : o.availabilityBadge}
-                            </span>
-                          )}
-                          {o.tags.slice(0, 3).map((t) => (
-                            <span key={t} className="micro-cap" style={{ background: 'var(--canvas-soft)', border: '1px solid var(--hairline)', borderRadius: 'var(--r-pill)', padding: '2px 8px', color: 'var(--ink-mute)' }}>
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-
-                        {score && score.rationale.length > 0 && (
-                          <details style={{ marginBottom: 10 }}>
-                            <summary className="caption" style={{ cursor: 'pointer', color: 'var(--primary)' }}>Why here?</summary>
-                            <ul style={{ margin: '6px 0 0 16px' }}>
-                              {score.rationale.map((r, i) => (
-                                <li key={i} className="caption" style={{ marginBottom: 3 }}>{r}</li>
-                              ))}
-                            </ul>
-                          </details>
-                        )}
-
-                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                          <button type="button" onClick={() => act(o.id, 'approved')} className="pill-primary" style={{ fontSize: 12, padding: '6px 14px' }}>
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 10 }}>
+                          <button type="button" onClick={() => act(o.id, 'approved')} className="pill-primary" style={{ fontSize: 12, padding: '5px 14px' }}>
                             Approve
-                          </button>
-                          <button type="button" onClick={() => act(o.id, 'modified')} className="caption" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)' }}>
-                            Modify
                           </button>
                           <button type="button" onClick={() => act(o.id, 'dismissed')} className="caption" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-mute)' }}>
                             Dismiss
                           </button>
-                          {(o.url || o.sourceUrl) && (
-                            <a href={(o.url ?? o.sourceUrl)!} target="_blank" rel="noopener noreferrer" className="caption" style={{ marginLeft: 'auto', color: 'var(--ink-mute)' }}>
-                              {o.source ?? 'source'} ↗
-                            </a>
-                          )}
+                          <details style={{ marginLeft: 'auto', position: 'relative' }}>
+                            <summary className="caption" style={{ cursor: 'pointer', color: 'var(--primary)', listStyle: 'none' }}>details</summary>
+                            <div className="caption" style={{ marginTop: 8, borderTop: '1px solid var(--hairline)', paddingTop: 8, display: 'grid', gap: 6 }}>
+                              {o.summary && <p style={{ color: 'var(--ink-secondary)' }}>{o.summary}</p>}
+                              <p className="tnum" style={{ color: 'var(--ink-mute)' }}>
+                                {score && `score ${score.total}`}
+                                {o.demand != null && ` · demand ${o.demand}`}
+                                {o.distanceKm != null && ` · ${Math.round(o.distanceKm)} km away`}
+                                {o.availabilityBadge && !o.bookedOut && ` · ${o.availabilityBadge}`}
+                                {o.tags.length > 0 && ` · ${o.tags.join(', ')}`}
+                              </p>
+                              {score && score.rationale.length > 0 && (
+                                <ul style={{ margin: '0 0 0 16px' }}>
+                                  {score.rationale.map((r, i) => (
+                                    <li key={i} style={{ marginBottom: 2 }}>{r}</li>
+                                  ))}
+                                </ul>
+                              )}
+                              <p style={{ display: 'flex', gap: 12 }}>
+                                <button type="button" onClick={() => act(o.id, 'modified')} className="caption" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: 0 }}>
+                                  Modify
+                                </button>
+                                {(o.url || o.sourceUrl) && (
+                                  <a href={(o.url ?? o.sourceUrl)!} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ink-mute)' }}>
+                                    {o.source ?? 'source'} ↗
+                                  </a>
+                                )}
+                              </p>
+                            </div>
+                          </details>
                         </div>
                       </article>
                     );

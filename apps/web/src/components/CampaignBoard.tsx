@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { PIPELINE, stepIndex, type CampaignRow } from '@/components/CampaignDetail';
-import { DISTRIBUTION_CHANNELS } from '@/lib/offers';
+import { DISTRIBUTION_CHANNELS, channelPlan } from '@/lib/offers';
 
 export type { CampaignRow } from '@/components/CampaignDetail';
 
@@ -127,10 +127,9 @@ export default function CampaignBoard({ campaigns }: { campaigns: CampaignRow[] 
           // the escalation ladder's next channel that is unlocked but not done
           const dueChannel =
             lead != null && lead >= 0
-              ? DISTRIBUTION_CHANNELS
-                  .map((ch) => ({ ...ch, daysOut: c.playbook?.[ch.id] ?? ch.daysOut }))
-                  .sort((a, b) => b.daysOut - a.daysOut)
-                  .find((ch) => (c.distribution?.[ch.id] ?? 'todo') === 'todo' && lead <= ch.daysOut)
+              ? channelPlan(c.playbook).find(
+                  (ch) => (c.distribution?.[ch.id] ?? 'todo') === 'todo' && lead <= ch.daysOut,
+                )
               : undefined;
 
           return (

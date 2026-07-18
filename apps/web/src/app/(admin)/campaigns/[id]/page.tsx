@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
-import CampaignDetail, { type CampaignRow } from '@/components/CampaignDetail';
+import CampaignDetail, { type CampaignRow, type OutreachRecipient } from '@/components/CampaignDetail';
 
 export const revalidate = 0;
 
@@ -20,6 +20,12 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
   if (!data) notFound();
   const campaign = data as unknown as CampaignRow;
 
+  const { data: contacts } = await supabase
+    .from('outreach_contacts')
+    .select('id, organisation, contact_name, email')
+    .order('organisation');
+  const outreachContacts = (contacts ?? []) as OutreachRecipient[];
+
   return (
     <>
       <header style={{ marginBottom: 24 }}>
@@ -30,7 +36,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
           {campaign.event?.title ?? 'Campaign'}
         </h1>
       </header>
-      <CampaignDetail campaign={campaign} />
+      <CampaignDetail campaign={campaign} outreachContacts={outreachContacts} />
       <footer className="caption" style={{ paddingTop: 64 }}>
         Raven · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie May.
       </footer>

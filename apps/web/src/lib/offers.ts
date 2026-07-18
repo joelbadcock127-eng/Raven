@@ -118,6 +118,7 @@ export function matchOffers(propertyId: string | null, tags: string[]): OfferTem
  */
 export const DISTRIBUTION_CHANNELS: Array<{ id: string; label: string; hint: string; daysOut: number }> = [
   { id: 'contentPage', label: 'Content page', daysOut: 60, hint: 'Publish the event page on the property site first — it does the selling for every later channel.' },
+  { id: 'socialContent', label: 'Social content', daysOut: 50, hint: 'Approve and publish the drafted posts and reel from the Social queue.' },
   { id: 'email', label: 'Email list', daysOut: 45, hint: 'Send the guest email to your MailerLite list.' },
   { id: 'formerGuests', label: 'Former guests', daysOut: 42, hint: 'Personal note to past guests who match this offer.' },
   { id: 'directOutreach', label: 'Direct outreach', daysOut: 40, hint: 'Email the organiser / project manager with the group pitch.' },
@@ -125,3 +126,20 @@ export const DISTRIBUTION_CHANNELS: Array<{ id: string; label: string; hint: str
   { id: 'travelGroups', label: 'Travel groups', daysOut: 21, hint: 'Post in Tasmania travel Facebook groups and forums (as the owner, transparently).' },
   { id: 'paidSocial', label: 'Paid social', daysOut: 10, hint: 'Last resort: boost on Meta with a small daily budget once free channels have had their shot.' },
 ];
+
+/**
+ * A campaign's playbook overrides the defaults per channel:
+ * legacy value = number (days out); current = { d: daysOut, s: sort index }.
+ */
+export type PlaybookEntry = number | { d?: number; s?: number };
+
+export function channelPlan(
+  playbook: Record<string, PlaybookEntry> | null | undefined,
+): Array<{ id: string; label: string; hint: string; daysOut: number; sort: number }> {
+  return DISTRIBUTION_CHANNELS.map((ch, i) => {
+    const p = playbook?.[ch.id];
+    const daysOut = typeof p === 'number' ? p : p?.d ?? ch.daysOut;
+    const sort = typeof p === 'object' && p?.s != null ? p.s : i;
+    return { ...ch, daysOut, sort };
+  }).sort((a, b) => a.sort - b.sort);
+}

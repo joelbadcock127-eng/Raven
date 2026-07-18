@@ -178,13 +178,20 @@ export async function setDistributionStatus(
   return { ok: true, message: 'Updated' };
 }
 
+type PlaybookMap = Record<string, number | { d?: number; s?: number }>;
+
 /** Override when a distribution channel switches on, in days before the target date. */
 export async function setPlaybookDays(id: string, channel: string, daysOut: number): Promise<ActionResult> {
   const supabase = supabaseAdmin();
   if (!supabase) return { ok: false, message: 'Supabase not configured' };
   const { data: row } = await supabase.from('campaigns').select('playbook').eq('id', id).maybeSingle();
   if (!row) return { ok: false, message: 'Campaign not found' };
-  const playbook = { ...(row.playbook as Record<string, number>), [channel]: Math.max(0, Math.round(daysOut)) };
+  const playbook = { ...(row.playbook as PlaybookMap) };
+  const prev = playbook[channel];
+  playbook[channel] = {
+    ...(typeof prev === 'object' ? prev : {}),
+    d: Math.max(0, Math.round(daysOut)),
+  };
   const { error } = await supabase
     .from('campaigns')
     .update({ playbook, updated_at: new Date().toISOString() })
@@ -192,4 +199,82 @@ export async function setPlaybookDays(id: string, channel: string, daysOut: numb
   if (error) return { ok: false, message: error.message };
   revalidatePath('/campaigns');
   return { ok: true, message: 'Playbook updated' };
+}
+
+/** Save a full channel ordering for this campaign's playbook. */
+export async function setPlaybookOrder(id: string, orderedChannelIds: string[]): Promise<ActionResult> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase not configured' };
+  const { data: row } = await supabase.from('campaigns').select('playbook').eq('id', id).maybeSingle();
+  if (!row) return { ok: false, message: 'Campaign not found' };
+  const playbook = { ...(row.playbook as PlaybookMap) };
+  orderedChannelIds.forEach((ch, i) => {
+    const prev = playbook[ch];
+    playbook[ch] = { ...(typeof prev === 'object' ? prev : typeof prev === 'number' ? { d: prev } : {}), s: i };
+  });
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ playbook, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) return { ok: false, message: error.message };
+  revalidatePath('/campaigns');
+  return { ok: true, message: 'Order saved' };
+}
+
+/**
+ * Push the kit's guest email into MailerLite as a draft campaign, ready to
+ * review and send from MailerLite (needs MAILERLITE_API_KEY, and ideally
+ * MAILERLITE_FROM / MAILERLITE_FROM_NAME set to a verified sender).
+ */
+export async function sendGuestEmail(campaignId: string): Promise<ActionResult> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase not configured' };
+  const key = process.env.MAILERLITE_API_KEY;
+  if (!key)
+    return { ok: false, message: 'MAILERLITE_API_KEY is not set in Vercel yet — copy the email and send it manually for now.' };
+
+  const { data: c } = await supabase
+    .from('campaigns')
+    .select('kit, distribution, property_id')
+    .eq('id', campaignId)
+    .maybeSingle();
+  const kit = (c?.kit ?? {}) as { guestEmail?: { subject: string; body: string } };
+  if (!c || !kit.guestEmail) return { ok: false, message: 'No guest email in the kit yet.' };
+
+  const html = kit.guestEmail.body
+    .split(/\n{2,}/)
+    .map((p) => `<p style="margin:0 0 14px;line-height:1.7">${p.replace(/\n/g, '<br/>')}</p>`)
+    .join('');
+
+  const res = await fetch('https://connect.mailerlite.com/api/campaigns', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify({
+      name: `Raven — ${kit.guestEmail.subject}`,
+      type: 'regular',
+      emails: [
+        {
+          subject: kit.guestEmail.subject,
+          from_name: process.env.MAILERLITE_FROM_NAME ?? 'Raven Properties',
+          from: process.env.MAILERLITE_FROM ?? 'stay@tenfiftybakers.com.au',
+          content: `<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:24px;color:#211d16">${html}</div>`,
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) {
+    const detail = (await res.text()).slice(0, 200);
+    return { ok: false, message: `MailerLite said no (${res.status}): ${detail}` };
+  }
+
+  await supabase
+    .from('campaigns')
+    .update({
+      distribution: { ...((c.distribution as Record<string, string>) ?? {}), email: 'done' },
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', campaignId);
+  revalidatePath('/campaigns');
+  return { ok: true, message: 'Draft created in MailerLite — review and hit send there.' };
 }
