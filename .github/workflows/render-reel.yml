@@ -1,0 +1,25 @@
+name: Render reel
+
+# Fired by Raven via repository_dispatch when a reel render job is enqueued.
+# Runs ffmpeg on the free Actions runner: downloads the clips from R2,
+# cuts/scales/grades them into a 9:16 reel with optional captions + music,
+# uploads the MP4 back to R2 via the presigned URL in the payload, then
+# reports completion to the app. Costs nothing.
+
+on:
+  repository_dispatch:
+    types: [render-reel]
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Render
+        env:
+          PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+        run: node apps/web/scripts/render/render-reel.mjs

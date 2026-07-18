@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { updatePost, setPostStatus, publishPost, draftPost } from '@/app/(admin)/social/actions';
+import { updatePost, setPostStatus, publishPost, draftPost, renderReel } from '@/app/(admin)/social/actions';
 
 export interface SocialPost {
   id: string;
@@ -194,6 +194,21 @@ export default function SocialQueue({
                       <button type="button" disabled={pending} className="pill-primary" style={{ fontSize: 12, padding: '6px 14px' }} onClick={() => run(() => setPostStatus(p.id, 'approved'))}>
                         Approve
                       </button>
+                      {p.kind === 'reel' && (
+                        <button
+                          type="button"
+                          disabled={pending}
+                          className="pill-primary"
+                          style={{ fontSize: 12, padding: '6px 14px', background: 'var(--canvas)', color: 'var(--primary)', border: '1px solid var(--primary)' }}
+                          onClick={() => {
+                            const filter = (window.prompt('Filter: warm, cool, mono, punchy or none', 'warm') ?? 'warm') as 'warm' | 'cool' | 'mono' | 'punchy' | 'none';
+                            const caption = window.prompt('Overlay caption on the video (optional)') ?? undefined;
+                            run(() => renderReel(p.id, { filter, caption }));
+                          }}
+                        >
+                          Render multi-clip reel
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="pill-primary"

@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { metaConfigured } from '@/lib/meta';
 import SocialQueue, { type SocialPost, type MediaRef } from '@/components/SocialQueue';
+import PostingPlans, { type Plan } from '@/components/PostingPlans';
 
 export const revalidate = 0;
 
@@ -8,8 +9,9 @@ export default async function SocialPage() {
   const supabase = supabaseAdmin();
   let posts: SocialPost[] = [];
   let media: MediaRef[] = [];
+  let plans: Plan[] = [];
   if (supabase) {
-    const [postRes, mediaRes] = await Promise.all([
+    const [postRes, mediaRes, planRes] = await Promise.all([
       supabase
         .from('social_posts')
         .select('id, campaign_id, property_id, kind, platform, caption, media_ids, scheduled_for, status, external_url, error, created_at')
@@ -17,9 +19,11 @@ export default async function SocialPage() {
         .order('created_at', { ascending: false })
         .limit(50),
       supabase.from('media_assets').select('id, kind, public_url'),
+      supabase.from('posting_plans').select('*').order('created_at'),
     ]);
     posts = (postRes.data as SocialPost[]) ?? [];
     media = (mediaRes.data as MediaRef[]) ?? [];
+    plans = (planRes.data as Plan[]) ?? [];
   }
 
   return (
@@ -31,6 +35,7 @@ export default async function SocialPage() {
             here as drafts. Nothing goes out without your approval.
           </p>
         </header>
+        <PostingPlans plans={plans} />
         <SocialQueue posts={posts} media={media} metaConnected={metaConfigured()} />
         <footer className="caption" style={{ paddingTop: 64 }}>
           Raven · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie May.
