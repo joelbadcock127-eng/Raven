@@ -61,15 +61,16 @@ function SectionView({
 }) {
   const s = section;
   const base: React.CSSProperties = {
-    padding: '56px 24px',
+    padding: 'clamp(36px, 7vw, 64px) clamp(16px, 4vw, 24px)',
     outline: selected ? '2px solid #533afd' : editable ? '1px dashed rgba(83,58,253,.25)' : 'none',
     outlineOffset: -2,
     cursor: editable ? 'pointer' : 'default',
   };
   const inner: React.CSSProperties = { maxWidth: 860, margin: '0 auto' };
+  // size = desktop px; scales down fluidly on small screens
   const h = (size: number): React.CSSProperties => ({
     fontFamily: theme.headingFont,
-    fontSize: size,
+    fontSize: `clamp(${Math.round(size * 0.62)}px, ${(size / 12).toFixed(1)}vw, ${size}px)`,
     fontWeight: 500,
     lineHeight: 1.15,
     color: theme.ink,
@@ -83,17 +84,17 @@ function SectionView({
             ...base,
             padding: 0,
             position: 'relative',
-            minHeight: '62vh',
+            minHeight: 'min(72vh, 640px)',
             display: 'flex',
             alignItems: 'flex-end',
             background: s.imageUrl ? `url(${s.imageUrl}) center/cover no-repeat` : theme.soft,
           }}
         >
           <div style={{ position: 'absolute', inset: 0, background: s.imageUrl ? 'linear-gradient(to top, rgba(0,0,0,.55), transparent 60%)' : 'none' }} />
-          <div style={{ ...inner, position: 'relative', width: '100%', padding: '0 24px 56px', color: s.imageUrl ? '#fff' : theme.ink }}>
-            <EditableText as="h1" editable={editable} sid={s.id} path="headline" value={s.headline} style={{ ...h(44), color: 'inherit' }} />
+          <div style={{ ...inner, position: 'relative', width: '100%', padding: 'clamp(64px, 12vw, 96px) clamp(16px, 4vw, 24px) clamp(36px, 7vw, 56px)', color: s.imageUrl ? '#fff' : theme.ink }}>
+            <EditableText as="h1" editable={editable} sid={s.id} path="headline" value={s.headline} style={{ ...h(46), color: 'inherit', textShadow: s.imageUrl ? '0 1px 18px rgba(0,0,0,.35)' : 'none' }} />
             {s.subheadline !== undefined && (
-              <EditableText as="p" editable={editable} sid={s.id} path="subheadline" value={s.subheadline} style={{ fontSize: 19, marginTop: 12, opacity: 0.92 }} />
+              <EditableText as="p" editable={editable} sid={s.id} path="subheadline" value={s.subheadline} style={{ fontSize: 'clamp(15px, 2vw, 19px)', marginTop: 12, opacity: 0.92, maxWidth: 560 }} />
             )}
             {s.ctaText && (
               <a
@@ -121,7 +122,7 @@ function SectionView({
             {s.heading !== undefined && (
               <EditableText as="h2" editable={editable} sid={s.id} path="heading" value={s.heading} style={{ ...h(30), marginBottom: 16 }} />
             )}
-            <EditableText as="p" editable={editable} sid={s.id} path="body" value={s.body} style={{ fontSize: 17, lineHeight: 1.75 }} />
+            <EditableText as="p" editable={editable} sid={s.id} path="body" value={s.body} style={{ fontSize: 'clamp(15px, 1.8vw, 17px)', lineHeight: 1.75, whiteSpace: 'pre-line' }} />
           </div>
         </div>
       );
@@ -132,7 +133,7 @@ function SectionView({
             {s.heading !== undefined && (
               <EditableText as="h2" editable={editable} sid={s.id} path="heading" value={s.heading} style={{ ...h(30), marginBottom: 20 }} />
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(160px, 42vw), 1fr))', gap: 10 }}>
               {s.images.map((img, i) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img key={i} src={img.url} alt={img.alt ?? ''} loading="lazy" style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', borderRadius: theme.radius }} />
@@ -153,7 +154,7 @@ function SectionView({
             {s.heading !== undefined && (
               <EditableText as="h2" editable={editable} sid={s.id} path="heading" value={s.heading} style={{ ...h(30), marginBottom: 24 }} />
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))', gap: 'clamp(16px, 3vw, 28px)' }}>
               {s.items.map((item, i) => (
                 <div key={i}>
                   {item.imageUrl && (
@@ -172,7 +173,7 @@ function SectionView({
       return (
         <div style={{ ...base, background: theme.soft, textAlign: 'center' }}>
           <div style={{ ...inner, maxWidth: 640 }}>
-            <EditableText as="p" editable={editable} sid={s.id} path="text" value={s.text} style={{ fontFamily: theme.headingFont, fontSize: 24, lineHeight: 1.45, fontStyle: 'italic' }} />
+            <EditableText as="p" editable={editable} sid={s.id} path="text" value={s.text} style={{ fontFamily: theme.headingFont, fontSize: 'clamp(18px, 2.6vw, 24px)', lineHeight: 1.45, fontStyle: 'italic' }} />
             {s.attribution !== undefined && (
               <EditableText as="p" editable={editable} sid={s.id} path="attribution" value={s.attribution} style={{ marginTop: 14, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.6 }} />
             )}
