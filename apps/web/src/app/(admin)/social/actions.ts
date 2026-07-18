@@ -320,8 +320,8 @@ export async function renderReel(
   // Music selection follows the style direction: hint words are matched
   // against each track's tags/caption; best match wins, least-used breaks
   // ties. No hint → least-used rotation. No matching mood → least-used.
-  const hint = (options.musicHint ?? post.direction ?? '').toLowerCase();
-  const hintWords = hint.split(/[^a-z0-9]+/).filter((w) => w.length > 2);
+  const hint = String(options.musicHint ?? post.direction ?? '').toLowerCase();
+  const hintWords = hint.split(/[^a-z0-9]+/).filter((w: string) => w.length > 2);
   const { data: allMusic } = await supabase
     .from('media_assets')
     .select('id, public_url, tags, caption, times_used, property_id')
