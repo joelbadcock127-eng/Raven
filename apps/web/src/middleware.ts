@@ -59,12 +59,32 @@ export async function middleware(req: NextRequest) {
   const host = (req.headers.get('host') ?? '').toLowerCase().split(':')[0];
   const { pathname } = req.nextUrl;
 
+  // Fast path: on Raven's own domain (vercel.app / localhost / the app URL)
+  // never touch the database — this must add zero latency to admin usage.
+  const appHost = (() => {
+    try {
+      return new URL(process.env.NEXT_PUBLIC_APP_URL ?? '').hostname.toLowerCase();
+    } catch {
+      return '';
+    }
+  })();
+  const isOwnHost =
+    host === appHost || host.endsWith('.vercel.app') || host === 'localhost' || host === '127.0.0.1';
+
+  if (isOwnHost) {
+    if (pathname.startsWith('/mirror')) {
+      const res = NextResponse.next();
+      res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+      return res;
+    }
+    return NextResponse.next();
+  }
+
   const settings = await loadSettings();
   let pid = settings.find((r) => r.domains?.some((d) => d.toLowerCase() === host))?.property_id;
   if (!pid) pid = staticDomainMap().get(host);
 
   if (!pid) {
-    // Raven's own domain: keep editor mirrors out of search engines
     if (pathname.startsWith('/mirror')) {
       const res = NextResponse.next();
       res.headers.set('X-Robots-Tag', 'noindex, nofollow');

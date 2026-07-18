@@ -127,8 +127,26 @@ export default function Sidebar() {
             </span>
             Settings
           </Link>
-          <a href="/stay" target="_blank" rel="noopener noreferrer" className="caption" style={{ padding: '0 12px' }}>
-            Public landing ↗
+          <a
+            href="/stay"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '9px 12px',
+              borderRadius: 'var(--r-md)',
+              fontSize: 14,
+              color: 'var(--ink-secondary)',
+            }}
+          >
+            <span aria-hidden style={{ width: 18, height: 18, opacity: 0.8, display: 'inline-flex' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 4h6v6M20 4l-9 9M19 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h6" />
+              </svg>
+            </span>
+            Public landing
           </a>
         </div>
       </aside>

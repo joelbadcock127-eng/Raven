@@ -183,7 +183,7 @@ export async function draftPost(
       model: MODELS.classify,
       max_tokens: 400,
       system:
-        'You write social captions for boutique Tasmanian accommodation. Warm, understated, no hype words, no emoji spam (one or two max), 2-4 short lines, end with a soft call to action to book direct, then 5-8 relevant hashtags on a final line. Stories get a single short line, no hashtags.',
+        'You write social captions for boutique Tasmanian accommodation. Plain text ONLY — never markdown, no # headings, no asterisks, no title line. Warm, understated, no hype words, no emoji spam (one or two max), 2-4 short lines, end with a soft call to action to book direct, then 5-8 relevant hashtags on a final line. Stories get a single short line, no hashtags.',
       messages: [
         {
           role: 'user',
@@ -194,6 +194,13 @@ export async function draftPost(
       ],
     });
     caption = res.content.find((b) => b.type === 'text')?.text?.trim() ?? '';
+    // strip any markdown artifacts that slip through
+    caption = caption
+      .split('\n')
+      .filter((l) => !/^#{1,3}\s/.test(l.trim()))
+      .join('\n')
+      .replace(/\*\*/g, '')
+      .trim();
   }
 
   const { error } = await supabase.from('social_posts').insert({

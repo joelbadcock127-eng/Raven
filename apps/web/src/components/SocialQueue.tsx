@@ -52,6 +52,8 @@ export default function SocialQueue({
   const [notice, setNotice] = useState('');
   const [editing, setEditing] = useState<string | null>(null);
   const [draftText, setDraftText] = useState('');
+  const [previewing, setPreviewing] = useState<string | null>(null);
+  const [previewPlatform, setPreviewPlatform] = useState<'instagram' | 'facebook'>('instagram');
 
   const mediaById = new Map(media.map((m) => [m.id, m]));
 
@@ -65,32 +67,45 @@ export default function SocialQueue({
 
   return (
     <div>
-      {/* ── Controls ── */}
-      <section className="card" style={{ padding: '20px 24px', marginBottom: 24 }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span className="caption">Draft one now:</span>
-          {PROPERTIES.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              disabled={pending}
-              onClick={() => run(() => draftPost(p.id, 'post'))}
-              className="pill-primary"
-              style={{ fontSize: 12, padding: '6px 12px', background: 'var(--canvas)', color: 'var(--primary)', border: '1px solid var(--primary)' }}
-            >
-              {p.name}
-            </button>
-          ))}
-          {notice && <span className="caption">{notice}</span>}
-        </div>
-        <p className="caption" style={{ marginTop: 10 }}>
-          The social regular also runs automatically every 3 days — it drafts a post (or a reel when
-          an unused video exists) per property and waits here for your approval.{' '}
-          {metaConnected
-            ? 'Meta API connected: approving then publishing goes straight to Instagram.'
-            : 'Meta API not connected yet — approved posts show everything to copy across manually until META_ACCESS_TOKEN and IG_USER_ID are set.'}
-        </p>
-      </section>
+      {/* ── Queue toolbar ── */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
+        <h2 className="heading-md" style={{ fontSize: 17 }}>Queue</h2>
+        <span
+          className="caption"
+          style={{
+            padding: '3px 10px',
+            borderRadius: 'var(--r-pill)',
+            background: metaConnected ? '#e5f5ec' : 'var(--canvas-soft)',
+            color: metaConnected ? '#1d7a4a' : 'var(--ink-mute)',
+            border: '1px solid',
+            borderColor: metaConnected ? '#bfe5d0' : 'var(--hairline)',
+          }}
+        >
+          {metaConnected ? 'Meta connected' : 'Meta not connected — manual posting for now'}
+        </span>
+        <span style={{ flex: 1 }} />
+        <span className="caption">Quick draft:</span>
+        {PROPERTIES.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            disabled={pending}
+            onClick={() => run(() => draftPost(p.id, 'post'))}
+            className="caption"
+            style={{
+              background: 'var(--canvas)',
+              border: '1px solid var(--hairline)',
+              borderRadius: 'var(--r-pill)',
+              padding: '5px 12px',
+              cursor: 'pointer',
+              color: 'var(--ink-secondary)',
+            }}
+          >
+            {p.name.replace('The Prescription Pad', 'Rx Pad').replace(' Bakers', '')}
+          </button>
+        ))}
+        {notice && <span className="caption">{notice}</span>}
+      </div>
 
       {/* ── Queue ── */}
       {active.length === 0 ? (
@@ -244,12 +259,150 @@ export default function SocialQueue({
                       Dismiss
                     </button>
                   )}
+                  <button
+                    type="button"
+                    className="pill-primary"
+                    style={{ fontSize: 12, padding: '6px 14px', background: 'var(--canvas)', color: 'var(--primary)', border: '1px solid var(--primary-subdued)', marginLeft: 'auto' }}
+                    onClick={() => setPreviewing(previewing === p.id ? null : p.id)}
+                  >
+                    {previewing === p.id ? 'Hide preview' : 'Preview'}
+                  </button>
                 </div>
+
+                {previewing === p.id && (
+                  <PostPreview
+                    platform={previewPlatform}
+                    onPlatform={setPreviewPlatform}
+                    propertyName={PROPERTIES.find((x) => x.id === p.property_id)?.name ?? 'Property'}
+                    caption={p.caption}
+                    media={items[0] ?? null}
+                    kind={p.kind}
+                  />
+                )}
               </article>
             );
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Phone-framed mock of how the post will look on Instagram / Facebook. */
+function PostPreview({
+  platform,
+  onPlatform,
+  propertyName,
+  caption,
+  media,
+  kind,
+}: {
+  platform: 'instagram' | 'facebook';
+  onPlatform: (p: 'instagram' | 'facebook') => void;
+  propertyName: string;
+  caption: string;
+  media: MediaRef | null;
+  kind: string;
+}) {
+  const handle = propertyName.toLowerCase().replace(/^the /, '').replace(/[^a-z0-9]+/g, '');
+  const isReel = kind === 'reel' || kind === 'story';
+  const firstLine = caption.split('\n').find((l) => l.trim()) ?? '';
+
+  const mediaEl = media ? (
+    media.kind === 'video' ? (
+      <video src={media.public_url} muted loop playsInline autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+    ) : (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={media.public_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+    )
+  ) : (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100%', color: '#999', fontSize: 12 }}>no media</div>
+  );
+
+  return (
+    <div style={{ borderTop: '1px solid var(--hairline)', paddingTop: 14, display: 'grid', gap: 10, justifyItems: 'start' }}>
+      {/* platform toggle */}
+      <div style={{ display: 'inline-flex', padding: 3, borderRadius: 'var(--r-pill)', background: 'var(--canvas-soft)', border: '1px solid var(--hairline)' }}>
+        {(['instagram', 'facebook'] as const).map((pf) => (
+          <button
+            key={pf}
+            type="button"
+            onClick={() => onPlatform(pf)}
+            style={{
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: platform === pf ? 500 : 400,
+              padding: '5px 14px',
+              borderRadius: 'var(--r-pill)',
+              background: platform === pf ? 'var(--canvas)' : 'transparent',
+              color: platform === pf ? 'var(--ink)' : 'var(--ink-mute)',
+              boxShadow: platform === pf ? 'var(--shadow-1)' : 'none',
+            }}
+          >
+            {pf === 'instagram' ? 'Instagram' : 'Facebook'}
+          </button>
+        ))}
+      </div>
+
+      {/* phone frame */}
+      <div style={{ width: 300, border: '1px solid #d8dde4', borderRadius: 18, overflow: 'hidden', background: '#fff', boxShadow: 'var(--shadow-2)' }}>
+        {platform === 'instagram' ? (
+          <div style={{ fontFamily: '-apple-system, system-ui, sans-serif', color: '#111' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px' }}>
+              <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(45deg,#f9ce34,#ee2a7b,#6228d7)', display: 'grid', placeItems: 'center', color: '#fff', fontSize: 12, fontWeight: 700 }}>
+                {propertyName[0]}
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>{handle}</span>
+              <span style={{ marginLeft: 'auto', fontSize: 16, color: '#111', letterSpacing: 2 }}>⋯</span>
+            </div>
+            <div style={{ aspectRatio: isReel ? '9 / 16' : '1 / 1', background: '#000', overflow: 'hidden' }}>{mediaEl}</div>
+            <div style={{ display: 'flex', gap: 12, padding: '9px 10px 4px', alignItems: 'center' }}>
+              {[
+                'M12 21s-7.5-4.7-9.7-9A5.4 5.4 0 0 1 12 6.2 5.4 5.4 0 0 1 21.7 12c-2.2 4.3-9.7 9-9.7 9z',
+                'M21 11.5a8.5 8.5 0 1 1-3.2-6.6L21 3l-1 4.5a8.4 8.4 0 0 1 1 4z',
+                'M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z',
+              ].map((d, i) => (
+                <svg key={i} viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d={d} />
+                </svg>
+              ))}
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111" strokeWidth="1.8" style={{ marginLeft: 'auto' }} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 3h12v18l-6-4-6 4V3z" />
+              </svg>
+            </div>
+            <div style={{ padding: '0 10px 12px', fontSize: 12.5, lineHeight: 1.45 }}>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>128 likes</div>
+              <span style={{ fontWeight: 600 }}>{handle}</span>{' '}
+              <span style={{ whiteSpace: 'pre-wrap' }}>{caption.length > 140 ? caption.slice(0, 140).trimEnd() + '… ' : caption}</span>
+              {caption.length > 140 && <span style={{ color: '#8e8e8e' }}>more</span>}
+            </div>
+          </div>
+        ) : (
+          <div style={{ fontFamily: '-apple-system, system-ui, sans-serif', color: '#050505' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}>
+              <span style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--brand-dark-900)', display: 'grid', placeItems: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>
+                {propertyName[0]}
+              </span>
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 600 }}>{propertyName}</div>
+                <div style={{ fontSize: 11, color: '#65676b' }}>Just now · 🌐</div>
+              </div>
+            </div>
+            <div style={{ padding: '0 12px 8px', fontSize: 13.5, lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
+              {caption.length > 200 ? caption.slice(0, 200).trimEnd() + '… ' : caption}
+              {caption.length > 200 && <span style={{ color: '#65676b' }}>See more</span>}
+            </div>
+            <div style={{ aspectRatio: isReel ? '9 / 16' : '4 / 3', background: '#000', overflow: 'hidden' }}>{mediaEl}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-around', padding: '8px 0', borderTop: '1px solid #e4e6eb', margin: '0 12px', color: '#65676b', fontSize: 12.5, fontWeight: 600 }}>
+              <span>Like</span>
+              <span>Comment</span>
+              <span>Share</span>
+            </div>
+          </div>
+        )}
+      </div>
+      <p className="caption">Preview approximation — exact rendering varies by device.</p>
     </div>
   );
 }
