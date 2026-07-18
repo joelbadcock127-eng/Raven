@@ -17,6 +17,10 @@ import { supabaseAdmin } from './supabase';
  *   R2_BUCKET             bucket name (default: raven-media)
  *   R2_PUBLIC_BASE        public base URL — the bucket's r2.dev public URL
  *                         or a connected custom domain, no trailing slash
+ *   R2_S3_ENDPOINT        optional: jurisdiction-specific S3 endpoint from
+ *                         the Cloudflare dashboard (e.g. https://<id>.eu.r2.
+ *                         cloudflarestorage.com); defaults to the standard
+ *                         https://<account-id>.r2.cloudflarestorage.com
  */
 
 export type StorageProvider = 'r2' | 'supabase';
@@ -46,7 +50,9 @@ export function activeProvider(): StorageProvider {
 function r2Client(): S3Client {
   return new S3Client({
     region: 'auto',
-    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    endpoint:
+      process.env.R2_S3_ENDPOINT ||
+      `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
     credentials: {
       accessKeyId: process.env.R2_ACCESS_KEY_ID!,
       secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
