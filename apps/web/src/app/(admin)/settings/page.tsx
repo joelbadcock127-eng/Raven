@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
+import { fetchLiveCosts, liveConfigured } from '@/lib/usage';
 
 export const revalidate = 0;
 
@@ -71,14 +72,24 @@ function Tile({ label, value, sub }: { label: string; value: string; sub?: strin
 }
 
 export default async function SettingsPage() {
-  const u = await loadUsage();
+  const [u, live] = await Promise.all([loadUsage(), fetchLiveCosts()]);
+  const configured = liveConfigured();
+
+  const aiEstimate = u
+    ? u.enrichedEvents * COST.enrichPerEvent + u.captionedPosts * COST.captionPerPost + u.kits * COST.kitPerCampaign
+    : 0;
+  const r2Gb = live.r2StorageBytes != null ? live.r2StorageBytes / 1024 ** 3 : u?.storageGb ?? 0;
 
   const rows = u
     ? [
-        { label: 'AI — event enrichment', value: u.enrichedEvents * COST.enrichPerEvent, detail: `${u.enrichedEvents} events × ~$${COST.enrichPerEvent.toFixed(3)}` },
-        { label: 'AI — social captions', value: u.captionedPosts * COST.captionPerPost, detail: `${u.captionedPosts} drafts this month × ~$${COST.captionPerPost.toFixed(3)}` },
-        { label: 'AI — campaign kits', value: u.kits * COST.kitPerCampaign, detail: `${u.kits} kits × ~$${COST.kitPerCampaign.toFixed(2)}` },
-        { label: 'Storage — Cloudflare R2', value: u.storageGb * COST.r2PerGbMonth, detail: `${u.storageGb.toFixed(2)} GB × ~$${COST.r2PerGbMonth.toFixed(3)}/GB·mo (egress free)` },
+        live.anthropicUsd != null
+          ? { label: 'AI — Anthropic (live)', value: live.anthropicUsd, detail: 'month-to-date from the Anthropic cost API' }
+          : { label: 'AI — all generation (estimated)', value: aiEstimate, detail: `${u.enrichedEvents} enrichments · ${u.captionedPosts} captions · ${u.kits} kits — add ANTHROPIC_ADMIN_KEY for live billing` },
+        {
+          label: `Storage — Cloudflare R2 ${live.r2StorageBytes != null ? '(live)' : '(estimated)'}`,
+          value: r2Gb * COST.r2PerGbMonth,
+          detail: `${r2Gb.toFixed(2)} GB${live.r2ClassAOps != null ? ` · ${live.r2ClassAOps} writes / ${live.r2ClassBOps} reads this month` : ''} — egress free${configured.r2 ? '' : ' — add CLOUDFLARE_API_TOKEN for live figures'}`,
+        },
         { label: 'Reel rendering', value: u.renderJobs * COST.renderPerJob, detail: `${u.renderJobs} jobs on GitHub Actions free tier` },
       ]
     : [];

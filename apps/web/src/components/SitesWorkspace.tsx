@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import type { SiteDef } from '@/lib/sites';
 import { saveSiteOverrides, resetSitePage, type MirrorOverride } from '@/app/(admin)/sites/actions';
+import Segmented from '@/components/Segmented';
 
 export default function SitesWorkspace({ sites }: { sites: SiteDef[] }) {
   const [activeSiteId, setActiveSiteId] = useState(sites[0]?.propertyId ?? '');
@@ -93,24 +94,11 @@ export default function SitesWorkspace({ sites }: { sites: SiteDef[] }) {
     <div>
       {/* ── Property tabs + edit controls ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        {sites.map((s) => {
-          const on = s.propertyId === site.propertyId;
-          return (
-            <button
-              key={s.propertyId}
-              type="button"
-              onClick={() => switchSite(s.propertyId)}
-              className="pill-primary"
-              style={{
-                background: on ? 'var(--primary)' : 'var(--canvas)',
-                color: on ? 'var(--on-primary)' : 'var(--ink-secondary)',
-                border: `1px solid ${on ? 'var(--primary)' : 'var(--hairline)'}`,
-              }}
-            >
-              {s.name}
-            </button>
-          );
-        })}
+        <Segmented
+          items={sites.map((s) => ({ id: s.propertyId, label: s.name }))}
+          activeId={site.propertyId}
+          onSelect={switchSite}
+        />
 
         <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
           <span className="caption">Edit mode</span>

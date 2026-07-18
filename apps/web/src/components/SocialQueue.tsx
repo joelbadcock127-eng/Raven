@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { updatePost, setPostStatus, publishPost, draftPost, renderReel } from '@/app/(admin)/social/actions';
+import Segmented from '@/components/Segmented';
 
 export interface SocialPost {
   id: string;
@@ -85,25 +86,15 @@ export default function SocialQueue({
         </span>
         <span style={{ flex: 1 }} />
         <span className="caption">Quick draft:</span>
-        {PROPERTIES.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            disabled={pending}
-            onClick={() => run(() => draftPost(p.id, 'post'))}
-            className="caption"
-            style={{
-              background: 'var(--canvas)',
-              border: '1px solid var(--hairline)',
-              borderRadius: 'var(--r-pill)',
-              padding: '5px 12px',
-              cursor: 'pointer',
-              color: 'var(--ink-secondary)',
-            }}
-          >
-            {p.name.replace('The Prescription Pad', 'Rx Pad').replace(' Bakers', '')}
-          </button>
-        ))}
+        <Segmented
+          size="sm"
+          items={PROPERTIES.map((p) => ({
+            id: p.id,
+            label: p.name.replace('The Prescription Pad', 'Rx Pad').replace(' Bakers', ''),
+          }))}
+          activeId={null}
+          onSelect={(id) => !pending && run(() => draftPost(id, 'post'))}
+        />
         {notice && <span className="caption">{notice}</span>}
       </div>
 

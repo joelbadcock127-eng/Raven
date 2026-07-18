@@ -311,13 +311,26 @@ export async function renderReel(
     .limit(Math.min(options.clipCount ?? 5, 8));
   if (!videos?.length) return { ok: false, message: 'No source videos in the library for this property.' };
 
-  // optional music: an audio/video asset tagged "music"
-  const { data: music } = await supabase
+  // music is automatic: least-recently-used library asset tagged "music"
+  // (property-specific first, falling back to shared/unassigned tracks)
+  let { data: music } = await supabase
     .from('media_assets')
-    .select('public_url')
+    .select('id, public_url')
     .eq('property_id', post.property_id)
     .contains('tags', ['music'])
+    .eq('retired', false)
+    .order('times_used', { ascending: true })
     .limit(1);
+  if (!music?.length) {
+    ({ data: music } = await supabase
+      .from('media_assets')
+      .select('id, public_url')
+      .is('property_id', null)
+      .contains('tags', ['music'])
+      .eq('retired', false)
+      .order('times_used', { ascending: true })
+      .limit(1));
+  }
 
   const { enqueueRenderJob } = await import('@/lib/render');
   const res = await enqueueRenderJob(supabase, {

@@ -5,6 +5,7 @@ import type { SiteDef } from '@/lib/sites';
 import type { SitePageV2, SiteVersion } from '@/lib/siteBuilder';
 import SitesWorkspace from '@/components/SitesWorkspace';
 import SiteBuilder from '@/components/SiteBuilder';
+import Segmented from '@/components/Segmented';
 
 export interface BuilderData {
   versions: SiteVersion[];
@@ -69,25 +70,11 @@ export default function SitesHub({
           ))}
         </div>
         {mode === 'builder' && (
-          <>
-            <span style={{ width: 8 }} />
-            {sites.map((s) => (
-              <button
-                key={s.propertyId}
-                type="button"
-                onClick={() => setBuilderProperty(s.propertyId)}
-                className="pill-primary"
-                style={{
-                  fontSize: 13,
-                  background: s.propertyId === builderProperty ? 'var(--primary)' : 'var(--canvas)',
-                  color: s.propertyId === builderProperty ? '#fff' : 'var(--ink-secondary)',
-                  border: `1px solid ${s.propertyId === builderProperty ? 'var(--primary)' : 'var(--hairline)'}`,
-                }}
-              >
-                {s.name}
-              </button>
-            ))}
-          </>
+          <Segmented
+            items={sites.map((s) => ({ id: s.propertyId, label: s.name }))}
+            activeId={builderProperty}
+            onSelect={setBuilderProperty}
+          />
         )}
       </div>
 
