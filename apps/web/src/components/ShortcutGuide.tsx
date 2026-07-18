@@ -24,13 +24,15 @@ function CopyRow({ label, value }: { label: string; value: string }) {
         <code
           style={{
             flex: 1,
+            minWidth: 0,
             fontSize: 11,
+            lineHeight: 1.5,
             padding: '8px 10px',
             background: 'var(--canvas-soft)',
             border: '1px solid var(--hairline)',
             borderRadius: 8,
-            overflowX: 'auto',
-            whiteSpace: 'nowrap',
+            wordBreak: 'break-all',
+            whiteSpace: 'normal',
           }}
         >
           {value}
@@ -61,7 +63,17 @@ export default function ShortcutGuide() {
   const registerUrl = `${origin}/api/ingest`;
 
   return (
-    <main style={{ minHeight: '100dvh', background: 'var(--canvas-soft)', padding: '20px 16px 60px', maxWidth: 560, margin: '0 auto' }}>
+    <main style={{ minHeight: '100dvh', background: 'var(--canvas-soft)', padding: '16px 16px 60px', maxWidth: 560, margin: '0 auto', overflowX: 'hidden' }}>
+      <a
+        href="/u"
+        className="caption"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 0', marginBottom: 4 }}
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+        Back to upload
+      </a>
       <header style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
         <span className="heading-md" style={{ fontWeight: 500 }}>Raven</span>
         <span className="caption">share-sheet shortcut</span>

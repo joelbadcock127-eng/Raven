@@ -210,7 +210,7 @@ export default function CampaignBoard({ campaigns }: { campaigns: CampaignRow[] 
                   style={{ fontSize: 12, padding: '6px 14px' }}
                   onClick={() => prepare(c.id)}
                 >
-                  {preparing === c.id ? 'Generating…' : '⚡ Prepare campaign kit'}
+                  {preparing === c.id ? 'Generating…' : 'Prepare campaign kit'}
                 </button>
               )}
               {c.kit?.generatedAt && (
