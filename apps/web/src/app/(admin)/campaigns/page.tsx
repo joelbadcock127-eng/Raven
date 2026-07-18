@@ -18,11 +18,11 @@ export default async function CampaignsPage() {
 
   return (
     <>
-        <header style={{ marginBottom: 32 }}>
+        <header style={{ marginBottom: 24 }}>
           <h1 className="display-lg" style={{ marginBottom: 12 }}>Campaigns</h1>
           <p className="caption" style={{ maxWidth: 620 }}>
-            One campaign per approved opportunity, tracked through the full pipeline: discover →
-            availability → property → page → content → approval → publish → bookings → revenue.
+            One campaign per approved opportunity. This is the overview — click any campaign to
+            open its page: goal dates, offer, kit assets, distribution and revenue.
           </p>
         </header>
         <CampaignBoard campaigns={campaigns} />
