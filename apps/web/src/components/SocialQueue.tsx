@@ -203,7 +203,8 @@ export default function SocialQueue({
                           onClick={() => {
                             const filter = (window.prompt('Filter: warm, cool, mono, punchy or none', 'warm') ?? 'warm') as 'warm' | 'cool' | 'mono' | 'punchy' | 'none';
                             const caption = window.prompt('Overlay caption on the video (optional)') ?? undefined;
-                            run(() => renderReel(p.id, { filter, caption }));
+                            const max = Number(window.prompt('Max clips to use (uses fewer if fewer exist)', '5')) || 5;
+                            run(() => renderReel(p.id, { filter, caption, clipCount: max }));
                           }}
                         >
                           Render multi-clip reel

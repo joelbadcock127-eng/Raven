@@ -14,8 +14,16 @@ export interface Plan {
   reuse_cooldown_days: number;
   allow_reuse: boolean;
   also_story: boolean;
+  folder_id: string | null;
+  max_clips: number;
   active: boolean;
   next_run_at: string;
+}
+
+export interface FolderRef {
+  id: string;
+  property_id: string | null;
+  name: string;
 }
 
 const PROPERTIES = [
@@ -33,7 +41,7 @@ const inputStyle: React.CSSProperties = {
   background: 'var(--canvas)',
 };
 
-export default function PostingPlans({ plans }: { plans: Plan[] }) {
+export default function PostingPlans({ plans, folders }: { plans: Plan[]; folders: FolderRef[] }) {
   const [showForm, setShowForm] = useState(false);
   const [notice, setNotice] = useState('');
   const [pending, startTransition] = useTransition();
@@ -47,6 +55,8 @@ export default function PostingPlans({ plans }: { plans: Plan[] }) {
     reuseCooldownDays: 60,
     allowReuse: true,
     alsoStory: false,
+    folderId: null,
+    maxClips: 5,
   });
 
   const run = (fn: () => Promise<{ ok: boolean; message: string }>) =>
@@ -129,6 +139,32 @@ export default function PostingPlans({ plans }: { plans: Plan[] }) {
               also post to story
             </label>
           )}
+          <select
+            value={form.folderId ?? ''}
+            onChange={(e) => setForm({ ...form, folderId: e.target.value || null })}
+            style={inputStyle}
+          >
+            <option value="">Whole property library</option>
+            {folders
+              .filter((f) => !f.property_id || f.property_id === form.propertyId)
+              .map((f) => (
+                <option key={f.id} value={f.id}>folder: {f.name}</option>
+              ))}
+          </select>
+          {form.format === 'reel' && (
+            <label className="caption" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              max
+              <input
+                type="number"
+                min={1}
+                max={8}
+                value={form.maxClips ?? 5}
+                onChange={(e) => setForm({ ...form, maxClips: Number(e.target.value) })}
+                style={{ ...inputStyle, width: 56 }}
+              />
+              clips
+            </label>
+          )}
           <input
             value={form.direction ?? ''}
             onChange={(e) => setForm({ ...form, direction: e.target.value })}
@@ -172,7 +208,9 @@ export default function PostingPlans({ plans }: { plans: Plan[] }) {
           <span style={{ fontSize: 14 }}>{p.name}</span>
           <span className="caption tnum">
             {p.format}
-            {p.also_story ? ' + story' : ''} · {p.platform} · every {p.every_days}d · next {p.next_run_at}
+            {p.also_story ? ' + story' : ''} · {p.platform} · every {p.every_days}d
+            {p.folder_id ? ` · ${folders.find((f) => f.id === p.folder_id)?.name ?? 'folder'}` : ''}
+            {p.format === 'reel' ? ` · ≤${p.max_clips} clips` : ''} · next {p.next_run_at}
             {p.direction ? ` · “${p.direction}”` : ''}
           </span>
           <span style={{ flex: 1 }} />
@@ -189,6 +227,7 @@ export default function PostingPlans({ plans }: { plans: Plan[] }) {
                   reuseCooldownDays: p.reuse_cooldown_days,
                   allowReuse: p.allow_reuse,
                   alsoStory: p.also_story,
+                  folderId: p.folder_id ?? undefined,
                 }),
               )
             }

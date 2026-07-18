@@ -126,6 +126,7 @@ export interface DraftOptions {
   reuseCooldownDays?: number; // skip assets used within this window
   allowReuse?: boolean; // false = only never-used assets
   alsoStory?: boolean; // additionally draft the same media as a story
+  folderId?: string; // restrict selection to a media folder
   planId?: string;
 }
 
@@ -152,6 +153,7 @@ export async function draftPost(
     .eq('property_id', propertyId)
     .eq('kind', wantVideo ? 'video' : 'image')
     .eq('retired', false);
+  if (options.folderId) query = query.contains('folder_ids', [options.folderId]);
   if (options.allowReuse === false) query = query.eq('times_used', 0);
   const { data: allAssets } = await query
     .order('times_used', { ascending: true })
@@ -234,6 +236,8 @@ export interface PlanInput {
   reuseCooldownDays?: number;
   allowReuse?: boolean;
   alsoStory?: boolean;
+  folderId?: string | null;
+  maxClips?: number;
 }
 
 export async function savePlan(input: PlanInput, id?: string): Promise<ActionResult> {
@@ -249,6 +253,8 @@ export async function savePlan(input: PlanInput, id?: string): Promise<ActionRes
     reuse_cooldown_days: input.reuseCooldownDays ?? 60,
     allow_reuse: input.allowReuse ?? true,
     also_story: input.alsoStory ?? false,
+    folder_id: input.folderId ?? null,
+    max_clips: Math.max(1, Math.min(input.maxClips ?? 5, 8)),
   };
   const { error } = id
     ? await supabase.from('posting_plans').update(row).eq('id', id)

@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
       reuseCooldownDays: plan.reuse_cooldown_days,
       allowReuse: plan.allow_reuse,
       alsoStory: plan.also_story,
+      folderId: plan.folder_id ?? undefined,
       planId: plan.id,
     });
     results[plan.name] = res.message;

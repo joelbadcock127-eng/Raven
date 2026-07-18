@@ -104,9 +104,30 @@ export default function Sidebar() {
             </Link>
           );
         })}
-        <div style={{ marginTop: 'auto', padding: '0 12px', display: 'grid', gap: 8 }}>
-          <Link href="/u" className="caption">Quick upload ↗</Link>
-          <a href="/stay" target="_blank" rel="noopener noreferrer" className="caption">
+        <div style={{ marginTop: 'auto', display: 'grid', gap: 4 }}>
+          <Link
+            href="/settings"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '9px 12px',
+              borderRadius: 'var(--r-md)',
+              fontSize: 14,
+              color: pathname.startsWith('/settings') ? 'var(--primary-deep)' : 'var(--ink-secondary)',
+              background: pathname.startsWith('/settings') ? 'var(--canvas-soft)' : 'transparent',
+              border: pathname.startsWith('/settings') ? '1px solid var(--hairline)' : '1px solid transparent',
+            }}
+          >
+            <span aria-hidden style={{ width: 18, height: 18, opacity: 0.8, display: 'inline-flex' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3.2" />
+                <path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.5-2-3.4-2.4 1a7.6 7.6 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.6a7.6 7.6 0 0 0-2.6 1.5l-2.4-1-2 3.4 2 1.5a7.6 7.6 0 0 0 0 3l-2 1.5 2 3.4 2.4-1a7.6 7.6 0 0 0 2.6 1.5l.4 2.6h4l.4-2.6a7.6 7.6 0 0 0 2.6-1.5l2.4 1 2-3.4z" />
+              </svg>
+            </span>
+            Settings
+          </Link>
+          <a href="/stay" target="_blank" rel="noopener noreferrer" className="caption" style={{ padding: '0 12px' }}>
             Public landing ↗
           </a>
         </div>
