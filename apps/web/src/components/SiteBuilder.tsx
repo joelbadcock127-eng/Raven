@@ -227,13 +227,25 @@ export default function SiteBuilder({
 
       {versions.length === 0 && (
         <section className="card" style={{ padding: 28, maxWidth: 620, marginBottom: 16 }}>
-          <h2 className="heading-md" style={{ marginBottom: 8 }}>No versions yet for {propertyName}</h2>
+          <h2 className="heading-md" style={{ marginBottom: 8 }}>
+            {propertyId === 'annie-may' ? 'Annie May’s new website is ready to create' : `No versions yet for ${propertyName}`}
+          </h2>
           <p className="caption">
-            Create a draft to start the redesign. You&apos;ll build pages from sections (hero,
-            gallery, features, FAQ…), edit any text by clicking it, and use the chat to direct the
-            AI at whichever section you select. Publish when ready — the custom domain switches
-            from the mirror to the new site instantly, and you can revert any time.
+            {propertyId === 'annie-may'
+              ? 'The complete six-page starter includes the existing story and accommodation details, the original Annie May photography, a full gallery and the direct-booking path. Every section remains editable in place and through the AI editor.'
+              : 'Create a draft to start the redesign. You’ll build pages from sections, edit any text by clicking it, and use the chat to direct the AI at whichever section you select.'}
           </p>
+          {propertyId === 'annie-may' && (
+            <button
+              type="button"
+              disabled={pending}
+              className="pill-primary"
+              style={{ marginTop: 18 }}
+              onClick={() => run(() => createVersion(propertyId, 'Annie May · New website'))}
+            >
+              {pending ? 'Creating…' : 'Create Annie May website'}
+            </button>
+          )}
         </section>
       )}
 

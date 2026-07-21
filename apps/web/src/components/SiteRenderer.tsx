@@ -45,7 +45,10 @@ function EditableText({
           window.parent.postMessage({ type: 'v2-text-edit', sectionId: sid, path, value: next }, '*');
       }}
       onClick={(e) => {
-        if (editable) e.stopPropagation();
+        if (editable) {
+          e.stopPropagation();
+          window.parent.postMessage({ type: 'v2-select', sectionId: sid }, '*');
+        }
       }}
     >
       {value}
@@ -315,11 +318,31 @@ export default function SiteRenderer({
 }) {
   const page = pages.find((p) => p.slug === currentSlug) ?? pages[0];
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [zoom, setZoom] = useState<{ url: string; alt: string } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  const zoomImages = Array.from(
+    new Map(
+      (page?.sections ?? [])
+        .flatMap((section) => {
+          if (section.type === 'split' && section.imageUrl)
+            return [{ url: section.imageUrl, alt: section.heading }];
+          if (section.type === 'gallery')
+            return section.images.map((image) => ({ url: image.url, alt: image.alt ?? '' }));
+          if (section.type === 'features')
+            return section.items
+              .filter((item) => item.imageUrl)
+              .map((item) => ({ url: item.imageUrl!, alt: item.title }));
+          return [];
+        })
+        .map((image) => [image.url, image]),
+    ).values(),
+  );
+
   useEffect(() => {
     if (editable) window.parent.postMessage({ type: 'v2-nav', slug: page?.slug ?? 'home' }, '*');
+    setMenuOpen(false);
   }, [editable, page?.slug]);
 
   // scroll-reveal + header state + gentle parallax on fullbleed imagery
@@ -353,6 +376,21 @@ export default function SiteRenderer({
     };
   }, [page?.slug]);
 
+  useEffect(() => {
+    if (!zoom) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setZoom(null);
+      if (zoomImages.length < 2) return;
+      const current = Math.max(0, zoomImages.findIndex((image) => image.url === zoom.url));
+      if (event.key === 'ArrowLeft')
+        setZoom(zoomImages[(current - 1 + zoomImages.length) % zoomImages.length]);
+      if (event.key === 'ArrowRight')
+        setZoom(zoomImages[(current + 1) % zoomImages.length]);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [zoom, zoomImages]);
+
   if (!page) return <p style={{ padding: 40 }}>No pages yet.</p>;
 
   const hrefFor = (slug: string) => {
@@ -372,7 +410,7 @@ export default function SiteRenderer({
     }
 
   const firstIsImage = page.sections[0]?.type === 'hero' || page.sections[0]?.type === 'fullbleed';
-  const headerSolid = scrolled || !firstIsImage;
+  const headerSolid = scrolled || !firstIsImage || menuOpen;
 
   const css = `
   .ldg-root { background:${theme.bg}; color:${theme.ink}; font-family:${theme.bodyFont}; font-weight:300; min-height:100vh; overflow-x:clip; }
@@ -417,6 +455,19 @@ export default function SiteRenderer({
   .ldg-book { font-size:11px; letter-spacing:.24em; text-transform:uppercase; border:1px solid currentColor; padding:10px 18px; transition:background .3s, color .3s; white-space:nowrap; }
   .ldg-header.solid .ldg-book:hover { background:${theme.ink}; color:${theme.bg}; }
   .ldg-header.overlay .ldg-book:hover { background:#fff; color:#111; }
+  .ldg-menu-toggle { display:none; margin-left:auto; border:0; background:none; color:inherit; width:42px; height:42px; padding:10px; cursor:pointer; }
+  .ldg-menu-toggle span { display:block; height:1px; background:currentColor; margin:6px 0; transition:transform .3s, opacity .3s; }
+  .ldg-menu-toggle.open span:first-child { transform:translateY(3.5px) rotate(45deg); }
+  .ldg-menu-toggle.open span:last-child { transform:translateY(-3.5px) rotate(-45deg); }
+  @media (max-width: 760px) {
+    .ldg-header { height:64px; }
+    .ldg-menu-toggle { display:block; }
+    .ldg-nav { display:none; position:absolute; top:64px; left:0; right:0; margin:0; padding:26px 22px 30px; background:${theme.bg}; color:${theme.ink};
+      flex-direction:column; align-items:flex-start; gap:18px; box-shadow:0 14px 30px rgba(0,0,0,.12); overflow:visible; }
+    .ldg-nav.open { display:flex; }
+    .ldg-nav a { font-size:12px; width:100%; padding:4px 0 10px; }
+    .ldg-nav .ldg-book { width:auto; padding:11px 18px; }
+  }
 
   /* hero */
   .ldg-hero { position:relative; min-height:100svh; display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden; background:${theme.ink}; }
@@ -510,6 +561,12 @@ export default function SiteRenderer({
   @keyframes ldg-fade { from { opacity:0; } to { opacity:1; } }
   .ldg-lightbox img { max-width:100%; max-height:100%; object-fit:contain; box-shadow:0 30px 80px rgba(0,0,0,.5); }
   .ldg-lightbox figcaption { position:absolute; bottom:22px; left:0; right:0; text-align:center; color:#fff; font-size:11px; letter-spacing:.22em; text-transform:uppercase; opacity:.7; }
+  .ldg-lightbox-nav { position:absolute; top:50%; transform:translateY(-50%); border:0; background:rgba(255,255,255,.08); color:#fff;
+    width:48px; height:64px; font:300 30px/1 ${theme.headingFont}; cursor:pointer; transition:background .25s; }
+  .ldg-lightbox-nav:hover { background:rgba(255,255,255,.18); }
+  .ldg-lightbox-prev { left:18px; } .ldg-lightbox-next { right:18px; }
+  .ldg-lightbox-close { position:absolute; top:18px; right:22px; border:0; background:none; color:#fff; font-size:28px; font-weight:200; cursor:pointer; opacity:.76; }
+  @media (max-width: 640px) { .ldg-lightbox-nav { width:38px; height:54px; } .ldg-lightbox-prev { left:6px; } .ldg-lightbox-next { right:6px; } }
 
   /* edit affordances */
   [data-edit] section { outline:1px dashed rgba(83,58,253,.3); outline-offset:-2px; cursor:pointer; }
@@ -524,13 +581,24 @@ export default function SiteRenderer({
         <a href={hrefFor('home')} className="ldg-wordmark" onClick={(e) => { if (editable) { e.preventDefault(); window.parent.postMessage({ type: 'v2-goto', slug: 'home' }, '*'); } }}>
           {propertyName}
         </a>
-        <nav className="ldg-nav">
+        <button
+          type="button"
+          className={`ldg-menu-toggle${menuOpen ? ' open' : ''}`}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span />
+          <span />
+        </button>
+        <nav className={`ldg-nav${menuOpen ? ' open' : ''}`}>
           {pages.map((p) => (
             <a
               key={p.slug}
               href={hrefFor(p.slug)}
               className={p.slug === page.slug ? 'active' : undefined}
               onClick={(e) => {
+                setMenuOpen(false);
                 if (editable) {
                   e.preventDefault();
                   window.parent.postMessage({ type: 'v2-goto', slug: p.slug }, '*');
@@ -541,7 +609,7 @@ export default function SiteRenderer({
             </a>
           ))}
           {bookHref && (
-            <a href={editable ? undefined : bookHref} className="ldg-book" target={standalone ? undefined : '_blank'} rel="noreferrer">
+            <a href={editable ? undefined : bookHref} className="ldg-book" target={standalone ? undefined : '_blank'} rel="noreferrer" onClick={() => setMenuOpen(false)}>
               Book
             </a>
           )}
@@ -575,6 +643,35 @@ export default function SiteRenderer({
         <figure className="ldg-lightbox" onClick={() => setZoom(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={zoom.url} alt={zoom.alt} />
+          <button type="button" className="ldg-lightbox-close" aria-label="Close gallery" onClick={() => setZoom(null)}>×</button>
+          {zoomImages.length > 1 && (
+            <>
+              <button
+                type="button"
+                className="ldg-lightbox-nav ldg-lightbox-prev"
+                aria-label="Previous image"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  const current = Math.max(0, zoomImages.findIndex((image) => image.url === zoom.url));
+                  setZoom(zoomImages[(current - 1 + zoomImages.length) % zoomImages.length]);
+                }}
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className="ldg-lightbox-nav ldg-lightbox-next"
+                aria-label="Next image"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  const current = Math.max(0, zoomImages.findIndex((image) => image.url === zoom.url));
+                  setZoom(zoomImages[(current + 1) % zoomImages.length]);
+                }}
+              >
+                ›
+              </button>
+            </>
+          )}
           {zoom.alt && <figcaption>{zoom.alt}</figcaption>}
         </figure>
       )}

@@ -1,9 +1,50 @@
 import { SITES } from '@/lib/sites';
 import { supabaseAdmin } from '@/lib/supabase';
 import type { SitePageV2, SiteVersion } from '@/lib/siteBuilder';
+import {
+  ANNIE_MAY_STARTER_PAGES,
+  ANNIE_MAY_THEME,
+} from '@/lib/annieMaySite';
 import SitesHub, { type BuilderData } from '@/components/SitesHub';
 
 export const revalidate = 0;
+
+const ANNIE_MAY_STARTER_VERSION_ID = 'a11e0000-0000-4000-8000-000000000001';
+
+async function readBuilderRows(supabase: NonNullable<ReturnType<typeof supabaseAdmin>>) {
+  return Promise.all([
+    supabase
+      .from('site_versions')
+      .select('id, property_id, label, status, theme, created_at, published_at')
+      .order('created_at', { ascending: false }),
+    supabase.from('site_v2_pages').select('id, version_id, slug, nav_label, title, sections, sort').order('sort'),
+    supabase.from('site_settings').select('property_id, live_version_id, domains'),
+  ]);
+}
+
+/** Seed the commissioned Annie May redesign once, then leave it entirely owner-editable. */
+async function ensureAnnieMayStarter(supabase: NonNullable<ReturnType<typeof supabaseAdmin>>): Promise<boolean> {
+  const { error: versionError } = await supabase.from('site_versions').upsert(
+    {
+      id: ANNIE_MAY_STARTER_VERSION_ID,
+      property_id: 'annie-may',
+      label: 'Annie May · New website',
+      status: 'draft',
+      theme: ANNIE_MAY_THEME,
+    },
+    { onConflict: 'id', ignoreDuplicates: true },
+  );
+  if (versionError) return false;
+
+  const { error: pagesError } = await supabase.from('site_v2_pages').upsert(
+    ANNIE_MAY_STARTER_PAGES.map((page) => ({
+      ...page,
+      version_id: ANNIE_MAY_STARTER_VERSION_ID,
+    })),
+    { onConflict: 'version_id,slug', ignoreDuplicates: true },
+  );
+  return !pagesError;
+}
 
 async function loadBuilderData(): Promise<Record<string, BuilderData>> {
   const supabase = supabaseAdmin();
@@ -12,14 +53,14 @@ async function loadBuilderData(): Promise<Record<string, BuilderData>> {
   );
   if (!supabase) return empty;
 
-  const [{ data: versions }, { data: pages }, { data: settings }] = await Promise.all([
-    supabase
-      .from('site_versions')
-      .select('id, property_id, label, status, theme, created_at, published_at')
-      .order('created_at', { ascending: false }),
-    supabase.from('site_v2_pages').select('id, version_id, slug, nav_label, title, sections, sort').order('sort'),
-    supabase.from('site_settings').select('property_id, live_version_id, domains'),
-  ]);
+  let [versionResult, pageResult, settingsResult] = await readBuilderRows(supabase);
+  if (!(versionResult.data ?? []).some((version) => version.property_id === 'annie-may')) {
+    const created = await ensureAnnieMayStarter(supabase);
+    if (created) [versionResult, pageResult, settingsResult] = await readBuilderRows(supabase);
+  }
+  const versions = versionResult.data;
+  const pages = pageResult.data;
+  const settings = settingsResult.data;
 
   const out = empty;
   for (const v of (versions as (SiteVersion & { property_id: string })[]) ?? []) {

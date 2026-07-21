@@ -71,14 +71,14 @@ export const DEFAULT_THEMES: Record<string, SiteTheme> = {
     radius: 12,
   },
   'annie-may': {
-    headingFont: "Georgia, 'Times New Roman', serif",
-    bodyFont: "system-ui, -apple-system, sans-serif",
-    bg: '#faf7f1',
-    ink: '#2e2b26',
-    soft: '#f2ede3',
-    accent: '#3e4a3d',
-    accentInk: '#f5f1e8',
-    radius: 8,
+    headingFont: "var(--font-site-serif), 'Cormorant Garamond', Georgia, serif",
+    bodyFont: "var(--font-site-sans), 'Jost', system-ui, sans-serif",
+    bg: '#f7f3eb',
+    ink: '#292821',
+    soft: '#e9e2d6',
+    accent: '#66715b',
+    accentInk: '#ffffff',
+    radius: 0,
   },
 };
 

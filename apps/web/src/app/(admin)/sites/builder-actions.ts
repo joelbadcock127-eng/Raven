@@ -4,6 +4,11 @@ import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase';
 import { anthropic, MODELS, HOUSE_STYLE, stripDashes } from '@/lib/ai';
 import { defaultTheme, newSection, type Section, type SectionType } from '@/lib/siteBuilder';
+import {
+  ANNIE_MAY_GALLERY_IMAGES,
+  ANNIE_MAY_THEME,
+  starterPagesFor,
+} from '@/lib/annieMaySite';
 
 export interface BuilderResult {
   ok: boolean;
@@ -20,7 +25,7 @@ export async function createVersion(
   const supabase = supabaseAdmin();
   if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
 
-  let theme = defaultTheme(propertyId);
+  let theme = propertyId === 'annie-may' ? ANNIE_MAY_THEME : defaultTheme(propertyId);
   if (duplicateOf) {
     const { data: src } = await supabase
       .from('site_versions')
@@ -47,14 +52,21 @@ export async function createVersion(
         .from('site_v2_pages')
         .insert(pages.map((p) => ({ ...p, version_id: version.id })));
   } else {
-    await supabase.from('site_v2_pages').insert({
-      version_id: version.id,
-      slug: 'home',
-      nav_label: 'Home',
-      title: '',
-      sections: [newSection('hero'), newSection('text'), newSection('cta')],
-      sort: 0,
-    });
+    const starterPages = starterPagesFor(propertyId);
+    const pages = starterPages?.length
+      ? starterPages.map((page) => ({ ...page, version_id: version.id }))
+      : [
+          {
+            version_id: version.id,
+            slug: 'home',
+            nav_label: 'Home',
+            title: '',
+            sections: [newSection('hero'), newSection('text'), newSection('cta')],
+            sort: 0,
+          },
+        ];
+    const { error: pageError } = await supabase.from('site_v2_pages').insert(pages);
+    if (pageError) return { ok: false, message: pageError.message };
   }
 
   revalidatePath('/sites');
@@ -180,6 +192,12 @@ export async function aiEditSection(
     mediaList = (media ?? [])
       .map((m) => `${m.public_url} — ${[m.caption, ...(m.tags ?? [])].filter(Boolean).join(', ') || 'no notes'}`)
       .join('\n');
+  }
+  if (propertyId === 'annie-may') {
+    const starterMedia = ANNIE_MAY_GALLERY_IMAGES.map(
+      (image) => `${image.url} — ${image.alt ?? 'Annie May photograph'}`,
+    ).join('\n');
+    mediaList = [mediaList, starterMedia].filter(Boolean).join('\n');
   }
 
   try {
