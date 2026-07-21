@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { updatePost, setPostStatus, publishPost, draftPost, renderReel } from '@/app/(admin)/social/actions';
+import { updatePost, setPostStatus, publishPost, draftPost, renderReel, setPostMedia } from '@/app/(admin)/social/actions';
 import Segmented from '@/components/Segmented';
+import ImageEditor from '@/components/ImageEditor';
 
 export interface SocialPost {
   id: string;
@@ -55,6 +56,7 @@ export default function SocialQueue({
   const [draftText, setDraftText] = useState('');
   const [previewing, setPreviewing] = useState<string | null>(null);
   const [previewPlatform, setPreviewPlatform] = useState<'instagram' | 'facebook'>('instagram');
+  const [editImg, setEditImg] = useState<{ postId: string; mediaId: string; propertyId: string | null } | null>(null);
 
   const mediaById = new Map(media.map((m) => [m.id, m]));
 
@@ -154,8 +156,20 @@ export default function SocialQueue({
                       m.kind === 'video' ? (
                         <video key={m.id} src={m.public_url} controls preload="metadata" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 8, background: '#000' }} />
                       ) : (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img key={m.id} src={m.public_url} alt="" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 8 }} />
+                        <div key={m.id} style={{ position: 'relative' }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={m.public_url} alt="" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
+                          {p.status !== 'published' && (
+                            <button
+                              type="button"
+                              onClick={() => setEditImg({ postId: p.id, mediaId: m.id, propertyId: p.property_id })}
+                              className="caption"
+                              style={{ position: 'absolute', bottom: 6, right: 6, background: 'rgba(0,0,0,.6)', color: '#fff', border: 'none', borderRadius: 6, padding: '3px 9px', cursor: 'pointer' }}
+                            >
+                              edit
+                            </button>
+                          )}
+                        </div>
                       ),
                     )}
                     {items.length === 0 && (
@@ -282,6 +296,22 @@ export default function SocialQueue({
             );
           })}
         </div>
+      )}
+
+      {editImg && (
+        <ImageEditor
+          asset={{ id: editImg.mediaId, property_id: editImg.propertyId, file_name: 'post-image' }}
+          onClose={() => setEditImg(null)}
+          onSaved={(newId) => {
+            const post = posts.find((p) => p.id === editImg.postId);
+            const nextIds = (post?.media_ids ?? []).map((id) => (id === editImg.mediaId ? newId : id));
+            setEditImg(null);
+            startTransition(async () => {
+              const res = await setPostMedia(editImg.postId, nextIds);
+              setNotice(res.message);
+            });
+          }}
+        />
       )}
     </div>
   );

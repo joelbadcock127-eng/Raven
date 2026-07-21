@@ -25,6 +25,19 @@ export async function updatePost(
   return { ok: true, message: 'Updated' };
 }
 
+/** Replace a post's attached media (used after editing an image). */
+export async function setPostMedia(id: string, mediaIds: string[]): Promise<ActionResult> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
+  const { error } = await supabase
+    .from('social_posts')
+    .update({ media_ids: mediaIds, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) return { ok: false, message: error.message };
+  revalidatePath('/social');
+  return { ok: true, message: 'Image updated' };
+}
+
 export async function setPostStatus(id: string, status: 'approved' | 'dismissed' | 'draft'): Promise<ActionResult> {
   const supabase = supabaseAdmin();
   if (!supabase) return { ok: false, message: 'Supabase is not configured.' };

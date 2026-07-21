@@ -45,6 +45,63 @@ export async function registerAsset(input: {
   return { ok: true };
 }
 
+/**
+ * Register an edited image as a new asset, keeping the original. Inherits the
+ * source's folders and caption so the edit lands next to it in the library.
+ * Returns the new id so callers (e.g. the Social editor) can attach it.
+ */
+export async function registerEditedAsset(input: {
+  sourceId?: string;
+  propertyId: string | null;
+  provider?: StorageProvider;
+  storagePath: string;
+  publicUrl: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+}): Promise<{ ok: boolean; id?: string; message?: string }> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
+
+  let folderIds: string[] = [];
+  let caption: string | null = null;
+  const tags = ['edited'];
+  if (input.sourceId) {
+    const { data: src } = await supabase
+      .from('media_assets')
+      .select('folder_ids, caption, tags')
+      .eq('id', input.sourceId)
+      .maybeSingle();
+    if (src) {
+      folderIds = (src.folder_ids as string[]) ?? [];
+      caption = (src.caption as string | null) ?? null;
+      for (const t of (src.tags as string[]) ?? []) if (!tags.includes(t)) tags.push(t);
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('media_assets')
+    .insert({
+      property_id: input.propertyId,
+      kind: 'image',
+      storage_provider: input.provider ?? 'r2',
+      storage_path: input.storagePath,
+      public_url: input.publicUrl,
+      file_name: input.fileName,
+      mime_type: input.mimeType,
+      size_bytes: input.sizeBytes,
+      folder_ids: folderIds,
+      caption,
+      tags,
+    })
+    .select('id')
+    .single();
+  if (error) return { ok: false, message: error.message };
+  revalidatePath('/media');
+  revalidatePath('/social');
+  return { ok: true, id: data.id };
+}
+
 export async function updateAsset(
   id: string,
   patch: { tags?: string[]; caption?: string; propertyId?: string | null; retired?: boolean },

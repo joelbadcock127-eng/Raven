@@ -1,6 +1,8 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import ImageEditor from '@/components/ImageEditor';
 import {
   createUploadUrl,
   registerAsset,
@@ -56,7 +58,9 @@ export default function MediaLibrary({ assets, folders }: { assets: MediaAsset[]
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkSel, setBulkSel] = useState<Set<string>>(new Set());
+  const [editingImage, setEditingImage] = useState<MediaAsset | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const toggleSelected = (id: string) =>
     setSelected((prev) => {
@@ -550,6 +554,9 @@ export default function MediaLibrary({ assets, folders }: { assets: MediaAsset[]
                   </div>
                 )}
                 <div style={{ display: 'flex', gap: 10 }}>
+                  {a.kind === 'image' && (
+                    <button type="button" onClick={() => setEditingImage(a)} className="caption" style={linkBtn}>edit</button>
+                  )}
                   <button type="button" onClick={() => editTags(a)} className="caption" style={linkBtn}>tags</button>
                   <button type="button" onClick={() => editCaption(a)} className="caption" style={linkBtn}>caption</button>
                   <button type="button" onClick={() => (pickerFor === a.id ? setPickerFor(null) : openPicker(a))} className="caption" style={linkBtn}>
@@ -603,6 +610,18 @@ export default function MediaLibrary({ assets, folders }: { assets: MediaAsset[]
             </figure>
           ))}
         </div>
+      )}
+
+      {editingImage && (
+        <ImageEditor
+          asset={editingImage}
+          onClose={() => setEditingImage(null)}
+          onSaved={() => {
+            setEditingImage(null);
+            setProgress('Edited image saved to the library');
+            router.refresh();
+          }}
+        />
       )}
     </div>
   );
