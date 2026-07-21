@@ -11,9 +11,12 @@ const HORIZON_DAYS = 180;
 
 function authorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
   const header = req.headers.get('authorization');
-  return header === `Bearer ${secret}` || req.nextUrl.searchParams.get('secret') === secret;
+  if (secret && (header === `Bearer ${secret}` || req.nextUrl.searchParams.get('secret') === secret))
+    return true;
+  // owner can trigger a run by hand with the upload token
+  const token = process.env.RAVEN_UPLOAD_TOKEN;
+  return !!token && req.nextUrl.searchParams.get('token') === token;
 }
 
 function isoPlusDays(days: number): string {

@@ -29,8 +29,12 @@ export function parseIcs(ics: string): BookedRange[] {
     const start = parseIcsDate(startLine);
     let end = endLine ? parseIcsDate(endLine) : null;
     if (!start) continue;
-    if (!end) {
-      // single-day event: one night
+    // STAAH (Annie May's channel) exports each blocked night as its own event
+    // with DTSTART == DTEND, which under the RFC exclusive-DTEND rule would be
+    // a zero-night event and get dropped. Treat DTEND <= DTSTART (or missing)
+    // as a single night; genuine multi-night ranges (DTEND > DTSTART) are kept
+    // exclusive as before.
+    if (!end || end <= start) {
       const d = new Date(start + 'T00:00:00Z');
       d.setUTCDate(d.getUTCDate() + 1);
       end = d.toISOString().slice(0, 10);
