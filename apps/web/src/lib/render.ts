@@ -17,7 +17,8 @@ export interface RenderSpec {
   height?: number;
   clipSeconds?: number;
   maxDuration?: number;
-  clips: { url: string }[];
+  // type defaults to 'video'; 'image' clips become Ken Burns pan/zoom shots
+  clips: { url: string; type?: 'image' | 'video' }[];
   filter?: 'none' | 'warm' | 'cool' | 'mono' | 'punchy';
   caption?: string;
   musicUrl?: string;

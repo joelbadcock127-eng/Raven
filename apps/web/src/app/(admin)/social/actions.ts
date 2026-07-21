@@ -107,6 +107,7 @@ export async function publishPost(id: string): Promise<ActionResult> {
       external_id: externalId ?? null,
       external_url: externalUrl ?? null,
       error: ok ? null : results.join(' · '),
+      ...(ok ? { published_at: new Date().toISOString() } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq('id', id);
@@ -261,17 +262,19 @@ export interface PlanInput {
   alsoStory?: boolean;
   folderId?: string | null;
   maxClips?: number;
+  mode?: 'recurring' | 'once'; // once = a single scheduled post
+  runOn?: string; // yyyy-mm-dd, for one-off plans
 }
 
 export async function savePlan(input: PlanInput, id?: string): Promise<ActionResult> {
   const supabase = supabaseAdmin();
   if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
-  const row = {
+
+  const shared = {
     property_id: input.propertyId,
     name: input.name,
     format: input.format,
     platform: input.platform,
-    every_days: Math.max(1, input.everyDays),
     direction: input.direction ?? null,
     reuse_cooldown_days: input.reuseCooldownDays ?? 60,
     allow_reuse: input.allowReuse ?? true,
@@ -279,6 +282,32 @@ export async function savePlan(input: PlanInput, id?: string): Promise<ActionRes
     folder_id: input.folderId ?? null,
     max_clips: Math.max(1, Math.min(input.maxClips ?? 5, 8)),
   };
+
+  // ── One-off: draft now if the date has arrived, otherwise schedule once ──
+  if (input.mode === 'once') {
+    const today = new Date().toISOString().slice(0, 10);
+    const runOn = input.runOn && /^\d{4}-\d{2}-\d{2}$/.test(input.runOn) ? input.runOn : today;
+    if (runOn <= today) {
+      const res = await draftPost(input.propertyId, input.format, {
+        platform: input.platform,
+        direction: input.direction || undefined,
+        reuseCooldownDays: input.reuseCooldownDays,
+        allowReuse: input.allowReuse,
+        alsoStory: input.alsoStory,
+        folderId: input.folderId ?? undefined,
+      });
+      return res.ok ? { ok: true, message: 'Drafted — waiting in the queue below' } : res;
+    }
+    const { error } = await supabase
+      .from('posting_plans')
+      .insert({ ...shared, mode: 'once', every_days: 1, next_run_at: runOn });
+    if (error) return { ok: false, message: error.message };
+    revalidatePath('/social');
+    return { ok: true, message: `Scheduled for ${runOn}` };
+  }
+
+  // ── Recurring: omit `mode` so recurring plans keep working pre-migration ──
+  const row = { ...shared, every_days: Math.max(1, input.everyDays) };
   const { error } = id
     ? await supabase.from('posting_plans').update(row).eq('id', id)
     : await supabase.from('posting_plans').insert(row);
@@ -308,6 +337,8 @@ export async function renderReel(
     caption?: string;
     clipCount?: number;
     musicHint?: string; // matches against music tags/captions; defaults to the post's direction
+    source?: 'auto' | 'videos' | 'photos'; // auto = videos, topped up with photos
+    folderId?: string; // restrict source clips to a folder
   } = {},
 ): Promise<ActionResult> {
   const supabase = supabaseAdmin();
@@ -320,17 +351,44 @@ export async function renderReel(
     .maybeSingle();
   if (!post?.property_id) return { ok: false, message: 'Post not found.' };
 
-  const { data: videos } = await supabase
-    .from('media_assets')
-    .select('public_url')
-    .eq('property_id', post.property_id)
-    .eq('kind', 'video')
-    .eq('retired', false)
-    .not('tags', 'cs', '{rendered-reel}')
-    .order('times_used', { ascending: true })
-    .order('created_at', { ascending: false })
-    .limit(Math.min(options.clipCount ?? 5, 8));
-  if (!videos?.length) return { ok: false, message: 'No source videos in the library for this property.' };
+  const clipCount = Math.min(options.clipCount ?? 5, 8);
+  const source = options.source ?? 'auto';
+
+  const pick = async (kind: 'video' | 'image', limit: number) => {
+    let q = supabase
+      .from('media_assets')
+      .select('public_url, kind')
+      .eq('property_id', post.property_id)
+      .eq('kind', kind)
+      .eq('retired', false)
+      .not('tags', 'cs', '{rendered-reel}');
+    if (options.folderId) q = q.contains('folder_ids', [options.folderId]);
+    const { data } = await q
+      .order('times_used', { ascending: true })
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    return (data ?? []).map((m) => ({ url: m.public_url as string, type: kind }));
+  };
+
+  // Build the clip list per source. Ken Burns lets a reel be all stills.
+  let clips: { url: string; type: 'image' | 'video' }[] = [];
+  if (source === 'photos') {
+    clips = await pick('image', clipCount);
+  } else if (source === 'videos') {
+    clips = await pick('video', clipCount);
+  } else {
+    const vids = await pick('video', clipCount);
+    clips = vids;
+    if (vids.length < clipCount) clips = [...vids, ...(await pick('image', clipCount - vids.length))];
+  }
+  if (!clips.length)
+    return {
+      ok: false,
+      message:
+        source === 'videos'
+          ? 'No source videos in the library for this property. Try Photos to build a reel from stills.'
+          : 'No source media in the library for this property.',
+    };
 
   // Music selection follows the style direction: hint words are matched
   // against each track's tags/caption; best match wins, least-used breaks
@@ -358,7 +416,7 @@ export async function renderReel(
     propertyId: post.property_id,
     socialPostId: post.id,
     spec: {
-      clips: videos.map((v) => ({ url: v.public_url })),
+      clips,
       filter: options.filter ?? 'warm',
       caption: options.caption,
       musicUrl: music?.[0]?.public_url,

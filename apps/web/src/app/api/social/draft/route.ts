@@ -56,8 +56,13 @@ export async function GET(req: NextRequest) {
     });
     results[plan.name] = res.message;
 
-    const next = new Date(Date.now() + plan.every_days * 86_400_000).toISOString().slice(0, 10);
-    await supabase.from('posting_plans').update({ next_run_at: next }).eq('id', plan.id);
+    if (plan.mode === 'once') {
+      // a one-off fires once, then retires
+      await supabase.from('posting_plans').update({ active: false }).eq('id', plan.id);
+    } else {
+      const next = new Date(Date.now() + plan.every_days * 86_400_000).toISOString().slice(0, 10);
+      await supabase.from('posting_plans').update({ next_run_at: next }).eq('id', plan.id);
+    }
   }
 
   // No plans, no posts — drafting only happens on owner-configured plans

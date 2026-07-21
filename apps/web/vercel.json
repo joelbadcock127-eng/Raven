@@ -6,6 +6,7 @@
     { "path": "/api/sync/availability", "schedule": "0 19 * * *" },
     { "path": "/api/signals", "schedule": "15 19 * * *" },
     { "path": "/api/enrich", "schedule": "30 19 * * *" },
-    { "path": "/api/social/draft", "schedule": "0 20 * * *" }
+    { "path": "/api/social/draft", "schedule": "0 20 * * *" },
+    { "path": "/api/social/insights", "schedule": "0 21 * * *" }
   ]
 }

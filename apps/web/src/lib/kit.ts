@@ -171,6 +171,23 @@ export async function generateCampaignKit(
 
   const offer = campaign.offer as { id: string; name: string; pitch: string } | null;
 
+  // a tracked booking link so clicks from this campaign's page and posts are
+  // attributable (falls back to the plain booking URL if tracking is unavailable)
+  let bookHref = prop.bookUrl;
+  try {
+    const { getOrCreateTrackedLink } = await import('./links');
+    const tl = await getOrCreateTrackedLink(supabase, {
+      propertyId,
+      campaignId: campaign.id,
+      label: `${prop.name} — ${event.title}`,
+      targetUrl: prop.bookUrl,
+      kind: 'booking',
+    });
+    if (tl) bookHref = tl.goUrl;
+  } catch {
+    /* tracking optional */
+  }
+
   // ── Landing page (Sonnet — new page creation per the model routing) ──
   const pageRes = await client.messages.create({
     model: MODELS.generate,
@@ -236,7 +253,7 @@ export async function generateCampaignKit(
       ...pageContent,
       heroImageUrl: (pageContent.heroImageUrl as string | undefined) ?? heroImage?.public_url ?? null,
       offer: offer ? { name: offer.name, pitch: offer.pitch } : null,
-      bookUrl: prop.bookUrl,
+      bookUrl: bookHref,
       propertyName: prop.name,
       propertyDomain: prop.domain,
       eventTitle: event.title,

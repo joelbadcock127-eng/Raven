@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { updatePost, setPostStatus, publishPost, draftPost, renderReel, setPostMedia } from '@/app/(admin)/social/actions';
-import Segmented from '@/components/Segmented';
+import { updatePost, setPostStatus, publishPost, renderReel, setPostMedia } from '@/app/(admin)/social/actions';
 import ImageEditor from '@/components/ImageEditor';
 
 export interface SocialPost {
@@ -57,6 +56,7 @@ export default function SocialQueue({
   const [previewing, setPreviewing] = useState<string | null>(null);
   const [previewPlatform, setPreviewPlatform] = useState<'instagram' | 'facebook'>('instagram');
   const [editImg, setEditImg] = useState<{ postId: string; mediaId: string; propertyId: string | null } | null>(null);
+  const [reelFor, setReelFor] = useState<string | null>(null);
 
   const mediaById = new Map(media.map((m) => [m.id, m]));
 
@@ -87,23 +87,7 @@ export default function SocialQueue({
           {metaConnected ? 'Meta connected' : 'Meta not connected — manual posting for now'}
         </span>
         <span style={{ flex: 1 }} />
-        <span className="caption">Quick draft:</span>
-        <Segmented
-          size="sm"
-          items={PROPERTIES.map((p) => ({
-            id: p.id,
-            label: p.name.replace('The Prescription Pad', 'Rx Pad').replace(' Bakers', ''),
-          }))}
-          activeId={null}
-          onSelect={(id) => {
-            if (pending) return;
-            const direction = window.prompt(
-              'What do you want this post to be? (optional — e.g. "sauna at dusk, moody, couples")',
-            );
-            if (direction === null) return; // cancelled
-            run(() => draftPost(id, 'post', { direction: direction.trim() || undefined }));
-          }}
-        />
+        <span className="caption" style={{ color: 'var(--ink-mute)' }}>New posts start in Posting plans above (recurring or one-off)</span>
         {notice && <span className="caption">{notice}</span>}
       </div>
 
@@ -226,16 +210,10 @@ export default function SocialQueue({
                           type="button"
                           disabled={pending}
                           className="pill-primary"
-                          style={{ fontSize: 12, padding: '6px 14px', background: 'var(--canvas)', color: 'var(--primary)', border: '1px solid var(--primary)' }}
-                          onClick={() => {
-                            const filter = (window.prompt('Filter: warm, cool, mono, punchy or none', 'warm') ?? 'warm') as 'warm' | 'cool' | 'mono' | 'punchy' | 'none';
-                            const caption = window.prompt('Overlay caption on the video (optional)') ?? undefined;
-                            const max = Number(window.prompt('Max clips to use (uses fewer if fewer exist)', '5')) || 5;
-                            const musicHint = window.prompt('Music vibe (optional — matched against your track tags, e.g. "calm piano")') ?? undefined;
-                            run(() => renderReel(p.id, { filter, caption, clipCount: max, musicHint: musicHint?.trim() || undefined }));
-                          }}
+                          style={{ fontSize: 12, padding: '6px 14px', background: reelFor === p.id ? 'var(--primary)' : 'var(--canvas)', color: reelFor === p.id ? 'var(--on-primary)' : 'var(--primary)', border: '1px solid var(--primary)' }}
+                          onClick={() => setReelFor(reelFor === p.id ? null : p.id)}
                         >
-                          Render multi-clip reel
+                          {reelFor === p.id ? 'Close reel builder' : 'Build reel'}
                         </button>
                       )}
                       <button
@@ -282,6 +260,18 @@ export default function SocialQueue({
                   </button>
                 </div>
 
+                {reelFor === p.id && (
+                  <ReelBuilder
+                    pending={pending}
+                    defaultCaption={p.caption.split('\n')[0] ?? ''}
+                    onRender={(opts) => {
+                      setReelFor(null);
+                      run(() => renderReel(p.id, opts));
+                    }}
+                    onClose={() => setReelFor(null)}
+                  />
+                )}
+
                 {previewing === p.id && (
                   <PostPreview
                     platform={previewPlatform}
@@ -316,6 +306,94 @@ export default function SocialQueue({
     </div>
   );
 }
+
+/** Inline reel builder: source (photos/videos/auto), grade, clips, music, caption. */
+function ReelBuilder({
+  pending,
+  defaultCaption,
+  onRender,
+  onClose,
+}: {
+  pending: boolean;
+  defaultCaption: string;
+  onRender: (opts: { source: 'auto' | 'videos' | 'photos'; filter: 'warm' | 'cool' | 'mono' | 'punchy' | 'none'; clipCount: number; caption?: string; musicHint?: string }) => void;
+  onClose: () => void;
+}) {
+  const [source, setSource] = useState<'auto' | 'videos' | 'photos'>('auto');
+  const [filter, setFilter] = useState<'warm' | 'cool' | 'mono' | 'punchy' | 'none'>('warm');
+  const [clipCount, setClipCount] = useState(5);
+  const [caption, setCaption] = useState(defaultCaption);
+  const [musicHint, setMusicHint] = useState('');
+
+  const seg = (val: string, cur: string, on: () => void, label: string) => (
+    <button
+      key={val}
+      type="button"
+      onClick={on}
+      className="caption"
+      style={{
+        padding: '5px 12px', borderRadius: 'var(--r-pill)', cursor: 'pointer', border: '1px solid',
+        borderColor: cur === val ? 'var(--primary)' : 'var(--hairline)',
+        background: cur === val ? 'var(--primary)' : 'var(--canvas)',
+        color: cur === val ? 'var(--on-primary)' : 'var(--ink-secondary)',
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="card" style={{ padding: 16, background: 'var(--canvas-soft)', display: 'grid', gap: 12 }}>
+      <div>
+        <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 6 }}>Build from</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {seg('auto', source, () => setSource('auto'), 'Auto (video + photos)')}
+          {seg('videos', source, () => setSource('videos'), 'Videos only')}
+          {seg('photos', source, () => setSource('photos'), 'Photos only (Ken Burns)')}
+        </div>
+      </div>
+      <div>
+        <div className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 6 }}>Grade</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {(['warm', 'cool', 'mono', 'punchy', 'none'] as const).map((f) => seg(f, filter, () => setFilter(f), f))}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'end' }}>
+        <label className="caption" style={{ display: 'grid', gap: 4 }}>
+          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Clips (max)</span>
+          <input type="number" min={2} max={8} value={clipCount} onChange={(e) => setClipCount(Math.max(2, Math.min(8, Number(e.target.value) || 5)))} style={{ ...builderField, width: 70 }} />
+        </label>
+        <label className="caption" style={{ display: 'grid', gap: 4, flex: '1 1 180px' }}>
+          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Music vibe (optional)</span>
+          <input value={musicHint} onChange={(e) => setMusicHint(e.target.value)} placeholder="e.g. calm piano, upbeat" style={builderField} />
+        </label>
+        <label className="caption" style={{ display: 'grid', gap: 4, flex: '1 1 220px' }}>
+          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>On-screen caption (optional)</span>
+          <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="short line burned onto the video" style={builderField} />
+        </label>
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <span className="caption" style={{ color: 'var(--ink-mute)' }}>Renders on GitHub Actions, usually 2-5 min. It attaches itself when done.</span>
+        <span style={{ flex: 1 }} />
+        <button type="button" className="caption" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-mute)' }} onClick={onClose}>cancel</button>
+        <button
+          type="button"
+          disabled={pending}
+          className="pill-primary"
+          style={{ fontSize: 12, padding: '7px 16px' }}
+          onClick={() => onRender({ source, filter, clipCount, caption: caption.trim() || undefined, musicHint: musicHint.trim() || undefined })}
+        >
+          Render reel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const builderField: React.CSSProperties = {
+  font: 'inherit', fontSize: 13, padding: '7px 10px', borderRadius: 8,
+  border: '1px solid var(--hairline-input)', background: 'var(--canvas)', width: '100%',
+};
 
 /** Phone-framed mock of how the post will look on Instagram / Facebook. */
 function PostPreview({

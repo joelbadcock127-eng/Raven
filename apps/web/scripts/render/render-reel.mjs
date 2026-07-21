@@ -105,7 +105,10 @@ try {
 
   mkdirSync('work', { recursive: true });
 
-  // 1. download + normalise each clip: trim, scale-crop to 9:16, grade, 30fps
+  // 1. download + normalise each clip: trim, scale-crop to 9:16, grade, 30fps.
+  //    Image clips become a slow Ken Burns pan/zoom so reels can be built from
+  //    the photo library alone (alternating zoom-in / zoom-out for variety).
+  const FRAMES = Math.round(CLIP_S * 30);
   const parts = [];
   for (let i = 0; i < clips.length; i++) {
     const src = `work/src${i}`;
@@ -113,12 +116,33 @@ try {
     if (!res.ok) throw new Error(`clip ${i}: HTTP ${res.status}`);
     writeFileSync(src, Buffer.from(await res.arrayBuffer()));
     const out = `work/part${i}.mp4`;
-    sh('ffmpeg', [
-      '-y', '-i', src, '-t', String(CLIP_S),
-      '-vf',
-      `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},fps=30,format=yuv420p${grade}`,
-      '-an', '-c:v', 'libx264', '-preset', 'fast', '-crf', '21', out,
-    ]);
+
+    const isImage =
+      clips[i].type === 'image' ||
+      (!clips[i].type && /\.(jpe?g|png|webp|gif)($|\?)/i.test(clips[i].url));
+
+    if (isImage) {
+      // scale to a 2x canvas so there's resolution to zoom into, then zoompan
+      const zoomIn = i % 2 === 0;
+      const z = zoomIn
+        ? `min(zoom+0.0011,1.16)`
+        : `if(lte(zoom,1.0),1.16,max(zoom-0.0011,1.0))`;
+      sh('ffmpeg', [
+        '-y', '-loop', '1', '-t', String(CLIP_S), '-i', src,
+        '-vf',
+        `scale=${W * 2}:${H * 2}:force_original_aspect_ratio=increase,crop=${W * 2}:${H * 2},` +
+          `zoompan=z='${z}':d=${FRAMES}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${W}x${H}:fps=30,` +
+          `format=yuv420p${grade}`,
+        '-r', '30', '-an', '-c:v', 'libx264', '-preset', 'fast', '-crf', '21', out,
+      ]);
+    } else {
+      sh('ffmpeg', [
+        '-y', '-i', src, '-t', String(CLIP_S),
+        '-vf',
+        `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},fps=30,format=yuv420p${grade}`,
+        '-an', '-c:v', 'libx264', '-preset', 'fast', '-crf', '21', out,
+      ]);
+    }
     parts.push(out);
   }
 

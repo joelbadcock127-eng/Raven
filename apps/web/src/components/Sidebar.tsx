@@ -33,6 +33,11 @@ const Icon = {
       <path d="M20.8 8.6a5 5 0 0 0-8.8-3.2A5 5 0 0 0 3.2 8.6c0 5 8.8 10.4 8.8 10.4s8.8-5.4 8.8-10.4z" />
     </svg>
   ),
+  analytics: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+    </svg>
+  ),
   upload: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 5v14M5 12h14" />
@@ -53,6 +58,7 @@ const ITEMS = [
   { href: '/sites', label: 'Sites', icon: Icon.sites },
   { href: '/media', label: 'Media', icon: Icon.media },
   { href: '/social', label: 'Social', icon: Icon.social },
+  { href: '/analytics', label: 'Analytics', icon: Icon.analytics },
 ];
 
 function isActive(pathname: string, href: string): boolean {

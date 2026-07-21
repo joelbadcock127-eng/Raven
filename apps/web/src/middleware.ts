@@ -80,6 +80,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Tracked-link redirects and bio pages are real app routes on every host.
+  if (pathname.startsWith('/go/') || pathname.startsWith('/l/')) return NextResponse.next();
+
   const settings = await loadSettings();
   let pid = settings.find((r) => r.domains?.some((d) => d.toLowerCase() === host))?.property_id;
   if (!pid) pid = staticDomainMap().get(host);

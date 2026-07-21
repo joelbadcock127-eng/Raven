@@ -120,6 +120,39 @@ export async function publishToInstagram(input: {
   }
 }
 
+/**
+ * Pull performance for a published Instagram media item. likes/comments are
+ * plain fields; reach/saved come from the insights edge. Returns nulls for
+ * anything Meta won't give for that media type rather than throwing.
+ */
+export async function getMediaInsights(
+  mediaId: string,
+): Promise<{ reach: number | null; saves: number | null; likes: number | null; comments: number | null }> {
+  const token = process.env.META_ACCESS_TOKEN;
+  const out = { reach: null as number | null, saves: null as number | null, likes: null as number | null, comments: null as number | null };
+  if (!token) return out;
+  try {
+    const fieldRes = await fetch(`${GRAPH}/${mediaId}?fields=like_count,comments_count&access_token=${token}`);
+    const fields = (await fieldRes.json()) as { like_count?: number; comments_count?: number };
+    out.likes = fields.like_count ?? null;
+    out.comments = fields.comments_count ?? null;
+  } catch {
+    /* ignore */
+  }
+  try {
+    const insRes = await fetch(`${GRAPH}/${mediaId}/insights?metric=reach,saved&access_token=${token}`);
+    const ins = (await insRes.json()) as { data?: Array<{ name: string; values: Array<{ value: number }> }> };
+    for (const m of ins.data ?? []) {
+      const v = m.values?.[0]?.value ?? null;
+      if (m.name === 'reach') out.reach = v;
+      if (m.name === 'saved') out.saves = v;
+    }
+  } catch {
+    /* insights not available for this media type */
+  }
+  return out;
+}
+
 /** Publish a photo or link post to the Facebook Page. */
 export async function publishToFacebook(input: {
   caption: string;

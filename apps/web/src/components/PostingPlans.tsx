@@ -18,6 +18,7 @@ export interface Plan {
   max_clips: number;
   active: boolean;
   next_run_at: string;
+  mode?: 'recurring' | 'once';
 }
 
 export interface FolderRef {
@@ -61,6 +62,7 @@ export default function PostingPlans({ plans, folders }: { plans: Plan[]; folder
   const [showForm, setShowForm] = useState(false);
   const [notice, setNotice] = useState('');
   const [pending, startTransition] = useTransition();
+  const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState<PlanInput>({
     propertyId: 'ten-fifty-bakers',
     name: '',
@@ -73,7 +75,10 @@ export default function PostingPlans({ plans, folders }: { plans: Plan[]; folder
     alsoStory: false,
     folderId: null,
     maxClips: 5,
+    mode: 'recurring',
+    runOn: today,
   });
+  const once = form.mode === 'once';
 
   const run = (fn: () => Promise<{ ok: boolean; message: string }>, close = false) =>
     startTransition(async () => {
@@ -86,7 +91,7 @@ export default function PostingPlans({ plans, folders }: { plans: Plan[]; folder
     <section className="card" style={{ padding: 0, marginBottom: 20, overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderBottom: plans.length || showForm ? '1px solid var(--hairline)' : 'none' }}>
         <h2 className="heading-md" style={{ fontSize: 17 }}>Posting plans</h2>
-        <span className="caption">what Raven drafts on schedule — everything still waits for approval</span>
+        <span className="caption">recurring or one-off — Raven drafts, you approve before anything goes out</span>
         <span style={{ flex: 1 }} />
         {notice && <span className="caption">{notice}</span>}
         <button type="button" className="pill-primary" style={{ fontSize: 12, padding: '7px 14px' }} onClick={() => setShowForm((v) => !v)}>
@@ -96,6 +101,30 @@ export default function PostingPlans({ plans, folders }: { plans: Plan[]; folder
 
       {showForm && (
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--hairline)', background: 'var(--canvas-soft)' }}>
+          {/* Repeat vs one-off */}
+          <div style={{ display: 'inline-flex', padding: 3, borderRadius: 'var(--r-pill)', background: 'var(--canvas)', border: '1px solid var(--hairline)', marginBottom: 14 }}>
+            {(
+              [
+                ['recurring', 'Repeat on a schedule'],
+                ['once', 'Just once'],
+              ] as const
+            ).map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setForm({ ...form, mode: m })}
+                className="caption"
+                style={{
+                  border: 'none', cursor: 'pointer', padding: '6px 14px', borderRadius: 'var(--r-pill)',
+                  background: form.mode === m ? 'var(--brand-dark-900)' : 'transparent',
+                  color: form.mode === m ? '#fff' : 'var(--ink-secondary)',
+                  fontWeight: form.mode === m ? 500 : 400,
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 12 }}>
             <Field label="Property">
               <select value={form.propertyId} onChange={(e) => setForm({ ...form, propertyId: e.target.value, folderId: null })} style={field}>
@@ -119,13 +148,19 @@ export default function PostingPlans({ plans, folders }: { plans: Plan[]; folder
                 <option value="facebook">Facebook only</option>
               </select>
             </Field>
-            <Field label="Cadence">
-              <select value={form.everyDays} onChange={(e) => setForm({ ...form, everyDays: Number(e.target.value) })} style={field}>
-                {[1, 2, 3, 5, 7, 14].map((d) => (
-                  <option key={d} value={d}>{d === 1 ? 'Daily' : d === 7 ? 'Weekly' : `Every ${d} days`}</option>
-                ))}
-              </select>
-            </Field>
+            {once ? (
+              <Field label="Date">
+                <input type="date" min={today} value={form.runOn ?? today} onChange={(e) => setForm({ ...form, runOn: e.target.value })} style={field} />
+              </Field>
+            ) : (
+              <Field label="Cadence">
+                <select value={form.everyDays} onChange={(e) => setForm({ ...form, everyDays: Number(e.target.value) })} style={field}>
+                  {[1, 2, 3, 5, 7, 14].map((d) => (
+                    <option key={d} value={d}>{d === 1 ? 'Daily' : d === 7 ? 'Weekly' : `Every ${d} days`}</option>
+                  ))}
+                </select>
+              </Field>
+            )}
             <Field label="Content source">
               <select value={form.folderId ?? ''} onChange={(e) => setForm({ ...form, folderId: e.target.value || null })} style={field}>
                 <option value="">Whole library</option>
@@ -175,13 +210,15 @@ export default function PostingPlans({ plans, folders }: { plans: Plan[]; folder
                         ...form,
                         name:
                           form.name ||
-                          `${PROPERTIES.find((p) => p.id === form.propertyId)?.short} · ${form.format}${form.everyDays === 1 ? ' daily' : ` / ${form.everyDays}d`}`,
+                          (once
+                            ? `${PROPERTIES.find((p) => p.id === form.propertyId)?.short} · ${form.format} · one-off`
+                            : `${PROPERTIES.find((p) => p.id === form.propertyId)?.short} · ${form.format}${form.everyDays === 1 ? ' daily' : ` / ${form.everyDays}d`}`),
                       }),
                     true,
                   )
                 }
               >
-                Save plan
+                {once ? (form.runOn && form.runOn <= today ? 'Draft now' : 'Schedule') : 'Save plan'}
               </button>
             </div>
           </div>
@@ -190,8 +227,8 @@ export default function PostingPlans({ plans, folders }: { plans: Plan[]; folder
 
       {plans.length === 0 && !showForm && (
         <p className="caption" style={{ padding: '14px 20px' }}>
-          No plans yet — the default (one post per property every 3 days) applies. Create one to take
-          control: daily story for Ten Fifty, a reel every 5 days for Annie May…
+          No plans yet. Set a recurring rhythm (a reel every 5 days for Annie May, a daily story for
+          Ten Fifty) or fire off a single post with “Just once”.
         </p>
       )}
 
@@ -220,7 +257,7 @@ export default function PostingPlans({ plans, folders }: { plans: Plan[]; folder
             </span>
             <span className="tag-soft" style={{ textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>{PLATFORM_LABEL[p.platform]}</span>
             <span className="tag-soft" style={{ textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>
-              {p.every_days === 1 ? 'daily' : `every ${p.every_days}d`}
+              {p.mode === 'once' ? `once · ${p.next_run_at}` : p.every_days === 1 ? 'daily' : `every ${p.every_days}d`}
             </span>
             {p.folder_id && (
               <span className="tag-soft" style={{ textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>
