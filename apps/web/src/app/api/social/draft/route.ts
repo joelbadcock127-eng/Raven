@@ -57,8 +57,9 @@ export async function GET(req: NextRequest) {
     results[plan.name] = res.message;
 
     if (plan.mode === 'once') {
-      // a one-off fires once, then retires
-      await supabase.from('posting_plans').update({ active: false }).eq('id', plan.id);
+      // a one-off retires once it has actually produced a draft; if the draft
+      // failed (e.g. no eligible media) leave it active to retry next run
+      if (res.ok) await supabase.from('posting_plans').update({ active: false }).eq('id', plan.id);
     } else {
       const next = new Date(Date.now() + plan.every_days * 86_400_000).toISOString().slice(0, 10);
       await supabase.from('posting_plans').update({ next_run_at: next }).eq('id', plan.id);

@@ -127,13 +127,17 @@ try {
       const z = zoomIn
         ? `min(zoom+0.0011,1.16)`
         : `if(lte(zoom,1.0),1.16,max(zoom-0.0011,1.0))`;
+      // -t / -frames:v are OUTPUT options (after -i) so the looped still is
+      // truncated to one clip; zoompan (d=FRAMES) then animates over exactly
+      // that window. Putting -t before -i would loop many input frames and
+      // zoompan would emit FRAMES frames PER input frame — a minutes-long clip.
       sh('ffmpeg', [
-        '-y', '-loop', '1', '-t', String(CLIP_S), '-i', src,
+        '-y', '-loop', '1', '-i', src, '-t', String(CLIP_S),
         '-vf',
         `scale=${W * 2}:${H * 2}:force_original_aspect_ratio=increase,crop=${W * 2}:${H * 2},` +
           `zoompan=z='${z}':d=${FRAMES}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${W}x${H}:fps=30,` +
           `format=yuv420p${grade}`,
-        '-r', '30', '-an', '-c:v', 'libx264', '-preset', 'fast', '-crf', '21', out,
+        '-r', '30', '-frames:v', String(FRAMES), '-an', '-c:v', 'libx264', '-preset', 'fast', '-crf', '21', out,
       ]);
     } else {
       sh('ffmpeg', [

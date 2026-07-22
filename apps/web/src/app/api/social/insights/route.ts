@@ -11,10 +11,11 @@ export const maxDuration = 120;
  * isn't connected. Manual: /api/social/insights?secret=CRON_SECRET
  */
 export async function GET(req: NextRequest) {
+  // this endpoint spends the rate-limited Meta token, so require the secret
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get('authorization');
   const qs = req.nextUrl.searchParams.get('secret');
-  if (secret && auth !== `Bearer ${secret}` && qs !== secret)
+  if (!secret || (auth !== `Bearer ${secret}` && qs !== secret))
     return NextResponse.json({ error: 'unauthorised' }, { status: 401 });
 
   if (!metaConfigured()) return NextResponse.json({ ok: true, skipped: 'Meta not connected' });
@@ -35,6 +36,9 @@ export async function GET(req: NextRequest) {
   let updated = 0;
   for (const p of posts ?? []) {
     const ins = await getMediaInsights(p.external_id as string);
+    // a transient Graph failure returns all-nulls — skip rather than wipe
+    // previously-synced metrics (and leave insights_synced_at old so it retries)
+    if (ins.reach == null && ins.saves == null && ins.likes == null && ins.comments == null) continue;
     await supabase
       .from('social_posts')
       .update({

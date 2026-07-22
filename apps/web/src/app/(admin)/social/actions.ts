@@ -107,10 +107,15 @@ export async function publishPost(id: string): Promise<ActionResult> {
       external_id: externalId ?? null,
       external_url: externalUrl ?? null,
       error: ok ? null : results.join(' · '),
-      ...(ok ? { published_at: new Date().toISOString() } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq('id', id);
+
+  // published_at is a 0014 column — set it separately and ignore any error so
+  // publishing still records status/external_id before the migration is run
+  if (ok) {
+    await supabase.from('social_posts').update({ published_at: new Date().toISOString() }).eq('id', id);
+  }
 
   if (ok && post.media_ids?.length) {
     // reuse-rule bookkeeping: bump use count and stamp last use
