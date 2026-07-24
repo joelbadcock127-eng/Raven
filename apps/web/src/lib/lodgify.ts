@@ -219,6 +219,7 @@ export interface ThreadMessage {
   subject: string | null;
   message: string;
   isInbound: boolean; // true = from the guest
+  kind: string | null; // raw type/direction field, for diagnosis
   createdAt: string | null;
 }
 
@@ -226,6 +227,43 @@ export interface Thread {
   uid: string;
   subject: string | null;
   messages: ThreadMessage[];
+  raw: Json; // untouched payload, surfaced by the ?debug=1 view
+}
+
+/** Messages arrive as HTML fragments — flatten to plain text for the chat view. */
+function htmlToText(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&#0?39;|&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .trim();
+}
+
+/**
+ * Work out who sent a message. Lodgify exposes this differently across
+ * accounts/channels (type, direction, sender_type, booleans), so check the
+ * lot; the raw value is kept on `kind` and shown by the debug view.
+ */
+function messageInbound(m: Json): boolean {
+  for (const flag of [m?.is_inbound, m?.inbound, m?.is_incoming]) {
+    if (typeof flag === 'boolean') return flag;
+  }
+  const labels = [m?.type, m?.direction, m?.sender_type, m?.author_type, m?.user_type, m?.creator_type]
+    .filter((x) => x != null)
+    .map((x: Json) => String(x).toLowerCase());
+  for (const l of labels) {
+    if (/guest|renter|inquirer|incoming|received|\bin\b/.test(l)) return true;
+    if (/owner|host|manager|system|outgoing|sent|\bout\b/.test(l)) return false;
+  }
+  // Lodgify titles owner replies "Reply to your booking request …"
+  if (/^(re:|reply to)/i.test(String(m?.subject ?? '').trim())) return false;
+  return true; // unknown senders read better as the guest side
 }
 
 /** Fetch one messaging thread by its guid (booking.threadUid). */
@@ -235,14 +273,16 @@ export async function getThread(threadUid: string): Promise<Thread> {
   const messages: ThreadMessage[] = rawMessages.map((m: Json, i: number) => ({
     id: String(m?.id ?? m?.uid ?? i),
     subject: m?.subject != null ? String(m.subject) : null,
-    message: String(m?.message ?? m?.body ?? m?.text ?? ''),
-    isInbound: m?.type != null ? String(m.type).toLowerCase().includes('guest') : Boolean(m?.is_inbound ?? m?.inbound),
+    message: htmlToText(String(m?.message ?? m?.body ?? m?.text ?? '')),
+    isInbound: messageInbound(m),
+    kind: m?.type ?? m?.direction ?? m?.sender_type ?? null,
     createdAt: m?.date_created ?? m?.created_at ?? null,
   }));
   return {
     uid: String(data?.uid ?? data?.thread_uid ?? threadUid),
     subject: data?.subject != null ? String(data.subject) : null,
     messages,
+    raw: data,
   };
 }
 

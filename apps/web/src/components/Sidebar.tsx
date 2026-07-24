@@ -79,11 +79,10 @@ const Icon = {
   ),
 };
 
-/** PMS tabs — the Lodgify features (dashboard, reservations, messaging, calendar). */
+/** PMS tabs — the Lodgify features. Reservations includes guest messaging. */
 const PMS_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: Icon.dashboard },
-  { href: '/reservations', label: 'Reservations', icon: Icon.reservations },
-  { href: '/inbox', label: 'Inbox', icon: Icon.inbox },
+  { href: '/reservations', label: 'Reservations', icon: Icon.inbox },
   { href: '/calendar', label: 'Calendar', icon: Icon.calendar },
 ];
 

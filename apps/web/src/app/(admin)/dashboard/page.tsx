@@ -1,22 +1,36 @@
 import Link from 'next/link';
-import { listBookings, lodgifyConfigured, type LodgifyBooking } from '@/lib/lodgify';
+import {
+  listBookings,
+  listProperties,
+  lodgifyConfigured,
+  type LodgifyBooking,
+  type LodgifyProperty,
+} from '@/lib/lodgify';
 import { bucketStays, fmtShort, fmtMoney, isoPlusDays, statusStyle, todayIso } from '@/lib/pms';
+import { SourceLogo } from '@/components/PmsBits';
 
 export const revalidate = 0;
 
-function StayRow({ b }: { b: LodgifyBooking }) {
+function StayRow({ b, propName }: { b: LodgifyBooking; propName: string | null }) {
   const pill = statusStyle(b.status);
   return (
     <Link
-      href={b.threadUid ? `/inbox?booking=${b.id}` : `/reservations`}
-      style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap', padding: '10px 0', borderBottom: '1px solid var(--hairline)' }}
+      href={`/reservations?booking=${b.id}`}
+      style={{ display: 'grid', gap: 3, padding: '10px 0', borderBottom: '1px solid var(--hairline)' }}
     >
-      <span className="micro-cap" style={{ padding: '2px 8px', borderRadius: 999, ...pill }}>{b.status}</span>
-      <span className="caption" style={{ fontWeight: 500, flex: 1, minWidth: 120 }}>{b.guestName}</span>
-      <span className="caption" style={{ color: 'var(--ink-mute)', minWidth: 140 }}>{b.propertyName ?? '—'}</span>
-      <span className="caption tnum">{fmtShort(b.arrival)} – {fmtShort(b.departure)}</span>
-      <span className="caption tnum" style={{ color: 'var(--ink-mute)' }}>{b.adults || '–'} guests</span>
-      <span className="caption tnum" style={{ color: 'var(--primary-deep)' }}>{fmtMoney(b.totalAmount, b.currency)}</span>
+      <span style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
+        <span className="micro-cap" style={{ padding: '2px 8px', borderRadius: 999, ...pill }}>{b.status}</span>
+        <span className="caption" style={{ fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.guestName}</span>
+        <span className="caption tnum" style={{ color: 'var(--primary-deep)' }}>{fmtMoney(b.totalAmount, b.currency)}</span>
+      </span>
+      <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <SourceLogo source={b.source} size={13} />
+        <span className="caption tnum">{fmtShort(b.arrival)} – {fmtShort(b.departure)}</span>
+        <span className="micro-cap tnum" style={{ color: 'var(--ink-mute)' }}>{b.adults || '–'} guests</span>
+        <span className="micro-cap" style={{ color: 'var(--ink-mute)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
+          {propName ?? ''}
+        </span>
+      </span>
     </Link>
   );
 }
@@ -24,22 +38,33 @@ function StayRow({ b }: { b: LodgifyBooking }) {
 export default async function PmsDashboardPage() {
   const configured = lodgifyConfigured();
   let bookings: LodgifyBooking[] = [];
+  let properties: LodgifyProperty[] = [];
   let loadError: string | null = null;
   if (configured) {
     try {
-      bookings = await listBookings({ max: 100, stayFrom: todayIso(), stayTo: isoPlusDays(30) });
+      [bookings, properties] = await Promise.all([
+        listBookings({ max: 100, stayFrom: todayIso(), stayTo: isoPlusDays(30) }),
+        listProperties(),
+      ]);
     } catch (err) {
       loadError = (err as Error).message;
     }
   }
+  const propById = new Map(properties.map((p) => [p.id, p]));
+  const nameOf = (b: LodgifyBooking) =>
+    (b.propertyId != null ? propById.get(b.propertyId)?.name : null) ?? b.propertyName;
+
   const { arrivals, departures, staying } = bucketStays(bookings);
-  const due = bookings.reduce((n, b) => n + Math.max(0, (b.totalAmount ?? 0) - (b.amountPaid ?? 0)), 0);
+  // Balance outstanding on confirmed stays only — enquiries aren't money owed.
+  const due = bookings
+    .filter((b) => b.status.toLowerCase() === 'booked')
+    .reduce((n, b) => n + Math.max(0, (b.totalAmount ?? 0) - (b.amountPaid ?? 0)), 0);
 
   const tiles = [
     { v: String(arrivals.length), l: 'arrivals · next 30d' },
     { v: String(departures.length), l: 'departures · next 30d' },
     { v: String(staying.length), l: 'currently staying' },
-    { v: fmtMoney(due, 'AUD'), l: 'balance due · next 30d' },
+    { v: fmtMoney(due, 'AUD'), l: 'balance due · booked stays, next 30d' },
   ];
 
   return (
@@ -47,8 +72,8 @@ export default async function PmsDashboardPage() {
       <header style={{ marginBottom: 22 }}>
         <h1 className="display-lg" style={{ marginBottom: 8 }}>Dashboard</h1>
         <p className="caption" style={{ maxWidth: 620, color: 'var(--ink-mute)' }}>
-          The PMS view, live from Lodgify: who&apos;s arriving, who&apos;s leaving and who&apos;s in-house
-          across the next 30 days.
+          The PMS view, live from Lodgify: confirmed arrivals, departures and in-house guests over
+          the next 30 days. Enquiries and requests live on the Reservations tab.
         </p>
       </header>
 
@@ -77,8 +102,8 @@ export default async function PmsDashboardPage() {
       <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', alignItems: 'start' }}>
         {(
           [
-            ['Next arrivals', arrivals, 'Arrivals in the next 30 days appear here.'],
-            ['Next departures', departures, 'Departures in the next 30 days appear here.'],
+            ['Next arrivals', arrivals, 'Booked arrivals in the next 30 days appear here.'],
+            ['Next departures', departures, 'Booked departures in the next 30 days appear here.'],
             ['Currently staying', staying, 'Guests in-house right now appear here.'],
           ] as const
         ).map(([title, list, empty]) => (
@@ -87,7 +112,7 @@ export default async function PmsDashboardPage() {
             {list.length === 0 ? (
               <p className="caption" style={{ color: 'var(--ink-mute)' }}>{empty}</p>
             ) : (
-              list.slice(0, 8).map((b) => <StayRow key={`${title}-${b.id}`} b={b} />)
+              list.slice(0, 8).map((b) => <StayRow key={`${title}-${b.id}`} b={b} propName={nameOf(b)} />)
             )}
           </section>
         ))}

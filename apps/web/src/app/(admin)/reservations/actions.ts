@@ -16,9 +16,9 @@ export async function replyToGuest(formData: FormData) {
   } catch (err) {
     error = (err as Error).message;
   }
-  revalidatePath('/inbox');
+  revalidatePath('/reservations');
   const params = new URLSearchParams({ booking: String(bookingId) });
   if (error) params.set('sendError', error.slice(0, 200));
   else params.set('sent', '1');
-  redirect(`/inbox?${params}`);
+  redirect(`/reservations?${params}`);
 }

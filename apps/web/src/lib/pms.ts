@@ -45,16 +45,22 @@ export function statusStyle(status: string): { color: string; background: string
   }
 }
 
-export function bucketStays(bookings: LodgifyBooking[]) {
+/**
+ * Confirmed stays only ("Booked") — enquiries and declined requests belong on
+ * the Reservations list, not the operational dashboard. Arrivals/departures
+ * are capped at the horizon so the tiles mean what they say.
+ */
+export function bucketStays(bookings: LodgifyBooking[], horizonDays = 30) {
   const today = todayIso();
-  const live = bookings.filter((b) => !['declined', 'closed'].includes(b.status.toLowerCase()));
+  const horizon = isoPlusDays(horizonDays);
+  const booked = bookings.filter((b) => b.status.toLowerCase() === 'booked');
   return {
-    arrivals: live
-      .filter((b) => b.arrival >= today)
+    arrivals: booked
+      .filter((b) => b.arrival >= today && b.arrival <= horizon)
       .sort((a, b) => a.arrival.localeCompare(b.arrival)),
-    departures: live
-      .filter((b) => b.departure >= today && b.arrival < b.departure)
+    departures: booked
+      .filter((b) => b.departure >= today && b.departure <= horizon && b.arrival < b.departure)
       .sort((a, b) => a.departure.localeCompare(b.departure)),
-    staying: live.filter((b) => b.arrival <= today && b.departure > today),
+    staying: booked.filter((b) => b.arrival <= today && b.departure > today),
   };
 }
