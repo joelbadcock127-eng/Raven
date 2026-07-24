@@ -1,6 +1,13 @@
 import Link from 'next/link';
-import { listBookings, lodgifyConfigured, type LodgifyBooking } from '@/lib/lodgify';
+import {
+  listBookings,
+  listProperties,
+  lodgifyConfigured,
+  type LodgifyBooking,
+  type LodgifyProperty,
+} from '@/lib/lodgify';
 import { fmtMoney, fmtShort, statusStyle } from '@/lib/pms';
+import { PropertyThumb, SourceLogo } from '@/components/PmsBits';
 
 export const revalidate = 0;
 
@@ -14,14 +21,16 @@ export default async function ReservationsPage({
   const { status = 'All' } = await searchParams;
   const configured = lodgifyConfigured();
   let bookings: LodgifyBooking[] = [];
+  let properties: LodgifyProperty[] = [];
   let loadError: string | null = null;
   if (configured) {
     try {
-      bookings = await listBookings({ max: 200 });
+      [bookings, properties] = await Promise.all([listBookings({ max: 200 }), listProperties()]);
     } catch (err) {
       loadError = (err as Error).message;
     }
   }
+  const propById = new Map(properties.map((p) => [p.id, p]));
   const shown = bookings
     .filter((b) => status === 'All' || b.status.toLowerCase() === status.toLowerCase())
     .sort((a, b) => (b.createdAt ?? b.arrival).localeCompare(a.createdAt ?? a.arrival));
@@ -72,7 +81,7 @@ export default async function ReservationsPage({
         })}
       </nav>
 
-      <section className="card" style={{ padding: '8px 22px' }}>
+      <section className="card" style={{ padding: '4px 18px', maxWidth: 760 }}>
         {shown.length === 0 ? (
           <p className="caption" style={{ color: 'var(--ink-mute)', padding: '14px 0' }}>
             {configured ? 'No reservations match this filter.' : 'Reservations appear once Lodgify is connected.'}
@@ -80,19 +89,43 @@ export default async function ReservationsPage({
         ) : (
           shown.map((b) => {
             const pill = statusStyle(b.status);
+            const prop = b.propertyId != null ? propById.get(b.propertyId) : undefined;
             return (
               <Link
                 key={b.id}
                 href={b.threadUid ? `/inbox?booking=${b.id}` : `/reservations?status=${status}`}
-                style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap', padding: '12px 0', borderBottom: '1px solid var(--hairline)' }}
+                style={{ display: 'flex', gap: 14, alignItems: 'center', padding: '14px 0', borderBottom: '1px solid var(--hairline)' }}
               >
-                <span className="micro-cap" style={{ padding: '2px 8px', borderRadius: 999, ...pill }}>{b.status}</span>
-                <span className="caption" style={{ fontWeight: 500, minWidth: 140, flex: 1 }}>{b.guestName}</span>
-                <span className="caption" style={{ color: 'var(--ink-mute)', minWidth: 150 }}>{b.propertyName ?? '—'}</span>
-                <span className="caption tnum">{fmtShort(b.arrival)} – {fmtShort(b.departure)}</span>
-                <span className="caption tnum" style={{ color: 'var(--ink-mute)' }}>{b.nights}n · {b.adults || '–'} guests</span>
-                <span className="micro-cap" style={{ color: 'var(--ink-mute)', width: 70 }}>{b.source ?? ''}</span>
-                <span className="caption tnum" style={{ color: 'var(--primary-deep)', width: 80, textAlign: 'right' }}>{fmtMoney(b.totalAmount, b.currency)}</span>
+                <PropertyThumb url={prop?.imageUrl} name={prop?.name ?? b.propertyName ?? '·'} size={52} />
+                <span style={{ flex: 1, minWidth: 0, display: 'grid', gap: 3 }}>
+                  <span style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
+                    <span className="micro-cap" style={{ padding: '2px 8px', borderRadius: 999, ...pill }}>{b.status}</span>
+                    <span style={{ flex: 1 }} />
+                    <span className="micro-cap tnum" style={{ color: 'var(--ink-mute)' }}>
+                      {b.createdAt ? fmtShort(b.createdAt) : ''}
+                    </span>
+                  </span>
+                  <span style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
+                    <span className="caption" style={{ fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {b.guestName}
+                    </span>
+                    <span className="caption tnum" style={{ color: 'var(--primary-deep)', fontWeight: 500 }}>
+                      {fmtMoney(b.totalAmount, b.currency)}
+                    </span>
+                  </span>
+                  <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <SourceLogo source={b.source} size={15} />
+                    <span className="caption tnum" style={{ color: 'var(--ink-secondary)' }}>
+                      {fmtShort(b.arrival)} – {fmtShort(b.departure)}
+                    </span>
+                    <span className="micro-cap tnum" style={{ color: 'var(--ink-mute)' }}>
+                      {b.nights}n · {b.adults || '–'} guests
+                    </span>
+                    <span className="micro-cap" style={{ color: 'var(--ink-mute)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
+                      {prop?.name ?? b.propertyName ?? ''}
+                    </span>
+                  </span>
+                </span>
               </Link>
             );
           })

@@ -2,11 +2,14 @@ import Link from 'next/link';
 import {
   getThread,
   listBookings,
+  listProperties,
   lodgifyConfigured,
   type LodgifyBooking,
+  type LodgifyProperty,
   type Thread,
 } from '@/lib/lodgify';
 import { fmtMoney, fmtShort, statusStyle } from '@/lib/pms';
+import { PropertyThumb, SourceLogo } from '@/components/PmsBits';
 import { replyToGuest } from './actions';
 
 export const revalidate = 0;
@@ -20,14 +23,16 @@ export default async function InboxPage({
   const configured = lodgifyConfigured();
 
   let bookings: LodgifyBooking[] = [];
+  let properties: LodgifyProperty[] = [];
   let loadError: string | null = null;
   if (configured) {
     try {
-      bookings = await listBookings({ max: 100 });
+      [bookings, properties] = await Promise.all([listBookings({ max: 100 }), listProperties()]);
     } catch (err) {
       loadError = (err as Error).message;
     }
   }
+  const propById = new Map(properties.map((p) => [p.id, p]));
   const conversations = bookings
     .filter((b) => b.threadUid)
     .sort((a, b) => (b.createdAt ?? b.arrival).localeCompare(a.createdAt ?? a.arrival));
@@ -89,24 +94,32 @@ export default async function InboxPage({
             conversations.map((b) => {
               const active = b.id === selected?.id;
               const pill = statusStyle(b.status);
+              const prop = b.propertyId != null ? propById.get(b.propertyId) : undefined;
               return (
                 <Link
                   key={b.id}
                   href={`/inbox?booking=${b.id}`}
                   style={{
-                    display: 'grid',
-                    gap: 4,
-                    padding: '12px 22px',
+                    display: 'flex',
+                    gap: 12,
+                    alignItems: 'center',
+                    padding: '12px 18px',
                     background: active ? 'var(--canvas-soft)' : 'transparent',
                     borderLeft: active ? '3px solid var(--primary)' : '3px solid transparent',
                   }}
                 >
-                  <span style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                    <span className="caption" style={{ fontWeight: 500, flex: 1 }}>{b.guestName}</span>
-                    <span className="micro-cap" style={{ padding: '1px 7px', borderRadius: 999, ...pill }}>{b.status}</span>
-                  </span>
-                  <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>
-                    {b.propertyName ?? '—'} · {fmtShort(b.arrival)} – {fmtShort(b.departure)}
+                  <PropertyThumb url={prop?.imageUrl} name={prop?.name ?? b.propertyName ?? '·'} size={42} />
+                  <span style={{ flex: 1, minWidth: 0, display: 'grid', gap: 3 }}>
+                    <span style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                      <span className="caption" style={{ fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {b.guestName}
+                      </span>
+                      <span className="micro-cap" style={{ padding: '1px 7px', borderRadius: 999, ...pill }}>{b.status}</span>
+                    </span>
+                    <span className="micro-cap" style={{ color: 'var(--ink-mute)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <SourceLogo source={b.source} size={13} />
+                      {fmtShort(b.arrival)} – {fmtShort(b.departure)}
+                    </span>
                   </span>
                 </Link>
               );
@@ -120,19 +133,62 @@ export default async function InboxPage({
             <p className="caption" style={{ color: 'var(--ink-mute)' }}>Select a conversation.</p>
           ) : (
             <>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap', marginBottom: 6 }}>
-                <h2 className="heading-md" style={{ flex: 1 }}>{selected.guestName}</h2>
-                <span className="caption tnum" style={{ color: 'var(--primary-deep)' }}>
-                  {fmtMoney(selected.totalAmount, selected.currency)}
-                </span>
-              </div>
-              <p className="micro-cap" style={{ color: 'var(--ink-mute)', marginBottom: 16 }}>
-                {selected.propertyName ?? '—'} · {fmtShort(selected.arrival)} – {fmtShort(selected.departure)} ·{' '}
-                {selected.nights} nights · {selected.adults || '–'} guests
-                {selected.source ? ` · via ${selected.source}` : ''} · Booking #{selected.id}
-                {selected.guestEmail ? ` · ${selected.guestEmail}` : ''}
-                {selected.guestPhone ? ` · ${selected.guestPhone}` : ''}
-              </p>
+              {(() => {
+                const prop = selected.propertyId != null ? propById.get(selected.propertyId) : undefined;
+                const pill = statusStyle(selected.status);
+                return (
+                  <div className="card" style={{ padding: 18, marginBottom: 18, background: 'var(--canvas-soft)' }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span className="micro-cap" style={{ padding: '2px 8px', borderRadius: 999, ...pill }}>{selected.status}</span>
+                        <h2 className="heading-md" style={{ margin: '8px 0 2px' }}>{selected.guestName}</h2>
+                        <p className="micro-cap" style={{ color: 'var(--ink-mute)' }}>
+                          {selected.adults || '–'} guests · {selected.nights} nights
+                          {selected.source ? `, from ${selected.source}` : ''}
+                          <br />
+                          Reservation ID: {selected.id}
+                          {selected.guestEmail ? <><br />{selected.guestEmail}</> : null}
+                          {selected.guestPhone ? <><br />{selected.guestPhone}</> : null}
+                        </p>
+                      </div>
+                      <SourceLogo source={selected.source} size={26} />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '14px 0', paddingTop: 14, borderTop: '1px solid var(--hairline)' }}>
+                      <PropertyThumb url={prop?.imageUrl} name={prop?.name ?? selected.propertyName ?? '·'} size={44} />
+                      <div style={{ minWidth: 0 }}>
+                        <div className="caption" style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {prop?.name ?? selected.propertyName ?? '—'}
+                        </div>
+                        {selected.propertyId != null && (
+                          <div className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Rental Id: {selected.propertyId}</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 24, paddingTop: 14, borderTop: '1px solid var(--hairline)', flexWrap: 'wrap' }}>
+                      <div>
+                        <div className="caption tnum" style={{ fontWeight: 500 }}>{fmtShort(selected.arrival)}</div>
+                        <div className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Check-in</div>
+                      </div>
+                      <div>
+                        <div className="caption tnum" style={{ fontWeight: 500 }}>{fmtShort(selected.departure)}</div>
+                        <div className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Check-out</div>
+                      </div>
+                      <div style={{ flex: 1 }} />
+                      <div style={{ textAlign: 'right' }}>
+                        <div className="micro-cap tnum" style={{ color: 'var(--ink-mute)' }}>
+                          Due {fmtMoney(Math.max(0, (selected.totalAmount ?? 0) - (selected.amountPaid ?? 0)), selected.currency)}
+                          {' · '}Paid {fmtMoney(selected.amountPaid ?? 0, selected.currency)}
+                        </div>
+                        <div className="caption tnum" style={{ fontWeight: 600, fontSize: 16 }}>
+                          {fmtMoney(selected.totalAmount, selected.currency)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div style={{ display: 'grid', gap: 10, marginBottom: 18, maxHeight: '42vh', overflowY: 'auto' }}>
                 {threadError ? (

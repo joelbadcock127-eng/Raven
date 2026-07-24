@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { PMS_MENU_EVENT, pmsMenuVisible } from '@/components/PmsMenuToggle';
 
 /** Minimal stroke icons (24×24 viewBox, stroke = currentColor). */
 const Icon = {
@@ -101,6 +103,18 @@ function isActive(pathname: string, href: string): boolean {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [showPms, setShowPms] = useState(true);
+
+  useEffect(() => {
+    const sync = () => setShowPms(pmsMenuVisible());
+    sync();
+    window.addEventListener(PMS_MENU_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(PMS_MENU_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
 
   return (
     <>
@@ -125,7 +139,7 @@ export default function Sidebar() {
         <div className="heading-md" style={{ fontWeight: 400, letterSpacing: '-0.4px', padding: '0 12px 20px' }}>
           Raven
         </div>
-        {PMS_ITEMS.map((item) => {
+        {showPms && PMS_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link
@@ -151,7 +165,7 @@ export default function Sidebar() {
             </Link>
           );
         })}
-        <div aria-hidden style={{ height: 1, background: 'var(--hairline)', margin: '10px 12px' }} />
+        {showPms && <div aria-hidden style={{ height: 1, background: 'var(--hairline)', margin: '10px 12px' }} />}
         {ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
           return (

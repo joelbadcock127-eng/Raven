@@ -53,11 +53,19 @@ async function lodgifyFetch<T>(
 export interface LodgifyProperty {
   id: number;
   name: string;
+  imageUrl: string | null;
   rooms: Array<{ id: number; name: string }>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any;
+
+/** Lodgify image urls sometimes arrive protocol-relative ("//l.icdbcdn.com/…"). */
+function normaliseImageUrl(url: unknown): string | null {
+  if (url == null || url === '') return null;
+  const s = String(url);
+  return s.startsWith('//') ? `https:${s}` : s;
+}
 
 export async function listProperties(): Promise<LodgifyProperty[]> {
   const data = await lodgifyFetch<Json>('/v2/properties?includeCount=false&includeInOut=false');
@@ -65,6 +73,9 @@ export async function listProperties(): Promise<LodgifyProperty[]> {
   return items.map((p) => ({
     id: Number(p.id),
     name: String(p.name ?? ''),
+    imageUrl: normaliseImageUrl(
+      p.image_url ?? p.thumbnail_url ?? p.photos?.[0]?.url ?? p.images?.[0]?.url ?? null,
+    ),
     rooms: (p.rooms ?? p.room_types ?? []).map((r: Json) => ({
       id: Number(r.id),
       name: String(r.name ?? ''),

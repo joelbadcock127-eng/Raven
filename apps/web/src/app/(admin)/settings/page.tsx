@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { fetchLiveCosts, liveConfigured } from '@/lib/usage';
+import PmsMenuToggle from '@/components/PmsMenuToggle';
 
 export const revalidate = 0;
 
@@ -105,6 +106,18 @@ export default async function SettingsPage() {
           at list prices — estimates, not provider invoices.
         </p>
       </header>
+
+      <section className="card" style={{ padding: '22px 24px', maxWidth: 720, marginBottom: 24 }}>
+        <h2 className="heading-md" style={{ marginBottom: 4 }}>Side menu</h2>
+        <p className="caption" style={{ marginBottom: 16 }}>
+          Show or hide the PMS section (Dashboard, Reservations, Inbox, Calendar) at the top of the
+          side menu. The pages stay reachable by their URLs either way. Saved per device.
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <span style={{ fontSize: 14, color: 'var(--ink-secondary)', flex: 1 }}>PMS tabs in the side menu</span>
+          <PmsMenuToggle />
+        </div>
+      </section>
 
       {!u ? (
         <section className="card" style={{ padding: 32, maxWidth: 560 }}>
