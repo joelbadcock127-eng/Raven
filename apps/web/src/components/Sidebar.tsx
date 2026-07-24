@@ -49,7 +49,41 @@ const Icon = {
       <path d="M3.5 20c.7-3.4 2.8-5 5.5-5s4.8 1.6 5.5 5M16 4.5c1.7.6 2.8 2 2.8 3.9s-1.1 3.3-2.8 3.9M17.5 15.2c2 .7 3.2 2.3 3.6 4.8" />
     </svg>
   ),
+  dashboard: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="8" height="8" rx="1.5" />
+      <rect x="13" y="3" width="8" height="5" rx="1.5" />
+      <rect x="13" y="10" width="8" height="11" rx="1.5" />
+      <rect x="3" y="13" width="8" height="8" rx="1.5" />
+    </svg>
+  ),
+  reservations: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <path d="M3 10h18M8 15h5" />
+    </svg>
+  ),
+  inbox: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12a8 8 0 0 1-8 8H4l2.2-2.6A8 8 0 1 1 21 12z" />
+      <path d="M8.5 11h7M8.5 14h4.5" />
+    </svg>
+  ),
+  calendar: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="16" rx="2.5" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </svg>
+  ),
 };
+
+/** PMS tabs — the Lodgify features (dashboard, reservations, messaging, calendar). */
+const PMS_ITEMS = [
+  { href: '/dashboard', label: 'Dashboard', icon: Icon.dashboard },
+  { href: '/reservations', label: 'Reservations', icon: Icon.reservations },
+  { href: '/inbox', label: 'Inbox', icon: Icon.inbox },
+  { href: '/calendar', label: 'Calendar', icon: Icon.calendar },
+];
 
 const ITEMS = [
   { href: '/', label: 'Feed', icon: Icon.feed },
@@ -91,6 +125,33 @@ export default function Sidebar() {
         <div className="heading-md" style={{ fontWeight: 400, letterSpacing: '-0.4px', padding: '0 12px 20px' }}>
           Raven
         </div>
+        {PMS_ITEMS.map((item) => {
+          const active = isActive(pathname, item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '9px 12px',
+                borderRadius: 'var(--r-md)',
+                fontSize: 14,
+                color: active ? 'var(--primary-deep)' : 'var(--ink-secondary)',
+                background: active ? 'var(--canvas-soft)' : 'transparent',
+                fontWeight: active ? 500 : 400,
+                border: active ? '1px solid var(--hairline)' : '1px solid transparent',
+              }}
+            >
+              <span aria-hidden style={{ width: 18, height: 18, opacity: 0.8, display: 'inline-flex' }}>
+                {item.icon}
+              </span>
+              {item.label}
+            </Link>
+          );
+        })}
+        <div aria-hidden style={{ height: 1, background: 'var(--hairline)', margin: '10px 12px' }} />
         {ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
           return (
