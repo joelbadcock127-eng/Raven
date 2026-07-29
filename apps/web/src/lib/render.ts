@@ -20,7 +20,13 @@ export interface RenderSpec {
   // type defaults to 'video'; 'image' clips become Ken Burns pan/zoom shots
   clips: { url: string; type?: 'image' | 'video' }[];
   filter?: 'none' | 'warm' | 'cool' | 'mono' | 'punchy';
-  caption?: string;
+  transition?: 'cut' | 'fade'; // fade = 0.35s crossfade between clips
+  caption?: string; // may contain newlines
+  captionStyle?: {
+    position?: 'top' | 'middle' | 'bottom';
+    size?: 'small' | 'medium' | 'large';
+    timing?: 'whole' | 'intro'; // intro = first 3.5s only
+  };
   musicUrl?: string;
 }
 

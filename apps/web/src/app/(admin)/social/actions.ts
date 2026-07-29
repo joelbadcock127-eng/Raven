@@ -4,6 +4,13 @@ import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase';
 import { anthropic, MODELS, HOUSE_STYLE, stripDashes } from '@/lib/ai';
 import { publishToInstagram, publishToFacebook, metaConfigured } from '@/lib/meta';
+import {
+  loadStyleGuide,
+  guideHasContent,
+  guideSystemBlock,
+  guideFilterDefault,
+  type StyleGuide,
+} from '@/lib/styleGuides';
 
 export interface ActionResult {
   ok: boolean;
@@ -198,12 +205,14 @@ export async function draftPost(
     'annie-may': 'Annie May — refined adults-only heritage guesthouse in Devonport, Tasmania',
   };
   if (client) {
+    const guide = await loadStyleGuide(supabase, propertyId);
     const res = await client.messages.create({
       model: MODELS.classify,
       max_tokens: 400,
       system:
         'You write social captions for boutique Tasmanian accommodation. Plain text ONLY, never markdown, no # headings, no asterisks, no title line. Warm, understated, no hype words, no emoji spam (one or two max), 2-4 short lines, end with a soft call to action to book direct, then 5-8 relevant hashtags on a final line. Stories get a single short line, no hashtags.' +
-        HOUSE_STYLE,
+        HOUSE_STYLE +
+        (guideHasContent(guide) ? guideSystemBlock(guide) : ''),
       messages: [
         {
           role: 'user',
@@ -335,17 +344,31 @@ export async function setPlanActive(id: string, active: boolean): Promise<Action
  * from the property's library and hands them to the ffmpeg render pipeline
  * (GitHub Actions). The finished MP4 attaches itself to the post.
  */
-export async function renderReel(
-  postId: string,
-  options: {
-    filter?: 'none' | 'warm' | 'cool' | 'mono' | 'punchy';
-    caption?: string;
-    clipCount?: number;
-    musicHint?: string; // matches against music tags/captions; defaults to the post's direction
-    source?: 'auto' | 'videos' | 'photos'; // auto = videos, topped up with photos
-    folderId?: string; // restrict source clips to a folder
-  } = {},
-): Promise<ActionResult> {
+const REEL_ASPECTS = {
+  '9:16': { width: 1080, height: 1920 },
+  '1:1': { width: 1080, height: 1080 },
+  '4:5': { width: 1080, height: 1350 },
+} as const;
+
+export interface ReelOptions {
+  filter?: 'none' | 'warm' | 'cool' | 'mono' | 'punchy';
+  caption?: string; // may contain newlines
+  captionPosition?: 'top' | 'middle' | 'bottom';
+  captionSize?: 'small' | 'medium' | 'large';
+  captionTiming?: 'whole' | 'intro';
+  clipCount?: number;
+  clipSeconds?: number; // 1.5–6s per clip
+  transition?: 'cut' | 'fade';
+  aspect?: keyof typeof REEL_ASPECTS;
+  musicHint?: string; // matches against music tags/captions; defaults to direction, then style guide
+  musicAssetId?: string; // explicit track choice ('' / undefined = auto match)
+  noMusic?: boolean;
+  source?: 'auto' | 'videos' | 'photos'; // auto = videos, topped up with photos
+  folderId?: string; // restrict source clips to a folder
+  mediaIds?: string[]; // hand-picked clips in play order; overrides source/clipCount
+}
+
+export async function renderReel(postId: string, options: ReelOptions = {}): Promise<ActionResult> {
   const supabase = supabaseAdmin();
   if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
 
@@ -356,7 +379,8 @@ export async function renderReel(
     .maybeSingle();
   if (!post?.property_id) return { ok: false, message: 'Post not found.' };
 
-  const clipCount = Math.min(options.clipCount ?? 5, 8);
+  const guide = await loadStyleGuide(supabase, post.property_id);
+  const clipCount = Math.min(options.clipCount ?? 5, 10);
   const source = options.source ?? 'auto';
 
   const pick = async (kind: 'video' | 'image', limit: number) => {
@@ -375,9 +399,18 @@ export async function renderReel(
     return (data ?? []).map((m) => ({ url: m.public_url as string, type: kind }));
   };
 
-  // Build the clip list per source. Ken Burns lets a reel be all stills.
+  // Build the clip list: hand-picked ids (in the order given) beat auto-pick.
   let clips: { url: string; type: 'image' | 'video' }[] = [];
-  if (source === 'photos') {
+  if (options.mediaIds?.length) {
+    const { data: chosen } = await supabase
+      .from('media_assets')
+      .select('id, public_url, kind')
+      .in('id', options.mediaIds.slice(0, 10));
+    clips = options.mediaIds
+      .map((id) => chosen?.find((m) => m.id === id))
+      .filter(Boolean)
+      .map((m) => ({ url: m!.public_url as string, type: m!.kind as 'image' | 'video' }));
+  } else if (source === 'photos') {
     clips = await pick('image', clipCount);
   } else if (source === 'videos') {
     clips = await pick('video', clipCount);
@@ -395,40 +428,208 @@ export async function renderReel(
           : 'No source media in the library for this property.',
     };
 
-  // Music selection follows the style direction: hint words are matched
-  // against each track's tags/caption; best match wins, least-used breaks
-  // ties. No hint → least-used rotation. No matching mood → least-used.
-  const hint = String(options.musicHint ?? post.direction ?? '').toLowerCase();
-  const hintWords = hint.split(/[^a-z0-9]+/).filter((w: string) => w.length > 2);
-  const { data: allMusic } = await supabase
-    .from('media_assets')
-    .select('id, public_url, tags, caption, times_used, property_id')
-    .contains('tags', ['music'])
-    .eq('retired', false)
-    .or(`property_id.eq.${post.property_id},property_id.is.null`)
-    .order('times_used', { ascending: true })
-    .limit(24);
-  const scored = (allMusic ?? [])
-    .map((m) => {
-      const hay = `${(m.tags ?? []).join(' ')} ${m.caption ?? ''}`.toLowerCase();
-      return { m, score: hintWords.filter((w) => hay.includes(w)).length };
-    })
-    .sort((a, b) => b.score - a.score || a.m.times_used - b.m.times_used);
-  const music = scored.length ? [scored[0].m] : [];
+  // Music: explicit track > hint matching (hint falls back to the post's
+  // direction, then the property style guide's music notes) > least-used.
+  let musicUrl: string | undefined;
+  if (!options.noMusic) {
+    if (options.musicAssetId) {
+      const { data: track } = await supabase
+        .from('media_assets')
+        .select('public_url')
+        .eq('id', options.musicAssetId)
+        .maybeSingle();
+      musicUrl = track?.public_url ?? undefined;
+    }
+    if (!musicUrl) {
+      const hint = String(options.musicHint ?? post.direction ?? guide?.music ?? '').toLowerCase();
+      const hintWords = hint.split(/[^a-z0-9]+/).filter((w: string) => w.length > 2);
+      const { data: allMusic } = await supabase
+        .from('media_assets')
+        .select('id, public_url, tags, caption, times_used, property_id')
+        .contains('tags', ['music'])
+        .eq('retired', false)
+        .or(`property_id.eq.${post.property_id},property_id.is.null`)
+        .order('times_used', { ascending: true })
+        .limit(24);
+      const scored = (allMusic ?? [])
+        .map((m) => {
+          const hay = `${(m.tags ?? []).join(' ')} ${m.caption ?? ''}`.toLowerCase();
+          return { m, score: hintWords.filter((w) => hay.includes(w)).length };
+        })
+        .sort((a, b) => b.score - a.score || a.m.times_used - b.m.times_used);
+      musicUrl = scored[0]?.m.public_url ?? undefined;
+    }
+  }
 
+  const aspect = REEL_ASPECTS[options.aspect ?? '9:16'] ?? REEL_ASPECTS['9:16'];
   const { enqueueRenderJob } = await import('@/lib/render');
   const res = await enqueueRenderJob(supabase, {
     propertyId: post.property_id,
     socialPostId: post.id,
     spec: {
       clips,
-      filter: options.filter ?? 'warm',
+      width: aspect.width,
+      height: aspect.height,
+      clipSeconds: options.clipSeconds,
+      transition: options.transition ?? 'cut',
+      filter: options.filter ?? guideFilterDefault(guide) ?? 'warm',
       caption: options.caption,
-      musicUrl: music?.[0]?.public_url,
+      captionStyle: options.caption
+        ? {
+            position: options.captionPosition ?? 'bottom',
+            size: options.captionSize ?? 'medium',
+            timing: options.captionTiming ?? 'whole',
+          }
+        : undefined,
+      musicUrl,
     },
   });
   revalidatePath('/social');
   return { ok: res.ok, message: res.message };
+}
+
+// ── Property style guides ──
+
+export async function saveStyleGuide(guide: StyleGuide): Promise<ActionResult> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
+  const { error } = await supabase.from('style_guides').upsert(
+    {
+      property_id: guide.property_id,
+      voice: guide.voice ?? '',
+      vibe: guide.vibe ?? '',
+      visual: guide.visual ?? '',
+      music: guide.music ?? '',
+      hashtags: guide.hashtags ?? [],
+      cta: guide.cta ?? '',
+      avoid: guide.avoid ?? '',
+      example_captions: guide.example_captions ?? [],
+      source_notes: guide.source_notes ?? '',
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'property_id' },
+  );
+  if (error)
+    return {
+      ok: false,
+      message: /style_guides/.test(error.message)
+        ? 'Run the 0015 migration first (supabase/migrations/0015_style_guides.sql).'
+        : error.message,
+    };
+  revalidatePath('/social');
+  return { ok: true, message: 'Style guide saved — it now steers every caption and reel for this property.' };
+}
+
+const GUIDE_SCHEMA = {
+  type: 'object',
+  properties: {
+    voice: { type: 'string', description: 'Tone of voice for captions, 1-2 sentences' },
+    vibe: { type: 'string', description: "The feed's overall feel and mood, 1-2 sentences" },
+    visual: { type: 'string', description: 'The look: light, colours, grading, framing, 1-2 sentences' },
+    music: { type: 'string', description: 'Music vibe keywords for reels, e.g. "calm acoustic, soft piano"' },
+    hashtags: { type: 'array', items: { type: 'string' }, description: '8-15 hashtags this account should draw from, each starting with #' },
+    cta: { type: 'string', description: 'How captions should close, one sentence' },
+    avoid: { type: 'string', description: 'Words, tones and moves this account never uses' },
+    example_captions: { type: 'array', items: { type: 'string' }, description: '3 short example captions written in exactly this style' },
+  },
+  required: ['voice', 'vibe', 'visual', 'music', 'hashtags', 'cta', 'avoid', 'example_captions'],
+  additionalProperties: false,
+} as const;
+
+export interface GenerateGuideInput {
+  propertyId: string;
+  handle?: string; // e.g. @anniemaybnb — recorded in source notes
+  notes?: string; // owner's description of the account's vibe
+  pastedExamples?: string; // captions pasted from the account, blank-line separated
+  usePublished?: boolean; // also learn from this property's published posts
+}
+
+/**
+ * Distil a style guide with AI from whatever reference material exists:
+ * pasted captions from the account being replicated, the owner's own
+ * description, and/or the property's already-published posts. Returns the
+ * guide for review — nothing is saved until the owner hits Save.
+ */
+export async function generateStyleGuide(
+  input: GenerateGuideInput,
+): Promise<ActionResult & { guide?: StyleGuide }> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
+  const client = anthropic();
+  if (!client) return { ok: false, message: 'ANTHROPIC_API_KEY is not set.' };
+
+  const examples = (input.pastedExamples ?? '')
+    .split(/\n\s*\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  let published: string[] = [];
+  if (input.usePublished) {
+    const { data } = await supabase
+      .from('social_posts')
+      .select('caption')
+      .eq('property_id', input.propertyId)
+      .eq('status', 'published')
+      .neq('caption', '')
+      .order('published_at', { ascending: false })
+      .limit(12);
+    published = (data ?? []).map((p) => p.caption as string);
+  }
+
+  if (!examples.length && !published.length && !input.notes?.trim())
+    return {
+      ok: false,
+      message: 'Give it something to learn from: paste a few captions, describe the vibe, or tick "learn from published posts".',
+    };
+
+  const propertyNames: Record<string, string> = {
+    'ten-fifty-bakers': 'Ten Fifty Bakers, off-grid luxury wilderness retreat at Bakers Beach, Tasmania',
+    'prescription-pad': 'The Prescription Pad, group accommodation in Shearwater, Tasmania',
+    'annie-may': 'Annie May, refined adults-only heritage guesthouse in Devonport, Tasmania',
+  };
+
+  const parts: string[] = [`Property: ${propertyNames[input.propertyId] ?? input.propertyId}`];
+  if (input.handle) parts.push(`Instagram account being replicated: ${input.handle}`);
+  if (input.notes?.trim()) parts.push(`Owner's description of the account's theme:\n${input.notes.trim()}`);
+  if (examples.length) parts.push(`Example captions from the account:\n${examples.map((e, i) => `${i + 1}. ${e}`).join('\n')}`);
+  if (published.length) parts.push(`Captions already published for this property:\n${published.map((e, i) => `${i + 1}. ${e}`).join('\n')}`);
+
+  try {
+    const res = await client.messages.create({
+      model: MODELS.generate,
+      max_tokens: 1500,
+      system:
+        'You distil social media style guides for boutique accommodation Instagram accounts. ' +
+        'Study the reference material and capture what makes this feed feel like itself: the voice, the mood, the visual look, the music that would fit it, how captions close, and what it never does. ' +
+        'Be specific and usable, not generic marketing speak. Example captions must be plain text, no markdown.' +
+        HOUSE_STYLE,
+      messages: [{ role: 'user', content: parts.join('\n\n') }],
+      output_config: { format: { type: 'json_schema', schema: GUIDE_SCHEMA } },
+    });
+    const text = res.content.find((b) => b.type === 'text')?.text ?? '{}';
+    const parsed = JSON.parse(text) as Omit<StyleGuide, 'property_id' | 'source_notes'>;
+    const guide: StyleGuide = {
+      property_id: input.propertyId,
+      voice: stripDashes(parsed.voice ?? ''),
+      vibe: stripDashes(parsed.vibe ?? ''),
+      visual: stripDashes(parsed.visual ?? ''),
+      music: parsed.music ?? '',
+      hashtags: (parsed.hashtags ?? []).map((h) => (h.startsWith('#') ? h : `#${h}`)),
+      cta: stripDashes(parsed.cta ?? ''),
+      avoid: stripDashes(parsed.avoid ?? ''),
+      example_captions: (parsed.example_captions ?? []).map((c) => stripDashes(c)),
+      source_notes: [
+        input.handle && `Distilled from ${input.handle}`,
+        examples.length && `${examples.length} pasted captions`,
+        published.length && `${published.length} published posts`,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    };
+    return { ok: true, message: 'Guide drafted — review it, tweak anything, then Save.', guide };
+  } catch (err) {
+    return { ok: false, message: `Generation failed: ${(err as Error).message}` };
+  }
 }
 
 export async function deletePlan(id: string): Promise<ActionResult> {

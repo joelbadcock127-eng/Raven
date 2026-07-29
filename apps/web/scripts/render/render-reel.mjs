@@ -12,7 +12,9 @@
  *     maxDuration,             // hard cap (default 30)
  *     clips: [{ url }],        // source videos, R2 public URLs
  *     filter,                  // 'none' | 'warm' | 'cool' | 'mono' | 'punchy'
- *     caption,                 // optional overlay text (bottom third)
+ *     transition,              // 'cut' (default) | 'fade' 0.35s crossfade
+ *     caption,                 // optional overlay text, may contain newlines
+ *     captionStyle,            // { position: top|middle|bottom, size: small|medium|large, timing: whole|intro }
  *     musicUrl,                // optional audio track URL
  *   }
  * }
@@ -25,8 +27,10 @@ const { jobId, completeUrl, completeToken, uploadUrl, publicUrl } = payload;
 const spec = payload.spec ?? {};
 const W = spec.width ?? 1080;
 const H = spec.height ?? 1920;
-const CLIP_S = spec.clipSeconds ?? 2.8;
-const MAX_S = spec.maxDuration ?? 30;
+const CLIP_S = Math.min(6, Math.max(1.5, Number(spec.clipSeconds) || 2.8));
+const MAX_S = Math.min(60, spec.maxDuration ?? 30);
+const TRANSITION = spec.transition === 'fade' ? 'fade' : 'cut';
+const FADE_S = 0.35; // crossfade length
 
 const FILTERS = {
   none: '',
@@ -150,18 +154,51 @@ try {
     parts.push(out);
   }
 
-  // 2. concat
-  writeFileSync('work/list.txt', parts.map((p) => `file '${p.replace('work/', '')}'`).join('\n'));
-  sh('ffmpeg', ['-y', '-f', 'concat', '-safe', '0', '-i', 'work/list.txt', '-c', 'copy', 'work/joined.mp4']);
+  // 2. join — plain concat for hard cuts, an xfade chain for crossfades
+  //    (crossfade re-encodes; each fade overlaps the next clip by FADE_S)
+  let totalDur = clips.length * CLIP_S;
+  if (TRANSITION === 'fade' && parts.length > 1) {
+    const inputs = parts.flatMap((p) => ['-i', p]);
+    let graph = '';
+    let prev = '[0:v]';
+    for (let i = 1; i < parts.length; i++) {
+      const offset = (i * CLIP_S - i * FADE_S).toFixed(2);
+      const out = i === parts.length - 1 ? '[vout]' : `[x${i}]`;
+      graph += `${prev}[${i}:v]xfade=transition=fade:duration=${FADE_S}:offset=${offset}${out};`;
+      prev = `[x${i}]`;
+    }
+    sh('ffmpeg', [
+      '-y', ...inputs,
+      '-filter_complex', graph.slice(0, -1),
+      '-map', '[vout]', '-c:v', 'libx264', '-preset', 'fast', '-crf', '21', '-r', '30', 'work/joined.mp4',
+    ]);
+    totalDur = clips.length * CLIP_S - (clips.length - 1) * FADE_S;
+  } else {
+    writeFileSync('work/list.txt', parts.map((p) => `file '${p.replace('work/', '')}'`).join('\n'));
+    sh('ffmpeg', ['-y', '-f', 'concat', '-safe', '0', '-i', 'work/list.txt', '-c', 'copy', 'work/joined.mp4']);
+  }
   let current = 'work/joined.mp4';
 
-  // 3. caption overlay (bottom third, subtle box)
+  // 3. caption overlay — multi-line, position/size/timing from captionStyle
   if (spec.caption) {
-    const text = String(spec.caption).replace(/[\\']/g, '').replace(/[:%]/g, '\\$&');
+    const style = spec.captionStyle ?? {};
+    const fontsize = { small: 42, medium: 54, large: 68 }[style.size] ?? 54;
+    const y = {
+      top: '220',
+      middle: '(h-text_h)/2',
+      bottom: 'h-360-text_h',
+    }[style.position] ?? 'h-360-text_h';
+    const enable = style.timing === 'intro' ? ":enable='lt(t,3.5)'" : '';
+    // drawtext renders embedded newlines; sanitise each line, keep the breaks
+    const text = String(spec.caption)
+      .split('\n')
+      .map((l) => l.replace(/[\\']/g, '').replace(/[:%]/g, '\\$&').trim())
+      .filter(Boolean)
+      .join('\n');
     sh('ffmpeg', [
       '-y', '-i', current,
       '-vf',
-      `drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='${text}':fontsize=54:fontcolor=white:borderw=2:bordercolor=black@0.55:x=(w-text_w)/2:y=h-360`,
+      `drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='${text}':fontsize=${fontsize}:fontcolor=white:borderw=2:bordercolor=black@0.55:line_spacing=10:x=(w-text_w)/2:y=${y}${enable}`,
       '-c:a', 'copy', 'work/captioned.mp4',
     ]);
     current = 'work/captioned.mp4';
@@ -173,7 +210,7 @@ try {
     const res = await fetch(spec.musicUrl);
     if (res.ok) {
       writeFileSync('work/music', Buffer.from(await res.arrayBuffer()));
-      const dur = clips.length * CLIP_S;
+      const dur = totalDur;
       const start = bestMusicStart('work/music', dur);
       sh('ffmpeg', [
         '-y', '-i', current, '-ss', String(start), '-i', 'work/music',

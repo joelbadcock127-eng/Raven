@@ -2,6 +2,8 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { metaConfigured } from '@/lib/meta';
 import SocialQueue, { type SocialPost, type MediaRef } from '@/components/SocialQueue';
 import PostingPlans, { type Plan, type FolderRef } from '@/components/PostingPlans';
+import StyleGuides from '@/components/StyleGuides';
+import type { StyleGuide } from '@/lib/styleGuides';
 
 export const revalidate = 0;
 
@@ -11,22 +13,28 @@ export default async function SocialPage() {
   let media: MediaRef[] = [];
   let plans: Plan[] = [];
   let folders: FolderRef[] = [];
+  let guides: StyleGuide[] = [];
   if (supabase) {
-    const [postRes, mediaRes, planRes, folderRes] = await Promise.all([
+    const [postRes, mediaRes, planRes, folderRes, guideRes] = await Promise.all([
       supabase
         .from('social_posts')
         .select('id, campaign_id, property_id, kind, platform, caption, media_ids, scheduled_for, status, external_url, error, created_at')
         .neq('status', 'dismissed')
         .order('created_at', { ascending: false })
         .limit(50),
-      supabase.from('media_assets').select('id, kind, public_url'),
+      supabase
+        .from('media_assets')
+        .select('id, kind, public_url, property_id, tags, file_name, caption')
+        .eq('retired', false),
       supabase.from('posting_plans').select('*').order('created_at'),
       supabase.from('media_folders').select('id, property_id, name').order('name'),
+      supabase.from('style_guides').select('*'), // errors quietly pre-0015 migration
     ]);
     posts = (postRes.data as SocialPost[]) ?? [];
     media = (mediaRes.data as MediaRef[]) ?? [];
     plans = (planRes.data as Plan[]) ?? [];
     folders = (folderRes.data as FolderRef[]) ?? [];
+    guides = (guideRes.data as StyleGuide[]) ?? [];
   }
 
   return (
@@ -38,6 +46,7 @@ export default async function SocialPage() {
             here as drafts. Nothing goes out without your approval.
           </p>
         </header>
+        <StyleGuides guides={guides} />
         <PostingPlans plans={plans} folders={folders} />
         <SocialQueue posts={posts} media={media} metaConnected={metaConfigured()} />
         <footer className="caption" style={{ paddingTop: 64 }}>
