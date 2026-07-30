@@ -56,14 +56,15 @@ export interface SiteVersion {
 }
 
 export const DEFAULT_THEMES: Record<string, SiteTheme> = {
+  // dark-sky cinematic — the Saffire model: sell the wilderness with stillness
   'ten-fifty-bakers': {
     headingFont: "var(--font-site-serif), 'Cormorant Garamond', Georgia, serif",
     bodyFont: "var(--font-site-sans), 'Jost', system-ui, sans-serif",
-    bg: '#f7f4ee',
-    ink: '#211d16',
-    soft: '#eee9df',
-    accent: '#8a6d3b',
-    accentInk: '#ffffff',
+    bg: '#15120d',
+    ink: '#ece5d8',
+    soft: '#1e1a13',
+    accent: '#b5915f',
+    accentInk: '#15120d',
     radius: 0,
   },
   'prescription-pad': {

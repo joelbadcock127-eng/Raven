@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Cormorant_Garamond, Jost, Fraunces, Space_Grotesk } from 'next/font/google';
 import { supabaseAdmin } from '@/lib/supabase';
 import { defaultTheme, type SitePageV2, type SiteTheme } from '@/lib/siteBuilder';
+import { SITE_SEEDS } from '@/lib/siteSeeds';
 import SiteRenderer from '@/components/SiteRenderer';
 
 export const revalidate = 0;
@@ -44,7 +45,26 @@ interface Query {
   standalone?: string;
 }
 
+/** '?version=seed' renders the designed blueprint straight from the repo —
+ *  no database version needed, so the redesigns are viewable immediately. */
+function loadSeed(propertyId: string) {
+  const seed = SITE_SEEDS[propertyId];
+  if (!seed) return null;
+  return {
+    version: { id: 'seed', property_id: propertyId, label: seed.label, status: 'draft', theme: seed.theme },
+    pages: seed.pages.map((p, i) => ({
+      id: `seed-${i}`,
+      slug: p.slug,
+      nav_label: p.nav_label,
+      title: p.title,
+      sort: i,
+      sections: p.sections.map((s, j) => ({ ...s, id: `sd${i}x${j}` })),
+    })) as SitePageV2[],
+  };
+}
+
 async function load(propertyId: string, versionId?: string) {
+  if (versionId === 'seed') return loadSeed(propertyId);
   const supabase = supabaseAdmin();
   if (!supabase) return null;
 

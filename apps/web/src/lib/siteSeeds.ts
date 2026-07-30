@@ -232,7 +232,7 @@ const tenFiftyBakers: SiteSeed = {
           type: 'split',
           kicker: 'Tamar Valley',
           heading: 'Cellar doors within reach',
-          body: 'Point the car east and the Tamar Valley wine route opens up. Sinapius, Ghost Rock and a string of small cellar doors that still pour their own.',
+          body: 'Point the car east and the Tamar Valley wine route opens up. Sinapius and a string of small cellar doors that still pour their own, with Ghost Rock a far shorter hop back along the coast.',
           imageUrl: A('146c453105-Ten-Fifty-Bakers-Sinapius-Vineyard-768x1881.jpg'),
           align: 'right',
           imageAspect: 'portrait',
