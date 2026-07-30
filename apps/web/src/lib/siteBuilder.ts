@@ -29,10 +29,14 @@ export type Section =
   | { id: string; type: 'cta'; heading: string; body?: string; buttonText: string; buttonHref: string; imageUrl?: string }
   // film strip: edge-to-edge horizontal scroll of large images at natural aspect
   | { id: string; type: 'strip'; kicker?: string; heading?: string; images: { url: string; alt?: string }[] }
-  // editorial collage: 2-3 offset images with an optional copy block
-  | { id: string; type: 'mosaic'; kicker?: string; heading?: string; body?: string; images: { url: string; alt?: string }[] }
+  // editorial collage: 2-3 offset images, optional copy block and a giant drifting word behind
+  | { id: string; type: 'mosaic'; kicker?: string; heading?: string; body?: string; word?: string; images: { url: string; alt?: string }[] }
   // oversized display statement band
-  | { id: string; type: 'marquee'; text: string };
+  | { id: string; type: 'marquee'; text: string }
+  // cinematic sequence: full-screen frames wiped in by scroll, alt = caption
+  | { id: string; type: 'stack'; images: { url: string; alt?: string }[] }
+  // room-by-room detail blocks: alternating media + numbered copy
+  | { id: string; type: 'rooms'; heading?: string; items: { name: string; body: string; images: { url: string; alt?: string }[] }[] };
 
 export type SectionType = Section['type'];
 
@@ -122,7 +126,11 @@ export function newSection(type: SectionType): Section {
       return { id, type, kicker: 'Kicker', heading: 'Heading', body: 'Write something…', images: [] };
     case 'marquee':
       return { id, type, text: 'A line worth saying loudly.' };
+    case 'stack':
+      return { id, type, images: [] };
+    case 'rooms':
+      return { id, type, heading: 'The rooms', items: [{ name: 'Room one', body: 'Describe it…', images: [] }] };
   }
 }
 
-export const SECTION_TYPES: SectionType[] = ['hero', 'fullbleed', 'strip', 'mosaic', 'split', 'text', 'marquee', 'gallery', 'features', 'stats', 'quote', 'faq', 'cta'];
+export const SECTION_TYPES: SectionType[] = ['hero', 'fullbleed', 'stack', 'mosaic', 'split', 'rooms', 'text', 'marquee', 'gallery', 'features', 'stats', 'quote', 'faq', 'strip', 'cta'];
