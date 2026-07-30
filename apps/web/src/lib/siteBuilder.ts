@@ -17,7 +17,8 @@ export interface SiteTheme {
 }
 
 export type Section =
-  | { id: string; type: 'hero'; kicker?: string; headline: string; subheadline?: string; imageUrl?: string; ctaText?: string; ctaHref?: string }
+  // videoUrl: ambient muted loop behind the hero; imageUrl doubles as its poster/fallback
+  | { id: string; type: 'hero'; kicker?: string; headline: string; subheadline?: string; imageUrl?: string; videoUrl?: string; ctaText?: string; ctaHref?: string }
   | { id: string; type: 'text'; heading?: string; body: string }
   | { id: string; type: 'split'; kicker?: string; heading: string; body: string; imageUrl?: string; align?: 'left' | 'right'; imageAspect?: 'portrait' | 'square' | 'landscape'; ctaText?: string; ctaHref?: string }
   | { id: string; type: 'fullbleed'; imageUrl: string; kicker?: string; headline?: string; body?: string; ctaText?: string; ctaHref?: string; height?: 'tall' | 'full' }

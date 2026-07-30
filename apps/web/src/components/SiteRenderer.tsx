@@ -111,6 +111,18 @@ function SectionView({
     case 'hero':
       return (
         <div className="ldg-hero">
+          {s.videoUrl && !editable && (
+            <video
+              className="ldg-hero-img ldg-hero-video"
+              src={s.videoUrl}
+              poster={s.imageUrl || undefined}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+            />
+          )}
           {s.imageUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={s.imageUrl} alt="" className="ldg-hero-img" fetchPriority="high" decoding="async" />
@@ -537,16 +549,18 @@ export default function SiteRenderer({
         if (!e.isIntersecting || counted.has(e.target)) return;
         counted.add(e.target);
         const el = e.target as HTMLElement;
-        const m = (el.textContent ?? '').match(/^(\d+)(.*)$/);
+        const m = (el.textContent ?? '').match(/^([\d,]*\d)(.*)$/);
         if (!m || reduced || editable) return;
-        const target = Number(m[1]);
+        const target = Number(m[1].replace(/,/g, ''));
+        const grouped = m[1].includes(',');
         const suffix = m[2] ?? '';
         const t0 = performance.now();
         const dur = 1300;
         const tick = (t: number) => {
           const p = Math.min(1, (t - t0) / dur);
           const eased = 1 - Math.pow(1 - p, 3);
-          el.textContent = `${Math.round(target * eased)}${suffix}`;
+          const v = Math.round(target * eased);
+          el.textContent = `${grouped ? v.toLocaleString('en-AU') : v}${suffix}`;
           if (p < 1) requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
@@ -743,10 +757,17 @@ export default function SiteRenderer({
   .ldg-header.solid .ldg-book:hover { background:${theme.ink}; color:${theme.bg}; }
   .ldg-header.overlay .ldg-book:hover { background:#fff; color:#111; }
 
-  /* hero — image is scroll-driven (parallax + settle scale) from the runtime */
+  /* hero — image is scroll-driven (parallax + settle scale) from the runtime;
+     an ambient video loop sits above the still when provided */
   .ldg-hero { position:relative; min-height:100svh; display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden; background:${theme.ink}; }
   .ldg-hero-img { position:absolute; inset:-1px 0; width:100%; height:112%; object-fit:cover; transform:scale(1.12); will-change:transform; }
-  @media (prefers-reduced-motion: reduce) { .ldg-hero-img { transform:none; height:100%; } }
+  .ldg-hero-video { z-index:1; }
+  .ldg-hero-video + .ldg-hero-img { z-index:0; }
+  .ldg-hero-shade, .ldg-hero-copy, .ldg-scrollcue { z-index:2; }
+  @media (prefers-reduced-motion: reduce) {
+    .ldg-hero-img { transform:none; height:100%; }
+    .ldg-hero-video { display:none; }
+  }
   .ldg-hero-shade { position:absolute; inset:0; background:linear-gradient(to bottom, rgba(0,0,0,.30), rgba(0,0,0,.12) 40%, rgba(0,0,0,.42)); }
   .ldg-hero-copy { position:relative; color:#fff; padding:120px 22px 90px; max-width:900px; }
   .ldg-hero-sub { font-size:clamp(14.5px, 1.8vw, 17px); line-height:1.8; font-weight:300; margin:22px auto 0; max-width:560px; opacity:.94; }
