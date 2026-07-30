@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Cormorant_Garamond, Jost } from 'next/font/google';
+import { Cormorant_Garamond, Jost, Fraunces, Space_Grotesk } from 'next/font/google';
 import { supabaseAdmin } from '@/lib/supabase';
 import { defaultTheme, type SitePageV2, type SiteTheme } from '@/lib/siteBuilder';
 import SiteRenderer from '@/components/SiteRenderer';
@@ -17,6 +17,17 @@ const siteSans = Jost({
   subsets: ['latin'],
   weight: ['300', '400', '500'],
   variable: '--font-site-sans',
+});
+const siteDisplay = Fraunces({
+  subsets: ['latin'],
+  weight: ['300', '400', '500'],
+  style: ['normal', 'italic'],
+  variable: '--font-site-display',
+});
+const siteGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['300', '400', '500'],
+  variable: '--font-site-grotesk',
 });
 
 const NAMES: Record<string, string> = {
@@ -96,7 +107,7 @@ export default async function SiteV2Page({
   };
 
   return (
-    <div className={`${siteSerif.variable} ${siteSans.variable}`}>
+    <div className={`${siteSerif.variable} ${siteSans.variable} ${siteDisplay.variable} ${siteGrotesk.variable}`}>
       <SiteRenderer
         propertyName={NAMES[property] ?? property}
         pages={data.pages}

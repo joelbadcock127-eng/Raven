@@ -5,6 +5,7 @@ import type { Section, SectionType, SitePageV2, SiteVersion } from '@/lib/siteBu
 import { SECTION_TYPES } from '@/lib/siteBuilder';
 import {
   createVersion,
+  createDesignedVersion,
   publishVersion,
   unpublishSite,
   savePageSections,
@@ -186,6 +187,16 @@ export default function SiteBuilder({
             }}
           >
             + new draft
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            className="caption"
+            title="A full art-directed site built from this property's photo library. Lands as a draft you can edit and preview before publishing."
+            style={{ background: 'var(--primary)', border: '1px solid var(--primary)', borderRadius: 'var(--r-pill)', padding: '5px 12px', cursor: 'pointer', color: '#fff' }}
+            onClick={() => run(() => createDesignedVersion(propertyId))}
+          >
+            ✦ build designed site
           </button>
           <span style={{ flex: 1 }} />
           {version && isDraft && (

@@ -19,14 +19,20 @@ export interface SiteTheme {
 export type Section =
   | { id: string; type: 'hero'; kicker?: string; headline: string; subheadline?: string; imageUrl?: string; ctaText?: string; ctaHref?: string }
   | { id: string; type: 'text'; heading?: string; body: string }
-  | { id: string; type: 'split'; kicker?: string; heading: string; body: string; imageUrl?: string; align?: 'left' | 'right'; ctaText?: string; ctaHref?: string }
-  | { id: string; type: 'fullbleed'; imageUrl: string; kicker?: string; headline?: string }
+  | { id: string; type: 'split'; kicker?: string; heading: string; body: string; imageUrl?: string; align?: 'left' | 'right'; imageAspect?: 'portrait' | 'square' | 'landscape'; ctaText?: string; ctaHref?: string }
+  | { id: string; type: 'fullbleed'; imageUrl: string; kicker?: string; headline?: string; body?: string; ctaText?: string; ctaHref?: string; height?: 'tall' | 'full' }
   | { id: string; type: 'stats'; items: { value: string; label: string }[] }
-  | { id: string; type: 'gallery'; heading?: string; images: { url: string; alt?: string }[] }
+  | { id: string; type: 'gallery'; heading?: string; layout?: 'grid' | 'masonry'; images: { url: string; alt?: string }[] }
   | { id: string; type: 'features'; heading?: string; items: { title: string; body: string; imageUrl?: string }[] }
   | { id: string; type: 'quote'; text: string; attribution?: string }
   | { id: string; type: 'faq'; heading?: string; items: { q: string; a: string }[] }
-  | { id: string; type: 'cta'; heading: string; body?: string; buttonText: string; buttonHref: string };
+  | { id: string; type: 'cta'; heading: string; body?: string; buttonText: string; buttonHref: string; imageUrl?: string }
+  // film strip: edge-to-edge horizontal scroll of large images at natural aspect
+  | { id: string; type: 'strip'; kicker?: string; heading?: string; images: { url: string; alt?: string }[] }
+  // editorial collage: 2-3 offset images with an optional copy block
+  | { id: string; type: 'mosaic'; kicker?: string; heading?: string; body?: string; images: { url: string; alt?: string }[] }
+  // oversized display statement band
+  | { id: string; type: 'marquee'; text: string };
 
 export type SectionType = Section['type'];
 
@@ -61,24 +67,24 @@ export const DEFAULT_THEMES: Record<string, SiteTheme> = {
     radius: 0,
   },
   'prescription-pad': {
-    headingFont: "system-ui, -apple-system, sans-serif",
-    bodyFont: "system-ui, -apple-system, sans-serif",
-    bg: '#ffffff',
-    ink: '#233642',
-    soft: '#eef5f6',
-    accent: '#1d4e5f',
+    headingFont: "var(--font-site-grotesk), 'Space Grotesk', system-ui, sans-serif",
+    bodyFont: "var(--font-site-sans), 'Jost', system-ui, sans-serif",
+    bg: '#fbfbf8',
+    ink: '#1f3038',
+    soft: '#e9f1f0',
+    accent: '#0e7a83',
     accentInk: '#ffffff',
-    radius: 12,
+    radius: 14,
   },
   'annie-may': {
-    headingFont: "Georgia, 'Times New Roman', serif",
-    bodyFont: "system-ui, -apple-system, sans-serif",
-    bg: '#faf7f1',
-    ink: '#2e2b26',
-    soft: '#f2ede3',
-    accent: '#3e4a3d',
+    headingFont: "var(--font-site-display), 'Fraunces', Georgia, serif",
+    bodyFont: "var(--font-site-sans), 'Jost', system-ui, sans-serif",
+    bg: '#faf6ee',
+    ink: '#332f27',
+    soft: '#f1eadb',
+    accent: '#5c6647',
     accentInk: '#f5f1e8',
-    radius: 8,
+    radius: 3,
   },
 };
 
@@ -109,7 +115,13 @@ export function newSection(type: SectionType): Section {
       return { id, type, heading: 'Good to know', items: [{ q: 'Question?', a: 'Answer.' }] };
     case 'cta':
       return { id, type, heading: 'Ready to stay?', body: '', buttonText: 'Check availability', buttonHref: '#' };
+    case 'strip':
+      return { id, type, kicker: '', heading: '', images: [] };
+    case 'mosaic':
+      return { id, type, kicker: 'Kicker', heading: 'Heading', body: 'Write something…', images: [] };
+    case 'marquee':
+      return { id, type, text: 'A line worth saying loudly.' };
   }
 }
 
-export const SECTION_TYPES: SectionType[] = ['hero', 'fullbleed', 'split', 'text', 'gallery', 'features', 'stats', 'quote', 'faq', 'cta'];
+export const SECTION_TYPES: SectionType[] = ['hero', 'fullbleed', 'strip', 'mosaic', 'split', 'text', 'marquee', 'gallery', 'features', 'stats', 'quote', 'faq', 'cta'];

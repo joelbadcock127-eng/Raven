@@ -120,7 +120,7 @@ function SectionView({
 
     case 'fullbleed':
       return (
-        <div className="ldg-fullbleed">
+        <div className={`ldg-fullbleed${s.height === 'full' ? ' ldg-fullbleed-full' : ''}`}>
           {s.imageUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={s.imageUrl} alt="" className="ldg-fullbleed-img plx" />
@@ -133,12 +133,23 @@ function SectionView({
             {s.headline !== undefined && (
               <EditableText as="h2" editable={editable} sid={s.id} path="headline" value={s.headline} className="ldg-display-sm rv rv-2" />
             )}
+            {s.body !== undefined && s.body !== '' && (
+              <EditableText as="p" editable={editable} sid={s.id} path="body" value={s.body} className="ldg-fullbleed-body rv rv-3" />
+            )}
+            {s.ctaText && (
+              <div className="rv rv-4" style={{ marginTop: 26 }}>
+                <LodgeButton href={resolve(s.ctaHref)} light editable={editable}>
+                  <EditableText editable={editable} sid={s.id} path="ctaText" value={s.ctaText} />
+                </LodgeButton>
+              </div>
+            )}
           </div>
         </div>
       );
 
     case 'split': {
       const imgRight = (s.align ?? 'right') === 'right';
+      const aspect = s.imageAspect === 'portrait' ? '3/4' : s.imageAspect === 'landscape' ? '4/3' : s.imageAspect === 'square' ? '1/1' : undefined;
       return (
         <div className="ldg-pad">
           <div className={`ldg-split${imgRight ? '' : ' ldg-split-rev'}`}>
@@ -159,13 +170,87 @@ function SectionView({
             <div className="ldg-split-media rv rv-2">
               {s.imageUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={s.imageUrl} alt="" loading="lazy" className="ldg-zoomable" onClick={(e) => { if (!editable) { e.stopPropagation(); onZoom(s.imageUrl!, s.heading); } }} />
+                <img src={s.imageUrl} alt="" loading="lazy" className="ldg-zoomable" style={aspect ? { aspectRatio: aspect } : undefined} onClick={(e) => { if (!editable) { e.stopPropagation(); onZoom(s.imageUrl!, s.heading); } }} />
               )}
             </div>
           </div>
         </div>
       );
     }
+
+    case 'strip':
+      return (
+        <div className="ldg-strip-band">
+          {(s.kicker || s.heading) && (
+            <div className="ldg-strip-head">
+              {s.kicker !== undefined && s.kicker !== '' && (
+                <EditableText editable={editable} sid={s.id} path="kicker" value={s.kicker} className="ldg-kicker rv" as="p" />
+              )}
+              {s.heading !== undefined && s.heading !== '' && (
+                <EditableText as="h2" editable={editable} sid={s.id} path="heading" value={s.heading} className="ldg-h2 rv rv-2" />
+              )}
+            </div>
+          )}
+          <div className="ldg-strip rv rv-2">
+            {s.images.map((img, i) => (
+              <figure key={i} className="ldg-strip-cell">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.url} alt={img.alt ?? ''} loading="lazy" className="ldg-zoomable" onClick={(e) => { if (!editable) { e.stopPropagation(); onZoom(img.url, img.alt ?? ''); } }} />
+              </figure>
+            ))}
+            {s.images.length === 0 && (
+              <div style={{ padding: 40, border: '1px dashed rgba(0,0,0,.2)', fontSize: 13, opacity: 0.6, margin: '0 auto' }}>
+                No images yet — attach from the media library in the builder
+              </div>
+            )}
+          </div>
+        </div>
+      );
+
+    case 'mosaic': {
+      const imgs = s.images.slice(0, 3);
+      return (
+        <div className="ldg-pad">
+          <div className="ldg-wide">
+            {(s.kicker || s.heading || s.body) && (
+              <div className="ldg-mosaic-copy rv">
+                {s.kicker !== undefined && s.kicker !== '' && (
+                  <EditableText editable={editable} sid={s.id} path="kicker" value={s.kicker} className="ldg-kicker" as="p" />
+                )}
+                {s.heading !== undefined && s.heading !== '' && (
+                  <EditableText as="h2" editable={editable} sid={s.id} path="heading" value={s.heading} className="ldg-h2" />
+                )}
+                {s.body !== undefined && s.body !== '' && (
+                  <EditableText as="p" editable={editable} sid={s.id} path="body" value={s.body} className="ldg-body" />
+                )}
+              </div>
+            )}
+            <div className="ldg-mosaic">
+              {imgs.map((img, i) => (
+                <figure key={i} className={`ldg-mosaic-cell ldg-mosaic-${i + 1} rv rv-${i + 1}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.url} alt={img.alt ?? ''} loading="lazy" className="ldg-zoomable" onClick={(e) => { if (!editable) { e.stopPropagation(); onZoom(img.url, img.alt ?? ''); } }} />
+                </figure>
+              ))}
+              {imgs.length === 0 && (
+                <div style={{ padding: 40, textAlign: 'center', border: '1px dashed rgba(0,0,0,.2)', fontSize: 13, opacity: 0.6, gridColumn: '1/-1' }}>
+                  No images yet — attach from the media library in the builder
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    case 'marquee':
+      return (
+        <div className="ldg-pad ldg-marquee-band">
+          <div className="ldg-wide">
+            <EditableText as="p" editable={editable} sid={s.id} path="text" value={s.text} className="ldg-marquee rv" />
+          </div>
+        </div>
+      );
 
     case 'stats':
       return (
@@ -193,16 +278,17 @@ function SectionView({
         </div>
       );
 
-    case 'gallery':
+    case 'gallery': {
+      const masonry = s.layout === 'masonry';
       return (
         <div className="ldg-pad ldg-gallery-band">
           <div className="ldg-wide">
             {s.heading !== undefined && (
               <EditableText as="h2" editable={editable} sid={s.id} path="heading" value={s.heading} className="ldg-h2 ldg-center rv" style={{ marginBottom: 34 }} />
             )}
-            <div className="ldg-grid">
+            <div className={masonry ? 'ldg-masonry' : 'ldg-grid'}>
               {s.images.map((img, i) => (
-                <figure key={i} className={`ldg-cell rv rv-${(i % 3) + 1}${i % 7 === 0 ? ' ldg-cell-wide' : ''}`}>
+                <figure key={i} className={masonry ? 'ldg-mcell' : `ldg-cell rv rv-${(i % 3) + 1}${i % 7 === 0 ? ' ldg-cell-wide' : ''}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={img.url} alt={img.alt ?? ''} loading="lazy" className="ldg-zoomable" onClick={(e) => { if (!editable) { e.stopPropagation(); onZoom(img.url, img.alt ?? ''); } }} />
                 </figure>
@@ -216,6 +302,7 @@ function SectionView({
           </div>
         </div>
       );
+    }
 
     case 'features':
       return (
@@ -277,14 +364,21 @@ function SectionView({
 
     case 'cta':
       return (
-        <div className="ldg-pad ldg-cta-band">
-          <div className="ldg-prose ldg-center rv">
+        <div className={`ldg-pad ldg-cta-band${s.imageUrl ? ' ldg-cta-img' : ''}`}>
+          {s.imageUrl && (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={s.imageUrl} alt="" className="ldg-cta-bg" loading="lazy" />
+              <div className="ldg-cta-shade" />
+            </>
+          )}
+          <div className="ldg-prose ldg-center rv" style={{ position: 'relative' }}>
             <EditableText as="h2" editable={editable} sid={s.id} path="heading" value={s.heading} className="ldg-h2" />
             {s.body !== undefined && s.body !== '' && (
               <EditableText as="p" editable={editable} sid={s.id} path="body" value={s.body} className="ldg-body" style={{ marginTop: 14 }} />
             )}
             <div style={{ marginTop: 30 }}>
-              <LodgeButton href={resolve(s.buttonHref)} editable={editable}>
+              <LodgeButton href={resolve(s.buttonHref)} light={Boolean(s.imageUrl)} editable={editable}>
                 <EditableText editable={editable} sid={s.id} path="buttonText" value={s.buttonText} />
               </LodgeButton>
             </div>
@@ -369,6 +463,7 @@ export default function SiteRenderer({
     for (const s of p.sections) {
       if (s.type === 'cta' && s.buttonHref && s.buttonHref !== '#') bookHref = bookHref ?? s.buttonHref;
       if (s.type === 'hero' && s.ctaHref && s.ctaHref !== '#') bookHref = bookHref ?? s.ctaHref;
+      if (s.type === 'fullbleed' && s.ctaHref && s.ctaHref !== '#') bookHref = bookHref ?? s.ctaHref;
     }
 
   const firstIsImage = page.sections[0]?.type === 'hero' || page.sections[0]?.type === 'fullbleed';
@@ -381,8 +476,8 @@ export default function SiteRenderer({
   .ldg-root a { color:inherit; text-decoration:none; }
 
   /* type system */
-  .ldg-kicker { font-size:11px; letter-spacing:.32em; text-transform:uppercase; font-weight:400; opacity:.72; font-family:${theme.bodyFont}; }
-  .ldg-kicker-light { opacity:.9; }
+  .ldg-kicker { font-size:11px; letter-spacing:.32em; text-transform:uppercase; font-weight:400; color:${theme.accent}; font-family:${theme.bodyFont}; }
+  .ldg-kicker-light { color:#fff; opacity:.9; }
   .ldg-display { font-family:${theme.headingFont}; font-weight:300; font-size:clamp(40px, 7.4vw, 86px); line-height:1.04; letter-spacing:.01em; margin-top:18px; }
   .ldg-display-sm { font-family:${theme.headingFont}; font-weight:300; font-size:clamp(30px, 4.6vw, 56px); line-height:1.1; margin-top:14px; }
   .ldg-h2 { font-family:${theme.headingFont}; font-weight:300; font-size:clamp(28px, 3.6vw, 46px); line-height:1.12; margin-top:14px; }
@@ -431,16 +526,49 @@ export default function SiteRenderer({
 
   /* fullbleed */
   .ldg-fullbleed { position:relative; min-height:74vh; display:flex; align-items:flex-end; overflow:hidden; background:${theme.ink}; }
+  .ldg-fullbleed-full { min-height:100svh; }
   .ldg-fullbleed-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scale(1.18); will-change:transform; }
   .ldg-fullbleed-shade { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,.5), transparent 55%); }
   .ldg-fullbleed-copy { position:relative; color:#fff; padding:clamp(36px, 6vw, 72px) clamp(20px, 5vw, 48px); max-width:1240px; margin:0 auto; width:100%; }
+  .ldg-fullbleed-body { font-size:clamp(14.5px, 1.7vw, 16.5px); line-height:1.85; font-weight:300; margin-top:16px; max-width:52ch; opacity:.94; white-space:pre-line; }
+
+  /* strip — edge-to-edge horizontal film strip, natural aspect ratios */
+  .ldg-strip-band { padding:clamp(56px, 9vw, 110px) 0; }
+  .ldg-strip-head { max-width:1240px; margin:0 auto; padding:0 clamp(20px, 5vw, 48px) 34px; }
+  .ldg-strip { display:flex; gap:clamp(8px, 1.2vw, 14px); overflow-x:auto; padding:0 clamp(20px, 5vw, 48px);
+    scroll-snap-type:x proximity; scrollbar-width:none; -webkit-overflow-scrolling:touch; cursor:grab; }
+  .ldg-strip::-webkit-scrollbar { display:none; }
+  .ldg-strip-cell { margin:0; flex:0 0 auto; scroll-snap-align:center; overflow:hidden; border-radius:${theme.radius}px; }
+  .ldg-strip-cell img { height:min(68vh, 600px); width:auto; max-width:88vw; object-fit:cover; display:block;
+    transition:transform 1.2s cubic-bezier(.22,.61,.36,1); }
+  .ldg-strip-cell:hover img { transform:scale(1.03); }
+  @media (max-width: 640px) { .ldg-strip-cell img { height:54vh; } }
+
+  /* mosaic — offset editorial collage */
+  .ldg-mosaic-copy { max-width:660px; margin-bottom:clamp(30px, 4vw, 54px); }
+  .ldg-mosaic { display:grid; grid-template-columns:repeat(12, 1fr); gap:clamp(10px, 1.8vw, 22px); align-items:start; }
+  .ldg-mosaic-cell { margin:0; overflow:hidden; border-radius:${theme.radius}px; }
+  .ldg-mosaic-cell img { width:100%; height:100%; object-fit:cover; transition:transform 1.3s cubic-bezier(.22,.61,.36,1); }
+  .ldg-mosaic-cell:hover img { transform:scale(1.04); }
+  .ldg-mosaic-1 { grid-column:1 / 8; } .ldg-mosaic-1 img { aspect-ratio:4/4.6; }
+  .ldg-mosaic-2 { grid-column:8 / 13; margin-top:clamp(48px, 9vw, 130px); } .ldg-mosaic-2 img { aspect-ratio:3/3.8; }
+  .ldg-mosaic-3 { grid-column:3 / 9; margin-top:clamp(-60px, -4vw, -20px); } .ldg-mosaic-3 img { aspect-ratio:16/9; }
+  @media (max-width: 720px) {
+    .ldg-mosaic-1, .ldg-mosaic-2, .ldg-mosaic-3 { grid-column:1 / -1; margin-top:0; }
+    .ldg-mosaic-1 img, .ldg-mosaic-2 img { aspect-ratio:4/4.2; } .ldg-mosaic-3 img { aspect-ratio:4/3; }
+  }
+
+  /* marquee — oversized statement */
+  .ldg-marquee-band { padding-top:clamp(40px, 7vw, 90px); padding-bottom:clamp(40px, 7vw, 90px); }
+  .ldg-marquee { font-family:${theme.headingFont}; font-weight:300; font-size:clamp(38px, 7vw, 110px); line-height:1.06;
+    letter-spacing:.005em; max-width:none; white-space:pre-line; }
 
   /* split */
   .ldg-split { max-width:1240px; margin:0 auto; display:grid; grid-template-columns:minmax(0,5fr) minmax(0,6fr); gap:clamp(28px, 5vw, 76px); align-items:center; }
   .ldg-split-rev { grid-template-columns:minmax(0,6fr) minmax(0,5fr); }
   .ldg-split-rev .ldg-split-copy { order:2; }
   .ldg-split-rev .ldg-split-media { order:1; }
-  .ldg-split-media { overflow:hidden; }
+  .ldg-split-media { overflow:hidden; border-radius:${theme.radius}px; }
   .ldg-split-media img { width:100%; aspect-ratio:4/4.4; object-fit:cover; transition:transform 1.4s cubic-bezier(.22,.61,.36,1); }
   .ldg-split-media:hover img { transform:scale(1.045); }
   @media (max-width: 780px) {
@@ -458,7 +586,7 @@ export default function SiteRenderer({
   /* gallery */
   .ldg-gallery-band { background:${theme.soft}; }
   .ldg-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(230px, 44vw), 1fr)); gap:6px; }
-  .ldg-cell { margin:0; overflow:hidden; }
+  .ldg-cell { margin:0; overflow:hidden; border-radius:${theme.radius}px; }
   .ldg-cell img { width:100%; height:100%; aspect-ratio:4/3; object-fit:cover; transition:transform 1.2s cubic-bezier(.22,.61,.36,1); }
   .ldg-cell:hover img { transform:scale(1.05); }
   .ldg-cell-wide { grid-column:span 2; }
@@ -466,12 +594,20 @@ export default function SiteRenderer({
   @media (max-width: 560px) { .ldg-cell-wide { grid-column:span 1; } .ldg-cell-wide img { aspect-ratio:4/3; } }
   .ldg-zoomable { cursor:${editable ? 'pointer' : 'zoom-in'}; }
 
+  /* gallery masonry — natural aspect ratios, big prints */
+  .ldg-masonry { columns:3; column-gap:10px; }
+  .ldg-mcell { margin:0 0 10px; overflow:hidden; break-inside:avoid; border-radius:${theme.radius}px; }
+  .ldg-mcell img { width:100%; height:auto; display:block; transition:transform 1.2s cubic-bezier(.22,.61,.36,1); }
+  .ldg-mcell:hover img { transform:scale(1.03); }
+  @media (max-width: 900px) { .ldg-masonry { columns:2; } }
+  @media (max-width: 560px) { .ldg-masonry { columns:1; } }
+
   /* features */
   .ldg-features { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap:clamp(26px, 3.4vw, 44px); }
-  .ldg-feature-media { overflow:hidden; margin-bottom:18px; }
+  .ldg-feature-media { overflow:hidden; margin-bottom:18px; border-radius:${theme.radius}px; }
   .ldg-feature-media img { width:100%; aspect-ratio:3/2.1; object-fit:cover; transition:transform 1.2s cubic-bezier(.22,.61,.36,1); }
   .ldg-feature:hover .ldg-feature-media img { transform:scale(1.05); }
-  .ldg-feature-title { font-family:${theme.bodyFont}; font-size:12px; letter-spacing:.26em; text-transform:uppercase; font-weight:400; }
+  .ldg-feature-title { font-family:${theme.headingFont}; font-size:clamp(18px, 2vw, 21px); font-weight:400; line-height:1.3; }
 
   /* quote */
   .ldg-quote-band { background:${theme.soft}; }
@@ -488,13 +624,20 @@ export default function SiteRenderer({
 
   /* buttons + cta */
   .ldg-btn { display:inline-block; font-size:11px; letter-spacing:.26em; text-transform:uppercase; font-weight:400;
-    border:1px solid ${theme.ink}; color:${theme.ink}; padding:15px 34px; transition:background .35s, color .35s; cursor:pointer; }
-  .ldg-btn:hover { background:${theme.ink}; color:${theme.bg}; }
+    border:1px solid ${theme.ink}; color:${theme.ink}; padding:15px 34px; border-radius:${theme.radius}px;
+    transition:background .35s, color .35s, border-color .35s; cursor:pointer; }
+  .ldg-btn:hover { background:${theme.accent}; border-color:${theme.accent}; color:${theme.accentInk}; }
   .ldg-btn-light { border-color:#fff; color:#fff; }
-  .ldg-btn-light:hover { background:#fff; color:#111; }
+  .ldg-btn-light:hover { background:#fff; border-color:#fff; color:#111; }
   .ldg-cta-band { background:${theme.ink}; color:${theme.bg}; }
   .ldg-cta-band .ldg-btn { border-color:${theme.bg}; color:${theme.bg}; }
   .ldg-cta-band .ldg-btn:hover { background:${theme.bg}; color:${theme.ink}; }
+  .ldg-cta-img { position:relative; overflow:hidden; }
+  .ldg-cta-img .ldg-cta-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .ldg-cta-shade { position:absolute; inset:0; background:rgba(10,9,7,.52); }
+  .ldg-cta-img .ldg-prose { color:#fff; }
+  .ldg-cta-img .ldg-btn-light { border-color:#fff; color:#fff; }
+  .ldg-cta-img .ldg-btn-light:hover { background:#fff; color:#111; }
 
   /* footer */
   .ldg-footer { padding:clamp(48px, 7vw, 80px) 24px 42px; text-align:center; border-top:1px solid rgba(0,0,0,.08); }

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase';
 import { anthropic, MODELS, HOUSE_STYLE, stripDashes } from '@/lib/ai';
 import { defaultTheme, newSection, type Section, type SectionType } from '@/lib/siteBuilder';
+import { SITE_SEEDS } from '@/lib/siteSeeds';
 
 export interface BuilderResult {
   ok: boolean;
@@ -59,6 +60,39 @@ export async function createVersion(
 
   revalidatePath('/sites');
   return { ok: true, message: 'Draft created', id: version.id };
+}
+
+/**
+ * Create a draft from the property's designed blueprint (lib/siteSeeds):
+ * the art-directed, image-led site built from the property's real photo
+ * library. Lands as a normal draft, fully editable, never auto-published.
+ */
+export async function createDesignedVersion(propertyId: string): Promise<BuilderResult> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
+  const seed = SITE_SEEDS[propertyId];
+  if (!seed) return { ok: false, message: 'No designed blueprint exists for this property yet.' };
+
+  const { data: version, error } = await supabase
+    .from('site_versions')
+    .insert({ property_id: propertyId, label: seed.label, theme: seed.theme })
+    .select('id')
+    .single();
+  if (error || !version) return { ok: false, message: error?.message ?? 'Could not create version' };
+
+  const rows = seed.pages.map((p, i) => ({
+    version_id: version.id,
+    slug: p.slug,
+    nav_label: p.nav_label,
+    title: p.title,
+    sort: i,
+    sections: p.sections.map((s) => ({ ...s, id: crypto.randomUUID().slice(0, 8) })),
+  }));
+  const { error: pageErr } = await supabase.from('site_v2_pages').insert(rows);
+  if (pageErr) return { ok: false, message: pageErr.message };
+
+  revalidatePath('/sites');
+  return { ok: true, message: 'Designed draft created — preview it, tweak anything, then publish when happy.', id: version.id };
 }
 
 /** Publish a version: it becomes the live site on the property's domains. */
