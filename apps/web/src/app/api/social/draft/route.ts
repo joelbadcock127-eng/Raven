@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { draftPost } from '@/app/(admin)/social/actions';
+import { refreshInstagramTokenIfDue } from '@/lib/meta';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -23,6 +24,10 @@ export async function GET(req: NextRequest) {
 
   const supabase = supabaseAdmin();
   if (!supabase) return NextResponse.json({ error: 'supabase not configured' }, { status: 500 });
+
+  // keep the Instagram-login token alive here too — this cron runs even
+  // when CRON_SECRET is unset, so the refresh never silently stops
+  await refreshInstagramTokenIfDue();
 
   const today = new Date().toISOString().slice(0, 10);
   const results: Record<string, string> = {};

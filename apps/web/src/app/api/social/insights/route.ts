@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { metaConfigured, getMediaInsights } from '@/lib/meta';
+import { metaConfigured, getMediaInsights, refreshInstagramTokenIfDue } from '@/lib/meta';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -19,6 +19,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'unauthorised' }, { status: 401 });
 
   if (!metaConfigured()) return NextResponse.json({ ok: true, skipped: 'Meta not connected' });
+
+  // keep the Instagram-login token alive (no-op on the Facebook route)
+  const tokenRefresh = await refreshInstagramTokenIfDue();
 
   const supabase = supabaseAdmin();
   if (!supabase) return NextResponse.json({ error: 'supabase not configured' }, { status: 500 });
@@ -51,5 +54,5 @@ export async function GET(req: NextRequest) {
       .eq('id', p.id);
     updated++;
   }
-  return NextResponse.json({ ok: true, updated });
+  return NextResponse.json({ ok: true, updated, tokenRefresh: tokenRefresh.note });
 }
