@@ -1,12 +1,19 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Cormorant_Garamond, Jost, Fraunces, Space_Grotesk } from 'next/font/google';
+import { Cormorant_Garamond, Jost, Fraunces, Space_Grotesk, Inter } from 'next/font/google';
 import { supabaseAdmin } from '@/lib/supabase';
 import { defaultTheme, type SitePageV2, type SiteTheme } from '@/lib/siteBuilder';
 import { SITE_SEEDS } from '@/lib/siteSeeds';
 import SiteRenderer from '@/components/SiteRenderer';
+import AnnieMaySite from '@/components/anniemay/AnnieMaySite';
 
 export const revalidate = 0;
+
+const amBody = Inter({
+  subsets: ['latin'],
+  weight: ['300', '400', '500'],
+  variable: '--font-am-body',
+});
 
 const siteSerif = Cormorant_Garamond({
   subsets: ['latin'],
@@ -100,6 +107,22 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { property } = await params;
   const q = await searchParams;
+
+  // Annie May serves the bespoke site (legacy builder versions via ?version=)
+  if (property === 'annie-may' && !q.version && !q.edit) {
+    const titles: Record<string, string> = {
+      home: 'Annie May — Boutique adults-only guesthouse, Devonport, Tasmania',
+      rooms: 'The Rooms — Annie May, Devonport',
+      gallery: 'Gallery — Annie May, Devonport',
+      contact: 'Find her — Annie May, 16 Formby Road, Devonport',
+    };
+    return {
+      title: titles[q.page ?? 'home'] ?? titles.home,
+      description:
+        'Annie May is a heritage boutique guesthouse in central Devonport, Tasmania — seven ensuite king rooms, adults only, breakfast included, lift access, minutes from the Spirit of Tasmania.',
+    };
+  }
+
   const data = await load(property, q.version);
   const page = data?.pages.find((p) => p.slug === (q.page ?? 'home')) ?? data?.pages[0];
   return {
@@ -118,6 +141,17 @@ export default async function SiteV2Page({
 }) {
   const { property } = await params;
   const q = await searchParams;
+
+  // Annie May: the bespoke redesign is the site. The old builder flow stays
+  // reachable only when a version is explicitly requested (?version=…).
+  if (property === 'annie-may' && !q.version && !q.edit) {
+    return (
+      <div className={`${siteDisplay.variable} ${amBody.variable}`}>
+        <AnnieMaySite page={q.page ?? 'home'} standalone={q.standalone === '1'} />
+      </div>
+    );
+  }
+
   const data = await load(property, q.version);
   if (!data) notFound();
 
