@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { updatePost, setPostStatus, publishPost, renderReel, setPostMedia } from '@/app/(admin)/social/actions';
 import ImageEditor from '@/components/ImageEditor';
+import { resolveBrandKit, previewFontsHref, FONTS, type BrandKit } from '@/lib/brandKit';
 
 export interface SocialPost {
   id: string;
@@ -48,10 +49,13 @@ export default function SocialQueue({
   posts,
   media,
   metaConnected,
+  brandKits = {},
 }: {
   posts: SocialPost[];
   media: MediaRef[];
   metaConnected: boolean;
+  /** Resolved per-property brand kits (saved overrides merged over defaults). */
+  brandKits?: Record<string, BrandKit>;
 }) {
   const [pending, startTransition] = useTransition();
   const [notice, setNotice] = useState('');
@@ -209,7 +213,7 @@ export default function SocialQueue({
                       <button type="button" disabled={pending} className="pill-primary" style={{ fontSize: 12, padding: '6px 14px' }} onClick={() => run(() => setPostStatus(p.id, 'approved'))}>
                         Approve
                       </button>
-                      {p.kind === 'reel' && (
+                      {(p.kind === 'reel' || p.kind === 'story') && (
                         <button
                           type="button"
                           disabled={pending}
@@ -217,7 +221,7 @@ export default function SocialQueue({
                           style={{ fontSize: 12, padding: '6px 14px', background: reelFor === p.id ? 'var(--primary)' : 'var(--canvas)', color: reelFor === p.id ? 'var(--on-primary)' : 'var(--primary)', border: '1px solid var(--primary)' }}
                           onClick={() => setReelFor(reelFor === p.id ? null : p.id)}
                         >
-                          {reelFor === p.id ? 'Close reel builder' : 'Build reel'}
+                          {reelFor === p.id ? 'Close builder' : p.kind === 'story' ? 'Build story' : 'Build reel'}
                         </button>
                       )}
                       <button
@@ -267,6 +271,8 @@ export default function SocialQueue({
                 {reelFor === p.id && (
                   <ReelBuilder
                     pending={pending}
+                    kind={p.kind === 'story' ? 'story' : 'reel'}
+                    brand={brandKits[p.property_id ?? ''] ?? resolveBrandKit(p.property_id)}
                     defaultCaption={p.caption.split('\n')[0] ?? ''}
                     clipPool={media.filter(
                       (m) =>
@@ -307,6 +313,7 @@ export default function SocialQueue({
       {editImg && (
         <ImageEditor
           asset={{ id: editImg.mediaId, property_id: editImg.propertyId, file_name: 'post-image' }}
+          brand={brandKits[editImg.propertyId ?? ''] ?? resolveBrandKit(editImg.propertyId)}
           onClose={() => setEditImg(null)}
           onSaved={(newId) => {
             const post = posts.find((p) => p.id === editImg.postId);
@@ -337,17 +344,22 @@ type ReelOpts = {
   musicHint?: string;
   musicAssetId?: string;
   noMusic?: boolean;
+  plainText?: boolean;
+  noWatermark?: boolean;
   mediaIds?: string[];
 };
 
 /**
- * Inline reel builder. Auto mode picks least-used clips; Pick mode lets the
- * owner choose the exact clips and their play order. Grade defaults to the
- * property's style guide; transitions, aspect, clip length, caption styling
- * and the music track are all editable.
+ * Inline reel/story builder. Auto mode picks least-used clips; Pick mode
+ * lets the owner choose the exact clips and their play order. Every default
+ * comes from the property's brand kit — grade, transition, aspect, pacing
+ * and the text styling (font, colour, scrim, case, watermark) — and each is
+ * editable per render.
  */
 function ReelBuilder({
   pending,
+  kind,
+  brand,
   defaultCaption,
   clipPool,
   musicPool,
@@ -355,6 +367,8 @@ function ReelBuilder({
   onClose,
 }: {
   pending: boolean;
+  kind: 'reel' | 'story';
+  brand: BrandKit;
   defaultCaption: string;
   clipPool: MediaRef[];
   musicPool: MediaRef[];
@@ -366,15 +380,21 @@ function ReelBuilder({
   const [picked, setPicked] = useState<string[]>([]);
   const [filter, setFilter] = useState<'guide' | 'warm' | 'cool' | 'mono' | 'punchy' | 'none'>('guide');
   const [clipCount, setClipCount] = useState(5);
-  const [clipSeconds, setClipSeconds] = useState(2.8);
-  const [transition, setTransition] = useState<'cut' | 'fade'>('fade');
-  const [aspect, setAspect] = useState<'9:16' | '1:1' | '4:5'>('9:16');
+  const [clipSeconds, setClipSeconds] = useState(brand.reel.clipSeconds);
+  const [transition, setTransition] = useState<'cut' | 'fade'>(brand.reel.transition);
+  const [aspect, setAspect] = useState<'9:16' | '1:1' | '4:5'>(kind === 'story' ? '9:16' : brand.reel.aspect);
   const [caption, setCaption] = useState(defaultCaption);
-  const [captionPosition, setCaptionPosition] = useState<'top' | 'middle' | 'bottom'>('bottom');
-  const [captionSize, setCaptionSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [captionPosition, setCaptionPosition] = useState<'top' | 'middle' | 'bottom'>(brand.overlay.position);
+  const [captionSize, setCaptionSize] = useState<'small' | 'medium' | 'large'>(brand.overlay.size);
   const [captionTiming, setCaptionTiming] = useState<'whole' | 'intro'>('whole');
+  const [textStyle, setTextStyle] = useState<'brand' | 'plain'>('brand');
+  const [watermarkOn, setWatermarkOn] = useState(brand.watermark.enabled && Boolean(brand.watermark.text));
   const [musicMode, setMusicMode] = useState<string>('auto'); // auto | none | asset id
   const [musicHint, setMusicHint] = useState('');
+
+  const brandFont = FONTS[brand.overlay.font];
+  const fontsHref = previewFontsHref(brand);
+  const previewImg = (picked.length ? clipPool.find((m) => m.id === picked[0]) : clipPool.find((m) => m.kind === 'image')) ?? clipPool[0];
 
   const togglePick = (id: string) =>
     setPicked((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length >= 10 ? cur : [...cur, id]));
@@ -407,6 +427,12 @@ function ReelBuilder({
 
   return (
     <div className="card" style={{ padding: 16, background: 'var(--canvas-soft)', display: 'grid', gap: 12 }}>
+      {fontsHref && <link rel="stylesheet" href={fontsHref} />}
+      <p className="caption" style={{ color: 'var(--ink-mute)', margin: 0 }}>
+        Brand styling applied automatically — {brandFont.label.split(' — ')[0]}
+        {brand.overlay.textCase === 'uppercase' ? ', uppercase' : ''}
+        {watermarkOn ? `, “${brand.watermark.text}” wordmark` : ''}. Everything below is editable.
+      </p>
       {row('Clips', (
         <>
           {seg('auto', mode, () => setMode('auto'), 'Auto-pick')}
@@ -480,13 +506,14 @@ function ReelBuilder({
             {seg('cut', transition, () => setTransition('cut'), 'Hard cut')}
           </>
         ))}
-        {row('Aspect', (
-          <>
-            {seg('9:16', aspect, () => setAspect('9:16'), '9:16 reel')}
-            {seg('4:5', aspect, () => setAspect('4:5'), '4:5 portrait')}
-            {seg('1:1', aspect, () => setAspect('1:1'), '1:1 square')}
-          </>
-        ))}
+        {kind !== 'story' &&
+          row('Aspect', (
+            <>
+              {seg('9:16', aspect, () => setAspect('9:16'), '9:16 reel')}
+              {seg('4:5', aspect, () => setAspect('4:5'), '4:5 portrait')}
+              {seg('1:1', aspect, () => setAspect('1:1'), '1:1 square')}
+            </>
+          ))}
         <label className="caption" style={{ display: 'grid', gap: 4 }}>
           <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Seconds per clip</span>
           <input type="number" min={1.5} max={6} step={0.5} value={clipSeconds} onChange={(e) => setClipSeconds(Math.max(1.5, Math.min(6, Number(e.target.value) || 2.8)))} style={{ ...builderField, width: 80 }} />
@@ -499,28 +526,94 @@ function ReelBuilder({
           <textarea value={caption} onChange={(e) => setCaption(e.target.value)} rows={2} placeholder="short lines burned onto the video" style={{ ...builderField, resize: 'vertical' }} />
         </label>
         {caption.trim() && (
-          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-            {row('Text position', (
-              <>
-                {seg('top', captionPosition, () => setCaptionPosition('top'), 'Top')}
-                {seg('middle', captionPosition, () => setCaptionPosition('middle'), 'Middle')}
-                {seg('bottom', captionPosition, () => setCaptionPosition('bottom'), 'Bottom')}
-              </>
-            ))}
-            {row('Text size', (
-              <>
-                {seg('small', captionSize, () => setCaptionSize('small'), 'Small')}
-                {seg('medium', captionSize, () => setCaptionSize('medium'), 'Medium')}
-                {seg('large', captionSize, () => setCaptionSize('large'), 'Large')}
-              </>
-            ))}
-            {row('Text timing', (
-              <>
-                {seg('whole', captionTiming, () => setCaptionTiming('whole'), 'Whole reel')}
-                {seg('intro', captionTiming, () => setCaptionTiming('intro'), 'First 3.5s')}
-              </>
-            ))}
-          </div>
+          <>
+            <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+              {row('Text style', (
+                <>
+                  {seg('brand', textStyle, () => setTextStyle('brand'), `Brand (${brandFont.label.split(' — ')[0]})`)}
+                  {seg('plain', textStyle, () => setTextStyle('plain'), 'Plain white')}
+                </>
+              ))}
+              {row('Text position', (
+                <>
+                  {seg('top', captionPosition, () => setCaptionPosition('top'), 'Top')}
+                  {seg('middle', captionPosition, () => setCaptionPosition('middle'), 'Middle')}
+                  {seg('bottom', captionPosition, () => setCaptionPosition('bottom'), 'Bottom')}
+                </>
+              ))}
+              {row('Text size', (
+                <>
+                  {seg('small', captionSize, () => setCaptionSize('small'), 'Small')}
+                  {seg('medium', captionSize, () => setCaptionSize('medium'), 'Medium')}
+                  {seg('large', captionSize, () => setCaptionSize('large'), 'Large')}
+                </>
+              ))}
+              {row('Text timing', (
+                <>
+                  {seg('whole', captionTiming, () => setCaptionTiming('whole'), kind === 'story' ? 'Whole story' : 'Whole reel')}
+                  {seg('intro', captionTiming, () => setCaptionTiming('intro'), 'First 3.5s')}
+                </>
+              ))}
+            </div>
+
+            {/* live approximation of the burned-on text over the first clip */}
+            <div
+              style={{
+                position: 'relative', width: 158, aspectRatio: '9 / 16', borderRadius: 10, overflow: 'hidden',
+                background: previewImg ? undefined : '#26221d',
+              }}
+            >
+              {previewImg && previewImg.kind === 'image' && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewImg.public_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+              )}
+              {previewImg && previewImg.kind === 'video' && (
+                <video src={previewImg.public_url} muted preload="metadata" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+              )}
+              {textStyle === 'brand' && watermarkOn && brand.watermark.text && (
+                <span
+                  style={{
+                    position: 'absolute', left: 0, right: 0, textAlign: 'center',
+                    [brand.watermark.position === 'bottom' ? 'bottom' : 'top']: 8,
+                    color: brand.colors.text, opacity: brand.watermark.opacity,
+                    fontFamily: brandFont.css, fontSize: 5, letterSpacing: 1, textShadow: '0 1px 2px rgba(0,0,0,.4)',
+                  }}
+                >
+                  {brand.watermark.text}
+                </span>
+              )}
+              <span
+                style={{
+                  position: 'absolute', left: 6, right: 6, textAlign: 'center', whiteSpace: 'pre-wrap', lineHeight: 1.3,
+                  ...(captionPosition === 'top'
+                    ? { top: '12%' }
+                    : captionPosition === 'middle'
+                      ? { top: '50%', transform: 'translateY(-50%)' }
+                      : { bottom: '19%' }),
+                  fontSize: { small: 7, medium: 9, large: 11 }[captionSize],
+                  ...(textStyle === 'brand'
+                    ? {
+                        fontFamily: brandFont.css,
+                        color: brand.colors.text,
+                        textTransform: brand.overlay.textCase === 'uppercase' ? ('uppercase' as const) : ('none' as const),
+                        ...(brand.overlay.scrim === 'band'
+                          ? { background: `${brand.colors.scrim}8c`, padding: '3px 5px', borderRadius: 2 }
+                          : { textShadow: '0 1px 3px rgba(0,0,0,.55)' }),
+                      }
+                    : { fontFamily: 'sans-serif', fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,.6)' }),
+                }}
+              >
+                {caption.trim()}
+              </span>
+            </div>
+
+            {brand.watermark.text && (
+              <label className="caption" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <input type="checkbox" checked={watermarkOn} onChange={(e) => setWatermarkOn(e.target.checked)} disabled={textStyle === 'plain'} />
+                “{brand.watermark.text}” wordmark
+              </label>
+            )}
+          </>
         )}
       </div>
 
@@ -564,6 +657,8 @@ function ReelBuilder({
               captionPosition,
               captionSize,
               captionTiming,
+              plainText: textStyle === 'plain',
+              noWatermark: !watermarkOn,
               musicHint: musicHint.trim() || undefined,
               musicAssetId: musicMode !== 'auto' && musicMode !== 'none' ? musicMode : undefined,
               noMusic: musicMode === 'none',
@@ -571,7 +666,7 @@ function ReelBuilder({
             })
           }
         >
-          {mode === 'pick' && picked.length < 2 ? 'Pick at least 2 clips' : 'Render reel'}
+          {mode === 'pick' && picked.length < 2 ? 'Pick at least 2 clips' : kind === 'story' ? 'Render story' : 'Render reel'}
         </button>
       </div>
     </div>

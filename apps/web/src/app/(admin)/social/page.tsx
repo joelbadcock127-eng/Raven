@@ -4,6 +4,7 @@ import SocialQueue, { type SocialPost, type MediaRef } from '@/components/Social
 import PostingPlans, { type Plan, type FolderRef } from '@/components/PostingPlans';
 import StyleGuides from '@/components/StyleGuides';
 import type { StyleGuide } from '@/lib/styleGuides';
+import { resolveBrandKit, type BrandKit } from '@/lib/brandKit';
 
 export const revalidate = 0;
 
@@ -37,6 +38,13 @@ export default async function SocialPage() {
     guides = (guideRes.data as StyleGuide[]) ?? [];
   }
 
+  // Resolved brand kit per property: saved overrides merged over defaults,
+  // so the reel/story builder is fully branded even before anything is saved.
+  const brandKits: Record<string, BrandKit> = {};
+  for (const pid of ['ten-fifty-bakers', 'prescription-pad', 'annie-may']) {
+    brandKits[pid] = resolveBrandKit(pid, guides.find((g) => g.property_id === pid)?.brand);
+  }
+
   return (
     <>
         <header style={{ marginBottom: 32 }}>
@@ -48,7 +56,7 @@ export default async function SocialPage() {
         </header>
         <StyleGuides guides={guides} />
         <PostingPlans plans={plans} folders={folders} />
-        <SocialQueue posts={posts} media={media} metaConnected={metaConfigured()} />
+        <SocialQueue posts={posts} media={media} metaConnected={metaConfigured()} brandKits={brandKits} />
         <footer className="caption" style={{ paddingTop: 64 }}>
           Raven · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie May.
         </footer>

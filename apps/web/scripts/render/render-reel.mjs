@@ -14,13 +14,31 @@
  *     filter,                  // 'none' | 'warm' | 'cool' | 'mono' | 'punchy'
  *     transition,              // 'cut' (default) | 'fade' 0.35s crossfade
  *     caption,                 // optional overlay text, may contain newlines
- *     captionStyle,            // { position: top|middle|bottom, size: small|medium|large, timing: whole|intro }
+ *     captionStyle,            // { position, size, timing, fontFile, color, scrim, scrimColor, uppercase }
+ *     watermark,               // { text, fontFile, color, position: top|bottom, opacity }
  *     musicUrl,                // optional audio track URL
  *   }
  * }
  */
 import { execFileSync } from 'node:child_process';
-import { writeFileSync, mkdirSync, readFileSync, statSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync, statSync, existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Brand fonts ship with the repo (the workflow checks it out); anything
+// missing falls back to the runner's DejaVu Sans Bold.
+const FONT_DIR = join(dirname(fileURLToPath(import.meta.url)), 'fonts');
+const FALLBACK_FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
+function fontPath(fontFile) {
+  if (!fontFile) return FALLBACK_FONT;
+  const p = join(FONT_DIR, String(fontFile).replace(/[^A-Za-z0-9._-]/g, ''));
+  return existsSync(p) ? p : FALLBACK_FONT;
+}
+// ffmpeg drawtext colours accept 0xRRGGBB; strip anything else from hex input
+function ffColor(hex, fallback) {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex ?? ''));
+  return m ? `0x${m[1]}` : fallback;
+}
 
 const payload = JSON.parse(process.env.PAYLOAD ?? '{}');
 const { jobId, completeUrl, completeToken, uploadUrl, publicUrl } = payload;
@@ -179,7 +197,8 @@ try {
   }
   let current = 'work/joined.mp4';
 
-  // 3. caption overlay — multi-line, position/size/timing from captionStyle
+  // 3. caption overlay — multi-line; position/size/timing plus brand font,
+  //    colour and scrim (soft shadow or tinted band) from captionStyle
   if (spec.caption) {
     const style = spec.captionStyle ?? {};
     const fontsize = { small: 42, medium: 54, large: 68 }[style.size] ?? 54;
@@ -189,19 +208,46 @@ try {
       bottom: 'h-360-text_h',
     }[style.position] ?? 'h-360-text_h';
     const enable = style.timing === 'intro' ? ":enable='lt(t,3.5)'" : '';
+    const font = fontPath(style.fontFile);
+    const color = ffColor(style.color, 'white');
+    const scrimColor = ffColor(style.scrimColor, 'black');
+    const scrim =
+      style.scrim === 'none'
+        ? ''
+        : style.scrim === 'band'
+          ? `:box=1:boxcolor=${scrimColor}@0.55:boxborderw=22`
+          : `:borderw=2:bordercolor=${scrimColor}@0.55:shadowcolor=${scrimColor}@0.45:shadowx=0:shadowy=3`;
     // drawtext renders embedded newlines; sanitise each line, keep the breaks
-    const text = String(spec.caption)
+    let text = String(spec.caption)
       .split('\n')
       .map((l) => l.replace(/[\\']/g, '').replace(/[:%]/g, '\\$&').trim())
       .filter(Boolean)
       .join('\n');
+    if (style.uppercase) text = text.toUpperCase();
     sh('ffmpeg', [
       '-y', '-i', current,
       '-vf',
-      `drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='${text}':fontsize=${fontsize}:fontcolor=white:borderw=2:bordercolor=black@0.55:line_spacing=10:x=(w-text_w)/2:y=${y}${enable}`,
+      `drawtext=fontfile=${font}:text='${text}':fontsize=${fontsize}:fontcolor=${color}${scrim}:line_spacing=12:x=(w-text_w)/2:y=${y}${enable}`,
       '-c:a', 'copy', 'work/captioned.mp4',
     ]);
     current = 'work/captioned.mp4';
+  }
+
+  // 3b. brand watermark — small wordmark, always on screen
+  if (spec.watermark?.text) {
+    const wm = spec.watermark;
+    const font = fontPath(wm.fontFile);
+    const color = ffColor(wm.color, 'white');
+    const alpha = Math.min(1, Math.max(0.1, Number(wm.opacity) || 0.8));
+    const wy = wm.position === 'bottom' ? 'h-140' : '96';
+    const text = String(wm.text).replace(/[\\']/g, '').replace(/[:%]/g, '\\$&').trim();
+    sh('ffmpeg', [
+      '-y', '-i', current,
+      '-vf',
+      `drawtext=fontfile=${font}:text='${text}':fontsize=30:fontcolor=${color}@${alpha}:shadowcolor=black@0.35:shadowx=0:shadowy=2:x=(w-text_w)/2:y=${wy}`,
+      '-c:a', 'copy', 'work/marked.mp4',
+    ]);
+    current = 'work/marked.mp4';
   }
 
   // 4. music — long tracks get their loudest section (usually the chorus),

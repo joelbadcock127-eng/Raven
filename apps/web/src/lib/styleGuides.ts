@@ -17,6 +17,8 @@ export interface StyleGuide {
   avoid: string;
   example_captions: string[];
   source_notes: string;
+  /** Saved brand-kit overrides (jsonb, migration 0016) — see lib/brandKit.ts. */
+  brand?: unknown;
   updated_at?: string;
 }
 
@@ -51,6 +53,49 @@ export async function loadStyleGuide(
   } catch {
     return null;
   }
+}
+
+/**
+ * Built-in starter guides, used whenever no guide is saved for a property so
+ * captions and music match the brand from the first draft. Annie May's is
+ * distilled from the anniemay.com.au brand voice ("She knows how to hold a
+ * moment") pending real captions pasted from @anniemaybnb.
+ */
+const DEFAULT_GUIDES: Record<string, Omit<StyleGuide, 'property_id'>> = {
+  'annie-may': {
+    voice:
+      'Quiet, poetic and unhurried. Annie May is spoken of as "she" — a graceful heritage host. Short lines, understated warmth, refinement without theatre. Never salesy, never loud.',
+    vibe:
+      'Slow heritage mornings in Devonport: soft window light, crisp linen, coffee going cold because the conversation was better. Adults-only calm — privacy with warmth.',
+    visual:
+      'Warm, softly graded film-like tones — creams, tans and muted sage against dark heritage timber. Golden window light, gentle contrast, nothing oversaturated.',
+    music: 'gentle acoustic guitar, soft warm piano, slow and unhurried, quiet coastal calm',
+    hashtags: [
+      '#anniemay', '#devonport', '#tasmania', '#discovertasmania', '#boutiqueaccommodation',
+      '#heritagehotel', '#bnbtasmania', '#northwesttasmania', '#spiritoftasmania', '#tassiestyle',
+    ],
+    cta: 'A soft invitation to stay with her — book direct at anniemay.com.au.',
+    avoid:
+      'Hype words (stunning, amazing, unreal), urgency (book now!!, don\'t miss out), emoji spam, exclamation marks, anything aimed at families with children.',
+    example_captions: [
+      'She keeps the morning slow. Coffee in the bay window, the Mersey easing past, nowhere you need to be.\n\nStay with her — anniemay.com.au\n\n#anniemay #devonport #tasmania #boutiqueaccommodation #heritagehotel',
+      'Heritage kept, comforts modernised. Seven rooms, each with its own quiet corner of a grand old Devonport home.\n\nBook direct at anniemay.com.au\n\n#anniemay #devonport #discovertasmania #bnbtasmania #tassiestyle',
+      'Off the Spirit and five minutes to her door. She knows how to hold a moment before the road tomorrow.\n\nanniemay.com.au\n\n#anniemay #spiritoftasmania #devonport #tasmania #boutiqueaccommodation',
+    ],
+    source_notes: 'Built-in starter distilled from the anniemay.com.au brand — replace by saving a guide.',
+  },
+};
+
+/** A property's built-in starter guide, or null if none is defined. */
+export function defaultGuide(propertyId: string): StyleGuide | null {
+  const d = DEFAULT_GUIDES[propertyId];
+  return d ? { property_id: propertyId, ...d } : null;
+}
+
+/** The guide to actually steer with: the saved one, else the built-in starter. */
+export function effectiveGuide(saved: StyleGuide | null, propertyId: string): StyleGuide | null {
+  if (saved && guideHasContent(saved)) return saved;
+  return defaultGuide(propertyId);
 }
 
 /** True when the guide has any content worth steering the AI with. */

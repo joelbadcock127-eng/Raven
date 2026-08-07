@@ -6,11 +6,13 @@ import { anthropic, MODELS, HOUSE_STYLE, stripDashes } from '@/lib/ai';
 import { publishToInstagram, publishToFacebook, metaConfigured } from '@/lib/meta';
 import {
   loadStyleGuide,
+  effectiveGuide,
   guideHasContent,
   guideSystemBlock,
   guideFilterDefault,
   type StyleGuide,
 } from '@/lib/styleGuides';
+import { resolveBrandKit, FONTS, type BrandKit } from '@/lib/brandKit';
 
 export interface ActionResult {
   ok: boolean;
@@ -205,7 +207,7 @@ export async function draftPost(
     'annie-may': 'Annie May — refined adults-only heritage guesthouse in Devonport, Tasmania',
   };
   if (client) {
-    const guide = await loadStyleGuide(supabase, propertyId);
+    const guide = effectiveGuide(await loadStyleGuide(supabase, propertyId), propertyId);
     const res = await client.messages.create({
       model: MODELS.classify,
       max_tokens: 400,
@@ -363,6 +365,8 @@ export interface ReelOptions {
   musicHint?: string; // matches against music tags/captions; defaults to direction, then style guide
   musicAssetId?: string; // explicit track choice ('' / undefined = auto match)
   noMusic?: boolean;
+  plainText?: boolean; // true = skip brand font/colour/watermark, use clean bold white
+  noWatermark?: boolean;
   source?: 'auto' | 'videos' | 'photos'; // auto = videos, topped up with photos
   folderId?: string; // restrict source clips to a folder
   mediaIds?: string[]; // hand-picked clips in play order; overrides source/clipCount
@@ -379,7 +383,9 @@ export async function renderReel(postId: string, options: ReelOptions = {}): Pro
     .maybeSingle();
   if (!post?.property_id) return { ok: false, message: 'Post not found.' };
 
-  const guide = await loadStyleGuide(supabase, post.property_id);
+  const savedGuide = await loadStyleGuide(supabase, post.property_id);
+  const guide = effectiveGuide(savedGuide, post.property_id);
+  const kit = resolveBrandKit(post.property_id, savedGuide?.brand);
   const clipCount = Math.min(options.clipCount ?? 5, 10);
   const source = options.source ?? 'auto';
 
@@ -461,7 +467,13 @@ export async function renderReel(postId: string, options: ReelOptions = {}): Pro
     }
   }
 
-  const aspect = REEL_ASPECTS[options.aspect ?? '9:16'] ?? REEL_ASPECTS['9:16'];
+  // Brand kit fills every gap the owner didn't set explicitly: aspect,
+  // pacing, transition, grade, text font/colour/scrim/case, watermark.
+  // Stories always render 9:16. plainText opts out of brand styling.
+  const branded = !options.plainText;
+  const aspectKey = post.kind === 'story' ? '9:16' : (options.aspect ?? kit.reel.aspect);
+  const aspect = REEL_ASPECTS[aspectKey] ?? REEL_ASPECTS['9:16'];
+  const fontFile = FONTS[kit.overlay.font]?.file ?? undefined;
   const { enqueueRenderJob } = await import('@/lib/render');
   const res = await enqueueRenderJob(supabase, {
     propertyId: post.property_id,
@@ -470,17 +482,36 @@ export async function renderReel(postId: string, options: ReelOptions = {}): Pro
       clips,
       width: aspect.width,
       height: aspect.height,
-      clipSeconds: options.clipSeconds,
-      transition: options.transition ?? 'cut',
-      filter: options.filter ?? guideFilterDefault(guide) ?? 'warm',
+      clipSeconds: options.clipSeconds ?? kit.reel.clipSeconds,
+      transition: options.transition ?? kit.reel.transition,
+      filter: options.filter ?? guideFilterDefault(guide) ?? kit.reel.grade,
       caption: options.caption,
       captionStyle: options.caption
         ? {
-            position: options.captionPosition ?? 'bottom',
-            size: options.captionSize ?? 'medium',
+            position: options.captionPosition ?? kit.overlay.position,
+            size: options.captionSize ?? kit.overlay.size,
             timing: options.captionTiming ?? 'whole',
+            ...(branded
+              ? {
+                  fontFile,
+                  color: kit.colors.text,
+                  scrim: kit.overlay.scrim,
+                  scrimColor: kit.colors.scrim,
+                  uppercase: kit.overlay.textCase === 'uppercase',
+                }
+              : {}),
           }
         : undefined,
+      watermark:
+        branded && !options.noWatermark && kit.watermark.enabled && kit.watermark.text
+          ? {
+              text: kit.watermark.text,
+              fontFile,
+              color: kit.colors.text,
+              position: kit.watermark.position,
+              opacity: kit.watermark.opacity,
+            }
+          : undefined,
       musicUrl,
     },
   });
@@ -518,6 +549,36 @@ export async function saveStyleGuide(guide: StyleGuide): Promise<ActionResult> {
     };
   revalidatePath('/social');
   return { ok: true, message: 'Style guide saved — it now steers every caption and reel for this property.' };
+}
+
+/**
+ * Save a property's brand-kit overrides (style_guides.brand). Only the
+ * fields that differ from the built-in defaults matter, but storing the
+ * whole kit keeps the editor simple; resolveBrandKit merges either way.
+ */
+export async function saveBrandKit(propertyId: string, kit: BrandKit): Promise<ActionResult> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
+  const { data: existing } = await supabase
+    .from('style_guides')
+    .select('property_id')
+    .eq('property_id', propertyId)
+    .maybeSingle();
+  const { error } = existing
+    ? await supabase
+        .from('style_guides')
+        .update({ brand: kit, updated_at: new Date().toISOString() })
+        .eq('property_id', propertyId)
+    : await supabase.from('style_guides').insert({ property_id: propertyId, brand: kit });
+  if (error)
+    return {
+      ok: false,
+      message: /brand|style_guides/.test(error.message)
+        ? 'Run the 0016 migration first (supabase/migrations/0016_brand_kits.sql).'
+        : error.message,
+    };
+  revalidatePath('/social');
+  return { ok: true, message: 'Brand kit saved — every new reel and story now renders in it.' };
 }
 
 const GUIDE_SCHEMA = {

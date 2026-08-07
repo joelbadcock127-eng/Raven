@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { generateStyleGuide, saveStyleGuide } from '@/app/(admin)/social/actions';
+import { generateStyleGuide, saveStyleGuide, saveBrandKit } from '@/app/(admin)/social/actions';
 import { emptyGuide, type StyleGuide } from '@/lib/styleGuides';
+import { resolveBrandKit, previewFontsHref, FONTS, type BrandKit, type FontKey } from '@/lib/brandKit';
 
 const PROPERTIES = [
   { id: 'ten-fifty-bakers', name: 'Ten Fifty Bakers' },
@@ -24,6 +25,7 @@ const field: React.CSSProperties = {
 export default function StyleGuides({ guides }: { guides: StyleGuide[] }) {
   const [open, setOpen] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, StyleGuide>>({});
+  const [kitDrafts, setKitDrafts] = useState<Record<string, BrandKit>>({});
   const [importOpen, setImportOpen] = useState(false);
   const [handle, setHandle] = useState('');
   const [notes, setNotes] = useState('');
@@ -39,6 +41,15 @@ export default function StyleGuides({ guides }: { guides: StyleGuide[] }) {
     setDrafts((d) => ({ ...d, [pid]: { ...guideFor(pid), ...p } }));
 
   const hasGuide = (pid: string) => guides.some((g) => g.property_id === pid);
+
+  const kitFor = (pid: string): BrandKit =>
+    kitDrafts[pid] ?? resolveBrandKit(pid, guides.find((g) => g.property_id === pid)?.brand);
+
+  const patchKit = (pid: string, section: keyof BrandKit, p: object) =>
+    setKitDrafts((d) => {
+      const cur = kitFor(pid);
+      return { ...d, [pid]: { ...cur, [section]: { ...cur[section], ...p } } };
+    });
 
   return (
     <section style={{ marginBottom: 32 }}>
@@ -196,6 +207,151 @@ export default function StyleGuides({ guides }: { guides: StyleGuide[] }) {
                     style={{ ...field, resize: 'vertical' }}
                   />
                 </label>
+                {(() => {
+                  const kit = kitFor(open);
+                  const fontsHref = previewFontsHref(kit);
+                  return (
+                    <div className="card" style={{ padding: 16, background: 'var(--canvas-soft)', display: 'grid', gap: 12 }}>
+                      {fontsHref && <link rel="stylesheet" href={fontsHref} />}
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                        <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Brand kit — fonts, colours and styling burned into every reel and story</span>
+                        <span style={{ flex: 1 }} />
+                        <button
+                          type="button"
+                          className="caption"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)' }}
+                          onClick={() => setKitDrafts((d) => ({ ...d, [open]: resolveBrandKit(open) }))}
+                        >
+                          reset to property default
+                        </button>
+                      </div>
+
+                      {/* live sample of the on-video text */}
+                      <div
+                        style={{
+                          padding: '18px 16px', borderRadius: 10, textAlign: 'center', whiteSpace: 'pre-wrap', lineHeight: 1.35,
+                          background: `linear-gradient(160deg, ${kit.colors.scrim} 0%, #6b6258 100%)`,
+                          fontFamily: FONTS[kit.overlay.font].css,
+                          color: kit.colors.text,
+                          textTransform: kit.overlay.textCase === 'uppercase' ? 'uppercase' : 'none',
+                          fontSize: { small: 15, medium: 18, large: 22 }[kit.overlay.size],
+                          textShadow: kit.overlay.scrim === 'shadow' ? '0 2px 4px rgba(0,0,0,.5)' : 'none',
+                        }}
+                      >
+                        {'Slow mornings.\nStay a while.'}
+                        {kit.watermark.enabled && kit.watermark.text && (
+                          <div style={{ fontSize: 10, letterSpacing: 2, opacity: kit.watermark.opacity, marginTop: 10 }}>{kit.watermark.text}</div>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
+                        <label className="caption" style={{ display: 'grid', gap: 4 }}>
+                          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Overlay font</span>
+                          <select value={kit.overlay.font} onChange={(e) => patchKit(open, 'overlay', { font: e.target.value as FontKey })} style={field}>
+                            {(Object.keys(FONTS) as FontKey[]).map((k) => (
+                              <option key={k} value={k}>{FONTS[k].label}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="caption" style={{ display: 'grid', gap: 4 }}>
+                          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Text treatment</span>
+                          <select value={kit.overlay.scrim} onChange={(e) => patchKit(open, 'overlay', { scrim: e.target.value })} style={field}>
+                            <option value="shadow">Soft shadow behind text</option>
+                            <option value="band">Tinted band behind text</option>
+                            <option value="none">Bare text</option>
+                          </select>
+                        </label>
+                        <label className="caption" style={{ display: 'grid', gap: 4 }}>
+                          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Letter case</span>
+                          <select value={kit.overlay.textCase} onChange={(e) => patchKit(open, 'overlay', { textCase: e.target.value })} style={field}>
+                            <option value="uppercase">UPPERCASE</option>
+                            <option value="as-typed">As typed</option>
+                          </select>
+                        </label>
+                        <label className="caption" style={{ display: 'grid', gap: 4 }}>
+                          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Default text size · position</span>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <select value={kit.overlay.size} onChange={(e) => patchKit(open, 'overlay', { size: e.target.value })} style={field}>
+                              {['small', 'medium', 'large'].map((s) => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                            <select value={kit.overlay.position} onChange={(e) => patchKit(open, 'overlay', { position: e.target.value })} style={field}>
+                              {['top', 'middle', 'bottom'].map((s) => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </div>
+                        </label>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'end' }}>
+                        {([['text', 'Text colour'], ['scrim', 'Scrim / shadow'], ['accent', 'Accent'], ['paper', 'Paper']] as const).map(([key, label]) => (
+                          <label key={key} className="caption" style={{ display: 'grid', gap: 4 }}>
+                            <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>{label}</span>
+                            <input
+                              type="color"
+                              value={kit.colors[key]}
+                              onChange={(e) => patchKit(open, 'colors', { [key]: e.target.value })}
+                              style={{ width: 52, height: 32, padding: 2, border: '1px solid var(--hairline-input)', borderRadius: 8, background: 'var(--canvas)', cursor: 'pointer' }}
+                            />
+                          </label>
+                        ))}
+                        <label className="caption" style={{ display: 'grid', gap: 4 }}>
+                          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Default grade</span>
+                          <select value={kit.reel.grade} onChange={(e) => patchKit(open, 'reel', { grade: e.target.value })} style={field}>
+                            {['warm', 'cool', 'mono', 'punchy', 'none'].map((g) => <option key={g} value={g}>{g}</option>)}
+                          </select>
+                        </label>
+                        <label className="caption" style={{ display: 'grid', gap: 4 }}>
+                          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Transition</span>
+                          <select value={kit.reel.transition} onChange={(e) => patchKit(open, 'reel', { transition: e.target.value })} style={field}>
+                            <option value="fade">Crossfade</option>
+                            <option value="cut">Hard cut</option>
+                          </select>
+                        </label>
+                        <label className="caption" style={{ display: 'grid', gap: 4 }}>
+                          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Seconds per clip</span>
+                          <input
+                            type="number" min={1.5} max={6} step={0.1} value={kit.reel.clipSeconds}
+                            onChange={(e) => patchKit(open, 'reel', { clipSeconds: Math.max(1.5, Math.min(6, Number(e.target.value) || 2.8)) })}
+                            style={{ ...field, width: 80 }}
+                          />
+                        </label>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'end' }}>
+                        <label className="caption" style={{ display: 'flex', gap: 6, alignItems: 'center', paddingBottom: 8 }}>
+                          <input type="checkbox" checked={kit.watermark.enabled} onChange={(e) => patchKit(open, 'watermark', { enabled: e.target.checked })} />
+                          wordmark on reels &amp; stories
+                        </label>
+                        <label className="caption" style={{ display: 'grid', gap: 4, flex: '1 1 220px' }}>
+                          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Wordmark text</span>
+                          <input value={kit.watermark.text} onChange={(e) => patchKit(open, 'watermark', { text: e.target.value })} style={field} />
+                        </label>
+                        <label className="caption" style={{ display: 'grid', gap: 4 }}>
+                          <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>Placement</span>
+                          <select value={kit.watermark.position} onChange={(e) => patchKit(open, 'watermark', { position: e.target.value })} style={field}>
+                            <option value="top">Top</option>
+                            <option value="bottom">Bottom</option>
+                          </select>
+                        </label>
+                        <span style={{ flex: 1 }} />
+                        <button
+                          type="button"
+                          disabled={pending}
+                          className="pill-primary"
+                          style={{ fontSize: 12, padding: '7px 16px' }}
+                          onClick={() =>
+                            startTransition(async () => {
+                              const res = await saveBrandKit(open, kitFor(open));
+                              setNotice(res.message);
+                            })
+                          }
+                        >
+                          {pending ? 'Saving…' : 'Save brand kit'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <span className="caption" style={{ color: 'var(--ink-mute)' }}>
                     Applied automatically to every new caption, reel grade and music pick for this property.

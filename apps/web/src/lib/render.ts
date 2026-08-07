@@ -26,6 +26,20 @@ export interface RenderSpec {
     position?: 'top' | 'middle' | 'bottom';
     size?: 'small' | 'medium' | 'large';
     timing?: 'whole' | 'intro'; // intro = first 3.5s only
+    // brand styling (fonts are TTFs committed under scripts/render/fonts/)
+    fontFile?: string; // e.g. 'Marcellus-Regular.ttf'; absent = DejaVu Sans Bold
+    color?: string; // text colour, hex
+    scrim?: 'none' | 'shadow' | 'band';
+    scrimColor?: string; // band/shadow tint, hex
+    uppercase?: boolean;
+  };
+  // small brand wordmark burned into the video
+  watermark?: {
+    text: string;
+    fontFile?: string;
+    color?: string;
+    position?: 'top' | 'bottom';
+    opacity?: number; // 0–1
   };
   musicUrl?: string;
 }

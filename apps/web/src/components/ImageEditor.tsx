@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createUploadUrl, registerEditedAsset } from '@/app/(admin)/media/actions';
+import { previewFontsHref, FONTS, type BrandKit } from '@/lib/brandKit';
 
 /**
  * Lightweight in-app image editor for social posts: crop to an aspect ratio
@@ -53,13 +54,18 @@ const MAX_OUT = 1440; // longest edge of exported image
 
 export default function ImageEditor({
   asset,
+  brand,
   onClose,
   onSaved,
 }: {
   asset: { id: string; property_id: string | null; file_name: string };
+  /** Property brand kit — text layers default to its font and colour. */
+  brand?: BrandKit;
   onClose: () => void;
   onSaved: (newId: string) => void;
 }) {
+  const brandFontCss = brand ? FONTS[brand.overlay.font].css : 'Georgia, serif';
+  const brandFontsHref = brand ? previewFontsHref(brand) : null;
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [aspect, setAspect] = useState<number | null>(1);
   const [zoom, setZoom] = useState(1);
@@ -124,7 +130,7 @@ export default function ImageEditor({
 
   const addText = () => {
     const id = Math.random().toString(36).slice(2, 8);
-    setTexts((t) => [...t, { id, text: 'Your text', x: 0.5, y: 0.82, size: 34, color: '#ffffff', bg: true }]);
+    setTexts((t) => [...t, { id, text: 'Your text', x: 0.5, y: 0.82, size: 34, color: brand?.colors.text ?? '#ffffff', bg: true }]);
     setSelected(id);
   };
   const patchText = (id: string, patch: Partial<TextLayer>) =>
@@ -143,6 +149,8 @@ export default function ImageEditor({
     if (!img || !crop) return;
     setBusy('Rendering…');
     try {
+      // brand fonts load from Google Fonts; wait so the canvas draws with them
+      await document.fonts.ready;
       const outW = Math.min(MAX_OUT, Math.round(crop.w));
       const outH = Math.round(outW / crop.a);
       const canvas = document.createElement('canvas');
@@ -161,7 +169,7 @@ export default function ImageEditor({
       for (const t of texts) {
         if (!t.text.trim()) continue;
         const fs = t.size * scale;
-        ctx.font = `600 ${fs}px Georgia, serif`;
+        ctx.font = `600 ${fs}px ${brandFontCss}`;
         const x = t.x * outW;
         const y = t.y * outH;
         if (t.bg) {
@@ -226,6 +234,7 @@ export default function ImageEditor({
 
   return (
     <div style={overlay} onClick={onClose}>
+      {brandFontsHref && <link rel="stylesheet" href={brandFontsHref} />}
       <div className="card" style={panel} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
           <h2 className="heading-md">Edit image</h2>
@@ -269,7 +278,7 @@ export default function ImageEditor({
                     left: `${t.x * 100}%`,
                     top: `${t.y * 100}%`,
                     transform: 'translate(-50%,-50%)',
-                    fontFamily: 'Georgia, serif',
+                    fontFamily: brandFontCss,
                     fontWeight: 600,
                     fontSize: t.size,
                     color: t.color,
