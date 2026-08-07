@@ -111,15 +111,15 @@ export async function generateMetadata({
   // Annie May serves the bespoke site (legacy builder versions via ?version=)
   if (property === 'annie-may' && !q.version && !q.edit) {
     const titles: Record<string, string> = {
-      home: 'Annie May — Boutique adults-only guesthouse, Devonport, Tasmania',
-      rooms: 'The Rooms — Annie May, Devonport',
-      gallery: 'Gallery — Annie May, Devonport',
-      contact: 'Find her — Annie May, 16 Formby Road, Devonport',
+      home: 'Annie May · Boutique adults only guesthouse, Devonport, Tasmania',
+      rooms: 'The Rooms · Annie May, Devonport',
+      gallery: 'Gallery · Annie May, Devonport',
+      contact: 'Find her · Annie May, 16 Formby Road, Devonport',
     };
     return {
       title: titles[q.page ?? 'home'] ?? titles.home,
       description:
-        'Annie May is a heritage boutique guesthouse in central Devonport, Tasmania — seven ensuite king rooms, adults only, breakfast included, lift access, minutes from the Spirit of Tasmania.',
+        'Annie May is a heritage boutique guesthouse in central Devonport, Tasmania. Seven ensuite king rooms, adults only, breakfast included, lift access, minutes from the Spirit of Tasmania.',
     };
   }
 

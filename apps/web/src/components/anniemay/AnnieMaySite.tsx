@@ -18,6 +18,7 @@ import {
   GALLERY,
   IMG,
   INSTAGRAM_URL,
+  MAPS_EMBED_URL,
   MAPS_URL,
   NAV_PAGES,
   ROOM_TYPES,
@@ -210,7 +211,7 @@ function Footer({ standalone }: { standalone: boolean }) {
     <footer className="am-dark" style={{ position: 'relative' }}>
       <div className="am-shell am-section-sm">
         <p className="am-kicker" style={{ color: 'var(--am-cream-mute)' }}>
-          Adults-only heritage guesthouse — Devonport, Tasmania
+          An adults only heritage guesthouse in Devonport, Tasmania
         </p>
         <Reveal>
           <p className="am-display" style={{ fontSize: 'clamp(3.4rem, 14vw, 13rem)', color: 'var(--am-cream)' }}>
@@ -237,7 +238,7 @@ function Footer({ standalone }: { standalone: boolean }) {
           </nav>
           <div style={{ gridColumn: 'span 4', display: 'grid', gap: 12, justifyItems: 'start' }}>
             <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="am-link" style={{ fontSize: '0.95rem' }}>
-              Instagram — @anniemaybnb
+              Instagram · @anniemaybnb
             </a>
             <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="am-link" style={{ fontSize: '0.95rem' }}>
               Facebook
@@ -267,7 +268,7 @@ function Hero() {
     <section style={{ position: 'relative', height: '100svh', minHeight: 560, overflow: 'clip', color: 'var(--am-cream)' }}>
       <motion.img
         src={IMG.facade}
-        alt="Annie May at dusk — a grand heritage home on Formby Road, Devonport"
+        alt="Annie May at dusk, a grand heritage home on Formby Road, Devonport"
         initial={reduced ? false : { scale: 1.12 }}
         animate={{ scale: 1 }}
         transition={{ duration: 2.4, ease: ease.outExpo }}
@@ -360,9 +361,9 @@ function Manifesto() {
             />
             <Reveal delay={0.5}>
               <p className="am-lead" style={{ marginTop: 40, maxWidth: '34rem' }}>
-                Annie May is a heritage home on Formby Road, kept the way she deserves — her bones
+                Annie May is a heritage home on Formby Road, kept the way she deserves: her bones
                 restored, her comforts modernised. Seven ensuite rooms, a lift to every floor, and
-                breakfast downstairs. She is adults-only, quiet by design, and minutes from the
+                breakfast downstairs. She is adults only, quiet by design, and minutes from the
                 Spirit of Tasmania.
               </p>
             </Reveal>
@@ -379,7 +380,7 @@ function Manifesto() {
           {(
             [
               ['07', 'ensuite rooms, each with its own character'],
-              ['18+', 'adults only — grown-up calm, always'],
+              ['18+', 'adults only, calm always'],
               ['All', 'floors reached by lift, luggage and all'],
               ['AM', 'breakfast included, made downstairs'],
             ] as Array<[string, string]>
@@ -413,7 +414,7 @@ function RoomsIndex({ standalone }: { standalone: boolean }) {
               <div key={room.name} className="am-grid" style={{ alignItems: 'center', rowGap: 32 }}>
                 <CurtainImage
                   src={room.image}
-                  alt={`${room.name} — ${room.rooms}`}
+                  alt={`${room.name}, ${room.rooms}`}
                   style={{
                     gridColumn: flip ? 'span 7 / -1' : 'span 7',
                     gridRow: 1,
@@ -536,7 +537,7 @@ function Occasions() {
             <Reveal delay={0.35}>
               <p className="am-lead" style={{ marginTop: 32 }}>
                 Seven rooms, one address. For a wedding party in town, a milestone worth gathering
-                for, or a slow weekend with your favourite adults — book her out and Annie May
+                for, or a slow weekend with your favourite adults: book her out and Annie May
                 becomes yours: every key, the lounge, the long breakfasts.
               </p>
             </Reveal>
@@ -582,7 +583,7 @@ function Location() {
             <Reveal>
               <p className="am-lead">
                 Formby Road, by the Mersey. Roll off the Spirit of Tasmania and be at her door in
-                minutes — or make her the base for the whole North-West.
+                minutes, or make her the base for the whole North West.
               </p>
             </Reveal>
           </div>
@@ -590,7 +591,7 @@ function Location() {
         <div style={{ marginTop: 'clamp(48px, 6vw, 80px)' }}>
           <Ledger
             items={[
-              ['The Spirit of Tasmania', 'minutes from the terminal — first night or last'],
+              ['The Spirit of Tasmania', 'minutes from the terminal, first night or last'],
               ['The Mersey riverfront', 'a stroll from the front door'],
               ['Devonport eats', 'cafés and dinner within walking distance'],
               ['Day trips', 'Cradle Mountain country, Sheffield’s murals, vineyards and cheese'],
@@ -671,7 +672,7 @@ function RoomsPage() {
           <MaskLines as="h1" className="am-display am-d-xl" lines={['Seven rooms,', 'three ways to stay.']} />
           <Reveal delay={0.4}>
             <p className="am-lead" style={{ marginTop: 36, maxWidth: '36rem' }}>
-              Every room is an ensuite king with a proper desk, a large TV and a full-length
+              Every room is an ensuite king with a proper desk, a large TV and a full length
               mirror; every stay includes breakfast; every floor is a lift ride away. Adults only,
               always. The differences are the ones worth choosing between.
             </p>
@@ -687,7 +688,7 @@ function RoomsPage() {
                 {/* inner wrapper so the detail shot anchors to the image, not the
                     row — it hangs below the frame, breaking one corner only */}
                 <div style={{ position: 'relative', paddingBottom: '28%' }}>
-                  <CurtainImage src={room.image} alt={`${room.name} — ${room.rooms}`} style={{ aspectRatio: '4 / 3' }} />
+                  <CurtainImage src={room.image} alt={`${room.name}, ${room.rooms}`} style={{ aspectRatio: '4 / 3' }} />
                   <CurtainImage
                     src={room.detailImage}
                     alt=""
@@ -738,9 +739,9 @@ function RoomsPage() {
           <Ledger
             dark
             items={[
-              ['Rooms 1 & 2', 'King Superior with Bath — shower and freestanding bath'],
-              ['Rooms 3 – 6', 'King Superior — walk-in shower'],
-              ['Room 7', 'The Loft — the whole second level, underfloor-heated shower'],
+              ['Rooms 1 & 2', 'King Superior with Bath, shower and freestanding bath'],
+              ['Rooms 3 to 6', 'King Superior, walk in shower'],
+              ['Room 7', 'The Loft, the whole second level to yourself'],
             ]}
           />
         </div>
@@ -808,7 +809,7 @@ function ContactPage() {
             <div style={{ gridColumn: 'span 5' }}>
               <Reveal>
                 <p className="am-lead">
-                  The quickest way to check dates and stay with her is the booking page — it shows
+                  The quickest way to check dates and stay with her is the booking page. It shows
                   live availability for all seven rooms.
                 </p>
               </Reveal>
@@ -838,16 +839,34 @@ function ContactPage() {
                   <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="am-link">
                     Facebook
                   </a>{' '}
-                  — enquiries are answered within 48 hours.
+                  and she will answer within 48 hours.
                 </p>
               </Reveal>
             </div>
             <div style={{ gridColumn: 'span 6 / -1' }}>
-              <a href={MAPS_URL} target="_blank" rel="noopener noreferrer" aria-label="Open in Google Maps">
-                <ParallaxImage src={IMG.facade} alt="Annie May, 16 Formby Road" drift={8} style={{ aspectRatio: '4 / 3' }} />
-              </a>
+              <CurtainImage src={IMG.facade} alt="Annie May, 16 Formby Road" style={{ aspectRatio: '16 / 9' }} />
+              <Reveal delay={0.2} style={{ marginTop: 'clamp(12px, 1.5vw, 22px)' }}>
+                <div style={{ aspectRatio: '4 / 3', overflow: 'hidden', position: 'relative', background: 'var(--am-paper-2)' }}>
+                  <iframe
+                    src={MAPS_EMBED_URL}
+                    title="Map to Annie May, 16 Formby Road, Devonport"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    allowFullScreen
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      border: 0,
+                      display: 'block',
+                      filter: 'grayscale(0.55) sepia(0.12) contrast(0.96)',
+                    }}
+                  />
+                </div>
+              </Reveal>
               <p className="am-body-copy" style={{ marginTop: 12, fontSize: '0.8rem' }}>
-                Tap the house to open the map.
+                <a href={MAPS_URL} target="_blank" rel="noopener noreferrer" className="am-link">
+                  Open in Google Maps
+                </a>
               </p>
             </div>
           </div>
@@ -859,8 +878,8 @@ function ContactPage() {
           <p className="am-kicker">Good to know</p>
           <Ledger
             items={[
-              ['Adults only', 'Annie May is a grown-ups’ house — guests 18 and over'],
-              ['Seven ensuite rooms', 'each with king bed, desk, TV and full-length mirror'],
+              ['Adults only', 'a house for grown ups, guests 18 and over'],
+              ['Seven ensuite rooms', 'each with king bed, desk, TV and full length mirror'],
               ['Lift access', 'every floor without stairs'],
               ['Breakfast', 'included with every stay, served downstairs'],
               ['Getting here', 'minutes from the Spirit of Tasmania terminal and Devonport Airport'],

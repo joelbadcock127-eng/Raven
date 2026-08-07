@@ -10,6 +10,7 @@ export const BOOK_URL =
 
 export const ADDRESS = '16 Formby Road, Devonport, Tasmania 7310';
 export const MAPS_URL = 'https://maps.google.com/?q=16+Formby+Road+Devonport+TAS+7310';
+export const MAPS_EMBED_URL = 'https://www.google.com/maps?q=16+Formby+Road,+Devonport+TAS+7310&output=embed';
 export const INSTAGRAM_URL = 'https://www.instagram.com/anniemaybnb/';
 export const FACEBOOK_URL = 'https://www.facebook.com/anniemaybnb/';
 
@@ -58,19 +59,19 @@ export const ROOM_TYPES: RoomType[] = [
     name: 'King Superior with Bath',
     line: 'The long soak.',
     body:
-      'A king bed for real rest, a proper desk when work calls, and the bathroom the day deserves — a walk-in shower and a separate freestanding bath for soaking.',
-    details: ['King bed', 'Freestanding bath + walk-in shower', 'Proper desk', 'Large TV', 'Full-length mirror', 'Ensuite', 'Breakfast included'],
+      'A king bed for real rest, a proper desk when work calls, and the bathroom the day deserves: a big walk in shower and a separate freestanding bath for soaking.',
+    details: ['King bed', 'Freestanding bath and shower', 'Proper desk', 'Large TV', 'Full length mirror', 'Ensuite', 'Breakfast included'],
     image: IMG.kingBath,
     detailImage: IMG.basin,
   },
   {
     numeral: 'II',
-    rooms: 'Rooms 3 – 6',
+    rooms: 'Rooms 3 to 6',
     name: 'King Superior',
-    line: 'Light-filled, quietly elegant.',
+    line: 'Full of light, quietly elegant.',
     body:
-      'Generous space, considered lighting and a modern walk-in shower. A room that stays out of your way and holds everything you need — desk, mirror, deep sleep.',
-    details: ['King bed', 'Walk-in shower', 'Proper desk', 'Large TV', 'Full-length mirror', 'Ensuite', 'Breakfast included'],
+      'Generous space, considered lighting and a modern walk in shower. A room that stays out of your way and holds everything you need: desk, mirror, deep sleep.',
+    details: ['King bed', 'Walk in shower', 'Proper desk', 'Large TV', 'Full length mirror', 'Ensuite', 'Breakfast included'],
     image: IMG.kingCaramel,
     detailImage: IMG.bedDetail,
   },
@@ -81,7 +82,7 @@ export const ROOM_TYPES: RoomType[] = [
     line: 'Intimate and calm, up top.',
     body:
       'The whole second level to yourself, up the spiral stair. Two armchairs under the skylight, a king bed in the eaves, and underfloor heating in the shower.',
-    details: ['King bed', 'Second-floor privacy', 'Two armchairs', 'Underfloor-heated shower', 'Desk + large TV', 'Ensuite', 'Breakfast included'],
+    details: ['King bed', 'The whole second floor', 'Two armchairs', 'Underfloor heated shower', 'Desk and large TV', 'Ensuite', 'Breakfast included'],
     image: IMG.loftBed,
     detailImage: IMG.loftDesk,
   },
@@ -103,7 +104,7 @@ export const GALLERY: Array<{ src: string; alt: string; wide?: boolean; tall?: b
   { src: IMG.loungeDetail, alt: 'The lounge, afternoon' },
   { src: IMG.windowSeat, alt: 'The bay window seat' },
   { src: IMG.loftBath, alt: 'Loft ensuite' },
-  { src: IMG.lift, alt: 'The lift — every floor, no stairs needed' },
+  { src: IMG.lift, alt: 'The lift, reaching every floor' },
 ];
 
 export const NAV_PAGES = [
