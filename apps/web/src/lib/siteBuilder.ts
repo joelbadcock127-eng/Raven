@@ -82,8 +82,8 @@ export const DEFAULT_THEMES: Record<string, SiteTheme> = {
     accentInk: '#ffffff',
     radius: 14,
   },
-  // Base for the designed blueprint (lib/siteSeeds). The hand-built Annie May
-  // starter carries its own ANNIE_MAY_THEME in lib/annieMaySite.ts.
+  // Annie May's real site is the bespoke build in components/anniemay —
+  // this theme only backs ad-hoc builder drafts.
   'annie-may': {
     headingFont: "var(--font-site-display), 'Fraunces', Georgia, serif",
     bodyFont: "var(--font-site-sans), 'Jost', system-ui, sans-serif",

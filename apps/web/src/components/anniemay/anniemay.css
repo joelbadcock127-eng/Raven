@@ -1,0 +1,176 @@
+/* Annie May — Quiet Heritage.
+   Alma Hospitality intimacy × The Largo heritage gravity, with
+   Relais Rossar's motion polish. The live site's own faces — Ginger
+   for display, Quicksand for body — over ivory, deep green-black ink
+   and a single sage accent. Scoped under .am-root. */
+
+.am-root {
+  --am-paper: #f6f2e9;       /* warm ivory, never pure white */
+  --am-paper-2: #ede7d9;     /* deeper ivory for tinted sections */
+  --am-ink: #24261f;         /* green-cast charcoal, never pure black */
+  --am-night: #1d201a;       /* dark sections — deep green-black */
+  --am-ink-soft: #5f6155;    /* muted copy */
+  --am-cream: #f6f2e9;
+  --am-cream-mute: #a7a696;  /* muted copy on dark */
+  --am-sage: #66715b;        /* the one accent — the house's own green */
+  --am-hairline: rgba(36, 38, 31, 0.14);
+  --am-hairline-dark: rgba(246, 242, 233, 0.16);
+  --am-display: var(--font-am-display), Georgia, 'Times New Roman', serif;
+  --am-body: var(--font-am-body), 'Quicksand', system-ui, sans-serif;
+
+  background: var(--am-paper);
+  color: var(--am-ink);
+  font-family: var(--am-body);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+.am-root ::selection { background: var(--am-sage); color: var(--am-cream); }
+.am-root img { user-select: none; }
+.am-root a { color: inherit; text-decoration: none; }
+
+/* ── Typography ── */
+.am-display {
+  font-family: var(--am-display);
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  line-height: 1.04;
+  margin: 0;
+  text-wrap: balance;
+}
+.am-d-xl { font-size: clamp(2.7rem, 7.5vw, 6.4rem); }
+.am-d-lg { font-size: clamp(2.2rem, 5.2vw, 4.4rem); }
+.am-d-md { font-size: clamp(1.7rem, 3.4vw, 2.8rem); line-height: 1.1; }
+.am-d-sm { font-size: clamp(1.3rem, 2.2vw, 1.8rem); line-height: 1.18; }
+
+.am-kicker {
+  font-family: var(--am-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--am-sage);
+  margin: 0 0 24px;
+}
+.am-lead {
+  font-size: clamp(1.02rem, 1.5vw, 1.22rem);
+  line-height: 1.62;
+  font-weight: 400;
+  color: var(--am-ink-soft);
+  margin: 0;
+}
+.am-body-copy { font-size: 0.98rem; line-height: 1.7; font-weight: 400; color: var(--am-ink-soft); margin: 0; }
+
+/* heritage chapter numeral — The Largo's serial gravity */
+.am-numeral {
+  font-family: var(--am-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.35em;
+  color: var(--am-sage);
+}
+.am-price {
+  font-family: var(--am-display);
+  font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+  line-height: 1;
+}
+
+/* ── Layout rhythm ── */
+.am-shell { max-width: 88rem; margin: 0 auto; padding-left: clamp(22px, 5.5vw, 90px); padding-right: clamp(22px, 5.5vw, 90px); }
+.am-narrow { max-width: 46rem; margin-left: auto; margin-right: auto; }
+.am-section { padding-top: clamp(88px, 11vw, 180px); padding-bottom: clamp(88px, 11vw, 180px); }
+.am-section-sm { padding-top: clamp(56px, 7vw, 110px); padding-bottom: clamp(56px, 7vw, 110px); }
+.am-dark { background: var(--am-night); color: var(--am-cream); }
+.am-dark .am-lead, .am-dark .am-body-copy { color: var(--am-cream-mute); }
+.am-tint { background: var(--am-paper-2); }
+
+.am-grid { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: clamp(16px, 2.5vw, 44px); }
+
+/* centred intimate statement — Alma's registers */
+.am-centered { text-align: center; display: flex; flex-direction: column; align-items: center; }
+
+/* ── Ruled frame around images (heritage plate) ── */
+.am-frame { position: relative; }
+.am-frame::after {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(246, 242, 233, 0.35);
+  pointer-events: none;
+}
+
+/* ── Hover zoom (Relais Rossar) — pair with an overflow-hidden wrapper ── */
+.am-zoom { overflow: hidden; display: block; }
+.am-zoom img { transition: transform 1.4s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; }
+.am-zoom:hover img, .am-zoom:focus-visible img { transform: scale(1.05); }
+
+/* ── Underline link ── */
+.am-link { position: relative; display: inline-block; padding-bottom: 3px; }
+.am-link::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.am-link:hover::after, .am-link:focus-visible::after { transform: scaleX(1); }
+.am-link-lit::after { transform: scaleX(1); transform-origin: right; }
+.am-link-lit:hover::after { transform: scaleX(0); }
+
+/* small-caps textual link with rule — used for "view more" moments */
+.am-more {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+
+/* ── Book button — a quiet rectangle, no pill ── */
+.am-book {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--am-body);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  padding: 17px 34px;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+  transition: background 0.45s cubic-bezier(0.22, 1, 0.36, 1), color 0.45s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.am-book:hover { background: var(--am-ink); color: var(--am-cream); border-color: var(--am-ink); }
+.am-dark .am-book:hover, .am-on-image .am-book:hover { background: var(--am-cream); color: var(--am-ink); border-color: var(--am-cream); }
+.am-book .arrow { transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+.am-book:hover .arrow { transform: translateX(4px); }
+.am-book-solid { background: var(--am-sage); border-color: var(--am-sage); color: var(--am-cream); }
+
+/* ── Nav ── */
+.am-nav-blur { backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+
+/* ── Responsive collapses ── */
+@media (max-width: 860px) {
+  .am-grid { grid-template-columns: 1fr; }
+  .am-grid > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
+  .am-desktop-only { display: none !important; }
+}
+@media (min-width: 861px) {
+  .am-mobile-only { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .am-root *, .am-root *::before, .am-root *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+    scroll-behavior: auto !important;
+  }
+}

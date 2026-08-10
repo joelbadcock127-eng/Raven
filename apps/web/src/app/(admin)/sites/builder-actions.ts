@@ -5,11 +5,6 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { anthropic, MODELS, HOUSE_STYLE, stripDashes } from '@/lib/ai';
 import { defaultTheme, newSection, type Section, type SectionType } from '@/lib/siteBuilder';
 import { SITE_SEEDS } from '@/lib/siteSeeds';
-import {
-  ANNIE_MAY_GALLERY_IMAGES,
-  ANNIE_MAY_THEME,
-  starterPagesFor,
-} from '@/lib/annieMaySite';
 
 export interface BuilderResult {
   ok: boolean;
@@ -26,7 +21,7 @@ export async function createVersion(
   const supabase = supabaseAdmin();
   if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
 
-  let theme = propertyId === 'annie-may' ? ANNIE_MAY_THEME : defaultTheme(propertyId);
+  let theme = defaultTheme(propertyId);
   if (duplicateOf) {
     const { data: src } = await supabase
       .from('site_versions')
@@ -53,20 +48,16 @@ export async function createVersion(
         .from('site_v2_pages')
         .insert(pages.map((p) => ({ ...p, version_id: version.id })));
   } else {
-    const starterPages = starterPagesFor(propertyId);
-    const pages = starterPages?.length
-      ? starterPages.map((page) => ({ ...page, version_id: version.id }))
-      : [
-          {
-            version_id: version.id,
-            slug: 'home',
-            nav_label: 'Home',
-            title: '',
-            sections: [newSection('hero'), newSection('text'), newSection('cta')],
-            sort: 0,
-          },
-        ];
-    const { error: pageError } = await supabase.from('site_v2_pages').insert(pages);
+    const { error: pageError } = await supabase.from('site_v2_pages').insert([
+      {
+        version_id: version.id,
+        slug: 'home',
+        nav_label: 'Home',
+        title: '',
+        sections: [newSection('hero'), newSection('text'), newSection('cta')],
+        sort: 0,
+      },
+    ]);
     if (pageError) return { ok: false, message: pageError.message };
   }
 
@@ -105,6 +96,28 @@ export async function createDesignedVersion(propertyId: string): Promise<Builder
 
   revalidatePath('/sites');
   return { ok: true, message: 'Designed draft created — preview it, tweak anything, then publish when happy.', id: version.id };
+}
+
+/** Delete a version and its pages. The live version must be unpublished first. */
+export async function deleteVersion(propertyId: string, versionId: string): Promise<BuilderResult> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
+
+  const { data: settings } = await supabase
+    .from('site_settings')
+    .select('live_version_id')
+    .eq('property_id', propertyId)
+    .maybeSingle();
+  if (settings?.live_version_id === versionId)
+    return { ok: false, message: 'This version is live — revert domains to the mirror first.' };
+
+  const { error: pageErr } = await supabase.from('site_v2_pages').delete().eq('version_id', versionId);
+  if (pageErr) return { ok: false, message: pageErr.message };
+  const { error } = await supabase.from('site_versions').delete().eq('id', versionId);
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath('/sites');
+  return { ok: true, message: 'Version deleted' };
 }
 
 /** Publish a version: it becomes the live site on the property's domains. */
@@ -227,13 +240,6 @@ export async function aiEditSection(
       .map((m) => `${m.public_url} — ${[m.caption, ...(m.tags ?? [])].filter(Boolean).join(', ') || 'no notes'}`)
       .join('\n');
   }
-  if (propertyId === 'annie-may') {
-    const starterMedia = ANNIE_MAY_GALLERY_IMAGES.map(
-      (image) => `${image.url} — ${image.alt ?? 'Annie May photograph'}`,
-    ).join('\n');
-    mediaList = [mediaList, starterMedia].filter(Boolean).join('\n');
-  }
-
   try {
     const res = await client.messages.create({
       model: MODELS.edit,
