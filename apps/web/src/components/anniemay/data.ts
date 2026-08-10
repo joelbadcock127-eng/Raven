@@ -1,8 +1,8 @@
 /**
- * Annie May bespoke site — every fact and photo in one place.
- * All copy sticks to what is true of the property (anniemay.com.au):
- * seven ensuite rooms, adults only, lift, breakfast included, heritage home
- * at 16 Formby Road in central Devonport. No prices anywhere by design.
+ * Annie May — single source of truth for the bespoke site.
+ * Copy is drawn from the live anniemay.com.au pages (mirrored under
+ * public/mirror/annie-may): seven ensuite king rooms, adults only,
+ * breakfast included, lift access, 16 Formby Road, Devonport.
  */
 
 export const BOOK_URL =
@@ -40,75 +40,130 @@ export const IMG = {
   host: `${A}/87018b3805-Annie-May-Deb-Badcock.jpg`,
 } as const;
 
-export interface RoomType {
+export interface Room {
   numeral: string;
   rooms: string;
   name: string;
-  line: string;
+  price: string;
+  terms: string;
   body: string;
   details: string[];
   image: string;
   detailImage: string;
 }
 
-/** The three room types, exactly as sold on anniemay.com.au/accommodation. */
-export const ROOM_TYPES: RoomType[] = [
+/** The three room types, priced and described as on anniemay.com.au/accommodation. */
+export const ROOMS: Room[] = [
   {
     numeral: 'I',
     rooms: 'Rooms 1 & 2',
     name: 'King Superior with Bath',
-    line: 'The long soak.',
+    price: '$385',
+    terms: 'per night · 2 adults · breakfast included',
     body:
-      'A king bed for real rest, a proper desk when work calls, and the bathroom the day deserves: a big walk in shower and a separate freestanding bath for soaking.',
-    details: ['King bed', 'Freestanding bath and shower', 'Proper desk', 'Large TV', 'Full length mirror', 'Ensuite', 'Breakfast included'],
+      'King bed for real rest, a proper desk when work calls, and a large TV for easy evenings. A full-length mirror and considered lighting keep things practical without fuss. The ensuite is a little retreat of its own, with a walk-in shower and a separate bath for an unhurried soak.',
+    details: ['King bed', 'Walk-in shower and freestanding bath', 'Proper desk', 'Large TV', 'Full-length mirror', 'Private ensuite'],
     image: IMG.kingBath,
     detailImage: IMG.basin,
   },
   {
     numeral: 'II',
-    rooms: 'Rooms 3 to 6',
+    rooms: 'Rooms 3 – 6',
     name: 'King Superior',
-    line: 'Full of light, quietly elegant.',
+    price: '$350',
+    terms: 'per night · 2 adults · breakfast included',
     body:
-      'Generous space, considered lighting and a modern walk in shower. A room that stays out of your way and holds everything you need: desk, mirror, deep sleep.',
-    details: ['King bed', 'Walk in shower', 'Proper desk', 'Large TV', 'Full length mirror', 'Ensuite', 'Breakfast included'],
+      'Light-filled and quietly elegant. Generous space, a proper desk when you need it, a large TV for easy evenings and a full-length mirror to keep things practical. The ensuite keeps it modern and simple with a walk-in shower for an unhurried start or end to the day.',
+    details: ['King bed', 'Walk-in shower', 'Proper desk', 'Large TV', 'Full-length mirror', 'Private ensuite'],
     image: IMG.kingCaramel,
     detailImage: IMG.bedDetail,
   },
   {
     numeral: 'III',
     rooms: 'Room 7',
-    name: 'The Loft',
-    line: 'Intimate and calm, up top.',
+    name: 'Loft Room',
+    price: '$350',
+    terms: 'per night · 2 adults · breakfast included',
     body:
-      'The whole second level to yourself, up the spiral stair. Two armchairs under the skylight, a king bed in the eaves, and underfloor heating in the shower.',
-    details: ['King bed', 'The whole second floor', 'Two armchairs', 'Underfloor heated shower', 'Desk and large TV', 'Ensuite', 'Breakfast included'],
+      'Intimate and calm on the second level. A king bed for real rest, two armchairs for quiet moments, a desk when work calls and a large TV for easy evenings. A full-length mirror keeps things practical. The ensuite bathroom adds comfort with a walk-in shower and underfloor heating.',
+    details: ['King bed', 'The whole second level', 'Two armchairs', 'Walk-in shower, underfloor heating', 'Desk and large TV', 'Private ensuite'],
     image: IMG.loftBed,
     detailImage: IMG.loftDesk,
   },
 ];
 
-export const GALLERY: Array<{ src: string; alt: string; wide?: boolean; tall?: boolean }> = [
-  { src: IMG.facade, alt: 'Annie May at dusk, Formby Road', wide: true },
+/** In-room comforts, as listed on the live accommodation page. */
+export const COMFORTS: string[] = [
+  'Ensuite bathrooms arranged for ease with quality amenities',
+  'Layered light for reading, getting ready and winding down',
+  'Breathable linen and properly made beds that invite real rest',
+  'A seat you will actually use, with a small surface for a glass or a book',
+  'Storage that keeps things tidy, so the room stays calm',
+];
+
+export interface Highlight {
+  name: string;
+  body: string;
+  image?: string;
+}
+
+/** Explore highlights, as on the live explore page. */
+export const HIGHLIGHTS: Highlight[] = [
+  {
+    name: 'Ghost Rock Vineyard',
+    body: 'Coastal cool-climate wines and a relaxed cellar-door restaurant.',
+    image: `${A}/e2a227f0e6-Annie-May-Ghost-Rock-Vineyard.jpg`,
+  },
+  {
+    name: 'The Tasmanian Arboretum',
+    body: 'A peaceful sanctuary of trees, lakes and quiet paths, perfect for a slow afternoon and the chance to spot a platypus.',
+    image: `${A}/5e369d42c8-Annie-May-Tasmanian-Arboretum.jpg`,
+  },
+  {
+    name: 'Ashgrove Cheese',
+    body: 'Award-winning artisan dairy, crafted at Elizabeth Town.',
+    image: `${A}/8998d1fa26-Annie-May-Ashgrove-Cheese-.jpg`,
+  },
+  {
+    name: 'Bakers Walking Co',
+    body: 'Guided day walks exploring private tracks, wildlife-rich bushland and coastal views beside Narawntapu National Park, with a gourmet Tasmanian lunch included.',
+    image: `${A}/6413f3ac99-Bakers-Walking-Co.jpg`,
+  },
+  {
+    name: 'Forth Falls walking track',
+    body: 'A short, scenic walk through lush bushland, rewarded with cascading waterfalls and quiet moments in nature.',
+  },
+  {
+    name: 'From Sky to Sea light show',
+    body: 'A captivating Devonport light show that illuminates the city’s stories with colour, sound and movement.',
+    image: `${A}/f96b970ae1-Annie-May-From-Sky-to-Sky.jpg`,
+  },
+  {
+    name: 'Sheffield — the Town of Murals',
+    body: 'Streets and laneways transformed into an open-air gallery celebrating Tasmania’s history and landscape.',
+    image: `${A}/5bdb001499-Annie-May-Sheffield-Mural.jpg`,
+  },
+  {
+    name: 'Southern Wild Distillery',
+    body: 'Award-winning spirits made in Devonport, blending wild Tasmanian botanicals with precision and passion.',
+    image: `${A}/e77e24bcb7-Annie-May-Southern-Wild-Distillery.jpg`,
+  },
+];
+
+export const GALLERY: Array<{ src: string; alt: string }> = [
+  { src: IMG.facade, alt: 'Annie May at dusk, Formby Road' },
   { src: IMG.tealBed, alt: 'King Superior under the chandelier' },
-  { src: IMG.stairs, alt: 'The spiral stair to the Loft', tall: true },
   { src: IMG.kingBath, alt: 'King Superior with Bath' },
-  { src: IMG.lounge, alt: 'The guest lounge' },
-  { src: IMG.chandelier, alt: 'Chandelier detail', tall: true },
-  { src: IMG.breakfast, alt: 'The breakfast room' },
+  { src: IMG.stairs, alt: 'The spiral stair to the Loft' },
+  { src: IMG.lounge, alt: 'The breakfast room' },
+  { src: IMG.chandelier, alt: 'Chandelier detail' },
   { src: IMG.kingCaramel, alt: 'King Superior' },
-  { src: IMG.loftDesk, alt: 'The Loft, under the skylight' },
   { src: IMG.curtains, alt: 'Morning light through sheers' },
-  { src: IMG.greenRoom, alt: 'King Superior, fireplace corner' },
-  { src: IMG.basin, alt: 'Ensuite detail', wide: true },
-  { src: IMG.loungeDetail, alt: 'The lounge, afternoon' },
-  { src: IMG.windowSeat, alt: 'The bay window seat' },
-  { src: IMG.loftBath, alt: 'Loft ensuite' },
-  { src: IMG.lift, alt: 'The lift, reaching every floor' },
 ];
 
 export const NAV_PAGES = [
-  { slug: 'rooms', label: 'Rooms' },
-  { slug: 'gallery', label: 'Gallery' },
-  { slug: 'contact', label: 'Find her' },
+  { slug: 'accommodation', label: 'Accommodation' },
+  { slug: 'story', label: 'Her Story' },
+  { slug: 'explore', label: 'Explore' },
+  { slug: 'contact', label: 'Contact' },
 ] as const;

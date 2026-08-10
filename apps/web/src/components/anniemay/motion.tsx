@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * Motion primitives for the Annie May site — Kinetic Luxe rules:
- * long editorial reveals on refined easing curves for content, physical
- * springs only for interactive elements, everything degrading gracefully
- * under prefers-reduced-motion.
+ * Motion primitives for the Annie May site: long editorial reveals on
+ * refined easing curves for content, physical springs only for
+ * interactive elements, everything degrading gracefully under
+ * prefers-reduced-motion.
  *
  * In-view detection is our own IntersectionObserver hook (framer's
  * whileInView proved unreliable in this Next 15 / React 19 stack);

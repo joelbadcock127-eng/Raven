@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Cormorant_Garamond, Jost, Fraunces, Space_Grotesk, Inter } from 'next/font/google';
+import { Cormorant_Garamond, Jost, Fraunces, Space_Grotesk, Quicksand } from 'next/font/google';
+import localFont from 'next/font/local';
 import { supabaseAdmin } from '@/lib/supabase';
 import { defaultTheme, type SitePageV2, type SiteTheme } from '@/lib/siteBuilder';
 import { SITE_SEEDS } from '@/lib/siteSeeds';
@@ -9,9 +10,17 @@ import AnnieMaySite from '@/components/anniemay/AnnieMaySite';
 
 export const revalidate = 0;
 
-const amBody = Inter({
+// Annie May uses the live site's own faces: Ginger (self-hosted, from
+// anniemay.com.au) for display and Quicksand for body.
+const amDisplay = localFont({
+  src: '../../../fonts/Ginger.woff',
+  weight: '400',
+  display: 'swap',
+  variable: '--font-am-display',
+});
+const amBody = Quicksand({
   subsets: ['latin'],
-  weight: ['300', '400', '500'],
+  weight: ['400', '500', '600'],
   variable: '--font-am-body',
 });
 
@@ -111,10 +120,11 @@ export async function generateMetadata({
   // Annie May serves the bespoke site (legacy builder versions via ?version=)
   if (property === 'annie-may' && !q.version && !q.edit) {
     const titles: Record<string, string> = {
-      home: 'Annie May · Boutique adults only guesthouse, Devonport, Tasmania',
-      rooms: 'The Rooms · Annie May, Devonport',
-      gallery: 'Gallery · Annie May, Devonport',
-      contact: 'Find her · Annie May, 16 Formby Road, Devonport',
+      home: 'Annie May · Refined Devonport heritage guesthouse',
+      accommodation: 'Accommodation in Devonport · Rooms & amenities · Annie May',
+      story: 'The Annie May story · Heritage with modern ease',
+      explore: 'Explore Devonport & North West Tasmania · Annie May',
+      contact: 'Contact Annie May · Devonport heritage guesthouse',
     };
     return {
       title: titles[q.page ?? 'home'] ?? titles.home,
@@ -146,7 +156,7 @@ export default async function SiteV2Page({
   // reachable only when a version is explicitly requested (?version=…).
   if (property === 'annie-may' && !q.version && !q.edit) {
     return (
-      <div className={`${siteDisplay.variable} ${amBody.variable}`}>
+      <div className={`${amDisplay.variable} ${amBody.variable}`}>
         <AnnieMaySite page={q.page ?? 'home'} standalone={q.standalone === '1'} />
       </div>
     );
