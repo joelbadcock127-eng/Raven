@@ -125,19 +125,12 @@ export async function publishPost(id: string): Promise<ActionResult> {
   }
 
   if (ok && post.media_ids?.length) {
-    // reuse-rule bookkeeping: bump use count and stamp last use
+    // reuse-rule bookkeeping: drafting already bumped times_used, so a
+    // publish only refreshes the last-use stamp (covers manually added media)
     for (const mid of post.media_ids) {
-      const { data: asset } = await supabase
-        .from('media_assets')
-        .select('times_used')
-        .eq('id', mid)
-        .maybeSingle();
       await supabase
         .from('media_assets')
-        .update({
-          times_used: (asset?.times_used ?? 0) + 1,
-          last_used_at: new Date().toISOString(),
-        })
+        .update({ last_used_at: new Date().toISOString() })
         .eq('id', mid);
     }
   }
@@ -187,15 +180,40 @@ export async function draftPost(
     .limit(limit * 4);
 
   const cooldownMs = (options.reuseCooldownDays ?? 0) * 86_400_000;
-  const assets = (allAssets ?? [])
-    .filter((a) => !cooldownMs || !a.last_used_at || Date.now() - Date.parse(a.last_used_at) > cooldownMs)
-    .slice(0, limit);
+  const pastCooldown = (allAssets ?? []).filter(
+    (a) => !cooldownMs || !a.last_used_at || Date.now() - Date.parse(a.last_used_at) > cooldownMs,
+  );
+
+  // Don't repeat media that's already sitting on a queued post for this property.
+  const { data: queuedPosts } = await supabase
+    .from('social_posts')
+    .select('media_ids')
+    .eq('property_id', propertyId)
+    .in('status', ['draft', 'approved', 'publishing']);
+  const inQueue = new Set((queuedPosts ?? []).flatMap((q) => q.media_ids ?? []));
+  let eligible = pastCooldown.filter((a) => !inQueue.has(a.id));
+  if (eligible.length < limit) eligible = pastCooldown; // small library: allow repeats over failing
+
+  // Pick randomly among the least-used candidates so consecutive drafts vary.
+  const pool = eligible.slice(0, limit * 3);
+  const assets: typeof pool = [];
+  while (assets.length < limit && pool.length)
+    assets.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
 
   if (!assets.length)
     return {
       ok: false,
       message: `No eligible ${wantVideo ? 'videos' : 'images'} for this property — upload media or relax the reuse rules.`,
     };
+
+  // A draft counts as a use, so the next draft rotates to fresh media even
+  // before anything is published.
+  for (const a of assets) {
+    await supabase
+      .from('media_assets')
+      .update({ times_used: (a.times_used ?? 0) + 1, last_used_at: new Date().toISOString() })
+      .eq('id', a.id);
+  }
 
   const client = anthropic();
   let caption = '';

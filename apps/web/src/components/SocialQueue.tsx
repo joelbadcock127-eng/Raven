@@ -61,6 +61,7 @@ export default function SocialQueue({
   const [previewPlatform, setPreviewPlatform] = useState<'instagram' | 'facebook'>('instagram');
   const [editImg, setEditImg] = useState<{ postId: string; mediaId: string; propertyId: string | null } | null>(null);
   const [reelFor, setReelFor] = useState<string | null>(null);
+  const [addingTo, setAddingTo] = useState<string | null>(null);
 
   const mediaById = new Map(media.map((m) => [m.id, m]));
 
@@ -138,34 +139,64 @@ export default function SocialQueue({
                 )}
 
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                  {/* media strip */}
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {items.map((m) =>
-                      m.kind === 'video' ? (
-                        <video key={m.id} src={m.public_url} controls preload="metadata" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 8, background: '#000' }} />
-                      ) : (
-                        <div key={m.id} style={{ position: 'relative' }}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={m.public_url} alt="" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
-                          {p.status !== 'published' && (
-                            <button
-                              type="button"
-                              onClick={() => setEditImg({ postId: p.id, mediaId: m.id, propertyId: p.property_id })}
-                              className="caption"
-                              style={{ position: 'absolute', bottom: 6, right: 6, background: 'rgba(0,0,0,.6)', color: '#fff', border: 'none', borderRadius: 6, padding: '3px 9px', cursor: 'pointer' }}
-                            >
-                              edit
-                            </button>
-                          )}
-                        </div>
-                      ),
-                    )}
-                    {items.length === 0 && (
-                      <div className="caption" style={{ width: 140, height: 140, display: 'grid', placeItems: 'center', border: '1px dashed var(--hairline)', borderRadius: 8 }}>
-                        no media
+                  {/* media strip — editable while the post hasn't gone out */}
+                  {(() => {
+                    const editable = ['draft', 'approved', 'failed'].includes(p.status);
+                    const removeBtn = (mid: string) => (
+                      <button
+                        type="button"
+                        title="Remove from this post"
+                        disabled={pending}
+                        onClick={() => run(() => setPostMedia(p.id, p.media_ids.filter((id) => id !== mid)))}
+                        style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, lineHeight: 1, background: 'rgba(0,0,0,.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: 12 }}
+                      >
+                        ✕
+                      </button>
+                    );
+                    return (
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {items.map((m) => (
+                          <div key={m.id} style={{ position: 'relative' }}>
+                            {m.kind === 'video' ? (
+                              <video src={m.public_url} controls preload="metadata" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 8, background: '#000', display: 'block' }} />
+                            ) : (
+                              <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={m.public_url} alt="" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
+                                {editable && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditImg({ postId: p.id, mediaId: m.id, propertyId: p.property_id })}
+                                    className="caption"
+                                    style={{ position: 'absolute', bottom: 6, right: 6, background: 'rgba(0,0,0,.6)', color: '#fff', border: 'none', borderRadius: 6, padding: '3px 9px', cursor: 'pointer' }}
+                                  >
+                                    edit
+                                  </button>
+                                )}
+                              </>
+                            )}
+                            {editable && removeBtn(m.id)}
+                          </div>
+                        ))}
+                        {items.length === 0 && (
+                          <div className="caption" style={{ width: 140, height: 140, display: 'grid', placeItems: 'center', border: '1px dashed var(--hairline)', borderRadius: 8 }}>
+                            no media
+                          </div>
+                        )}
+                        {editable && (
+                          <button
+                            type="button"
+                            onClick={() => setAddingTo(addingTo === p.id ? null : p.id)}
+                            className="caption"
+                            title="Add media from the library"
+                            style={{ width: 140, height: 140, display: 'grid', placeItems: 'center', border: '1px dashed var(--hairline)', borderRadius: 8, background: addingTo === p.id ? 'var(--canvas-soft)' : 'transparent', cursor: 'pointer', color: 'var(--primary)' }}
+                          >
+                            {addingTo === p.id ? 'close' : '+ add'}
+                          </button>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })()}
 
                   {/* caption */}
                   <div style={{ flex: 1, minWidth: 260 }}>
@@ -263,6 +294,45 @@ export default function SocialQueue({
                     {previewing === p.id ? 'Hide preview' : 'Preview'}
                   </button>
                 </div>
+
+                {addingTo === p.id && (
+                  <div style={{ border: '1px solid var(--hairline)', borderRadius: 8, padding: 12 }}>
+                    <p className="caption" style={{ marginBottom: 10, color: 'var(--ink-mute)' }}>
+                      Pick from the library to add to this post
+                    </p>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', maxHeight: 260, overflowY: 'auto' }}>
+                      {media
+                        .filter(
+                          (m) =>
+                            m.property_id === p.property_id &&
+                            (m.kind === 'image' || m.kind === 'video') &&
+                            !p.media_ids.includes(m.id) &&
+                            !(m.tags ?? []).includes('music') &&
+                            !(m.tags ?? []).includes('rendered-reel'),
+                        )
+                        .map((m) => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            disabled={pending}
+                            title={m.file_name ?? undefined}
+                            onClick={() => {
+                              setAddingTo(null);
+                              run(() => setPostMedia(p.id, [...p.media_ids, m.id]));
+                            }}
+                            style={{ padding: 0, border: '1px solid var(--hairline)', borderRadius: 8, overflow: 'hidden', cursor: 'pointer', background: 'none' }}
+                          >
+                            {m.kind === 'video' ? (
+                              <video src={m.public_url} preload="metadata" muted style={{ width: 92, height: 92, objectFit: 'cover', display: 'block', background: '#000' }} />
+                            ) : (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img src={m.public_url} alt="" loading="lazy" style={{ width: 92, height: 92, objectFit: 'cover', display: 'block' }} />
+                            )}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
 
                 {reelFor === p.id && (
                   <ReelBuilder
