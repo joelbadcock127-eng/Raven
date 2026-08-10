@@ -407,16 +407,15 @@ function Hero() {
   );
 }
 
-/** Straight answers, right under the hero: the questions every onlooker
- *  arrives with (where is she, who is she for, what's included), answered
- *  before they have to go looking. Speaks to travellers who only know
- *  they want the north west coast, not yet where on it. */
+/** The essentials, answered in one quiet ledger: where she is, how to
+ *  get here, who she is for, what is included. Speaks to travellers who
+ *  only know they want the north west coast, not yet where on it. */
 function Essentials({ standalone }: { standalone: boolean }) {
   const mapHref = standalone ? '/explore#map' : '/site/annie-may?page=explore#map';
   const items: Array<[string, string]> = [
     [
       'Where is she?',
-      'In central Devonport on Tasmania’s north west coast, on the main road beside the Mersey and an easy walk to the city centre.',
+      'In central Devonport on Tasmania\u2019s north west coast, on the main road beside the Mersey and an easy walk to the city centre.',
     ],
     [
       'Getting here',
@@ -434,57 +433,60 @@ function Essentials({ standalone }: { standalone: boolean }) {
   return (
     <section className="am-tint am-section-sm">
       <div className="am-shell">
-        <div className="am-grid" style={{ rowGap: 36, alignItems: 'end', marginBottom: 'clamp(36px, 4vw, 60px)' }}>
-          <div style={{ gridColumn: 'span 6', gridRow: 1 }}>
-            <p className="am-kicker">New to the north west coast?</p>
-            <MaskLines as="h2" className="am-display am-d-md" lines={['Start where', 'the coast does.']} />
-          </div>
-          <div style={{ gridColumn: 'span 5 / -1', gridRow: 1 }}>
-            <Reveal delay={0.25}>
+        <div className="am-grid" style={{ rowGap: 48 }}>
+          <div style={{ gridColumn: 'span 4', gridRow: 1 }}>
+            <p className="am-kicker">The essentials</p>
+            <Reveal>
               <p className="am-body-copy">
-                Planning a stay on Tasmania’s north west coast and not yet sure where to base
-                yourself? Devonport is where the Spirit of Tasmania lands and where the coast
-                begins, and Annie May is its most refined place to stay.
+                Searching for places to stay on Tasmania’s north west coast and not yet sure
+                where to base yourself? Devonport is where the Spirit of Tasmania lands and where
+                the coast begins. Annie May is its most refined place to stay.
               </p>
             </Reveal>
-          </div>
-        </div>
-        <div className="am-grid" style={{ rowGap: 32 }}>
-          {items.map(([q, a], i) => (
-            <Reveal key={q} delay={i * 0.1} style={{ gridColumn: 'span 3', minWidth: 0 }}>
-              <div style={{ borderTop: '1px solid var(--am-hairline)', paddingTop: 18 }}>
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: '0.74rem',
-                    fontWeight: 600,
-                    letterSpacing: '0.26em',
-                    textTransform: 'uppercase',
-                    color: 'var(--am-sage)',
-                  }}
-                >
-                  {q}
-                </h3>
-                <p className="am-body-copy" style={{ marginTop: 12, fontSize: '0.92rem' }}>
-                  {a}
-                </p>
+            <Reveal delay={0.2}>
+              <div style={{ marginTop: 30, display: 'flex', gap: 22, alignItems: 'center', flexWrap: 'wrap' }}>
+                <motion.a className="am-book" href={mapHref} whileTap={{ scale: 0.97 }} transition={spring}>
+                  See her on the map
+                  <span className="arrow" aria-hidden>
+                    →
+                  </span>
+                </motion.a>
               </div>
             </Reveal>
-          ))}
-        </div>
-        <Reveal delay={0.35}>
-          <div style={{ marginTop: 'clamp(36px, 4vw, 56px)', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
-            <motion.a className="am-book" href={mapHref} whileTap={{ scale: 0.97 }} transition={spring}>
-              See her on the map
-              <span className="arrow" aria-hidden>
-                →
-              </span>
-            </motion.a>
-            <a href={standalone ? '/accommodation' : '/site/annie-may?page=accommodation'} className="am-link am-more">
-              Meet the rooms
-            </a>
           </div>
-        </Reveal>
+          <div style={{ gridColumn: 'span 7 / -1', gridRow: 1 }}>
+            {items.map(([q, a], i) => (
+              <Reveal key={q} delay={i * 0.08} y={18}>
+                <div
+                  className="am-grid"
+                  style={{
+                    gridTemplateColumns: 'minmax(150px, 1fr) 2fr',
+                    columnGap: 'clamp(16px, 2.5vw, 40px)',
+                    borderTop: '1px solid var(--am-hairline)',
+                    padding: '20px 0',
+                  }}
+                >
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      letterSpacing: '0.24em',
+                      textTransform: 'uppercase',
+                      color: 'var(--am-sage)',
+                      paddingTop: 4,
+                    }}
+                  >
+                    {q}
+                  </h3>
+                  <p className="am-body-copy" style={{ margin: 0 }}>
+                    {a}
+                  </p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -507,35 +509,6 @@ function Statement() {
             interruptions, no fuss, just a beautifully prepared stay that lets everything else fall
             away.
           </p>
-        </Reveal>
-        <Reveal delay={0.65}>
-          <div
-            style={{
-              marginTop: 'clamp(56px, 7vw, 100px)',
-              display: 'flex',
-              gap: 'clamp(28px, 5vw, 80px)',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-            }}
-          >
-            {(
-              [
-                ['Seven', 'ensuite king rooms'],
-                ['Adults', 'only, calm always'],
-                ['Breakfast', 'included, every morning'],
-                ['Lift', 'access to every floor'],
-              ] as Array<[string, string]>
-            ).map(([big, small]) => (
-              <div key={big} style={{ textAlign: 'center', minWidth: 130 }}>
-                <span className="am-display am-d-sm" style={{ display: 'block' }}>
-                  {big}
-                </span>
-                <span className="am-body-copy" style={{ fontSize: '0.82rem', letterSpacing: '0.06em' }}>
-                  {small}
-                </span>
-              </div>
-            ))}
-          </div>
         </Reveal>
       </div>
     </section>
@@ -1047,8 +1020,8 @@ export default function AnnieMaySite({ page, standalone }: { page: string; stand
         {current === 'home' && (
           <>
             <Hero />
-            <Essentials standalone={standalone} />
             <Statement />
+            <Essentials standalone={standalone} />
             <RoomsIndex standalone={standalone} />
             <StoryTeaser standalone={standalone} />
             <Features />
