@@ -190,16 +190,28 @@ export default function SiteBuilder({
             + new draft
           </button>
           {propertyId === 'annie-may' ? (
-            <a
-              href="/site/annie-may"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="caption"
-              title="Annie May's real website is the bespoke build — it needs no draft or blueprint"
-              style={{ border: '1px solid var(--primary-subdued)', borderRadius: 'var(--r-pill)', padding: '5px 12px', color: 'var(--primary)' }}
-            >
-              open her website ↗
-            </a>
+            <>
+              <a
+                href="/site/annie-may"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="caption"
+                title="Annie May's real website is the bespoke build — it needs no draft or blueprint"
+                style={{ border: '1px solid var(--primary-subdued)', borderRadius: 'var(--r-pill)', padding: '5px 12px', color: 'var(--primary)' }}
+              >
+                open her website ↗
+              </a>
+              <a
+                href="/site/annie-may?v=2"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="caption"
+                title="V2 draft: live conditions strip, book-direct walk offer, Deb intro. The live site is untouched."
+                style={{ border: '1px dashed var(--primary-subdued)', borderRadius: 'var(--r-pill)', padding: '5px 12px', color: 'var(--primary)' }}
+              >
+                V2 ↗
+              </a>
+            </>
           ) : (
             <>
               <button

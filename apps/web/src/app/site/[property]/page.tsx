@@ -7,6 +7,7 @@ import { defaultTheme, type SitePageV2, type SiteTheme } from '@/lib/siteBuilder
 import { SITE_SEEDS } from '@/lib/siteSeeds';
 import SiteRenderer from '@/components/SiteRenderer';
 import AnnieMaySite from '@/components/anniemay/AnnieMaySite';
+import AnnieMaySiteV2 from '@/components/anniemay/AnnieMaySiteV2';
 
 export const revalidate = 0;
 
@@ -59,6 +60,7 @@ interface Query {
   edit?: string;
   section?: string;
   standalone?: string;
+  v?: string; // annie-may only: '2' renders the V2 draft clone
 }
 
 /** '?version=seed' renders the designed blueprint straight from the repo —
@@ -156,9 +158,10 @@ export default async function SiteV2Page({
   // ?version=seed since no builder seed exists for her. The old builder
   // flow stays reachable only for a real stored version (?version=<id>).
   if (property === 'annie-may' && (!q.version || q.version === 'seed') && !q.edit) {
+    const Site = q.v === '2' ? AnnieMaySiteV2 : AnnieMaySite;
     return (
       <div className={`${amDisplay.variable} ${amBody.variable}`}>
-        <AnnieMaySite page={q.page ?? 'home'} standalone={q.standalone === '1'} />
+        <Site page={q.page ?? 'home'} standalone={q.standalone === '1'} />
       </div>
     );
   }
