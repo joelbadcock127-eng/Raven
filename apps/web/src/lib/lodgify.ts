@@ -8,7 +8,7 @@
  */
 
 const BASE = 'https://api.lodgify.com';
-const MIN_INTERVAL_MS = 600; // ~100 req/min max — far below limits
+const MIN_INTERVAL_MS = 125; // ~480 req/min max — still below the 750/min ceiling
 let lastRequestAt = 0;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -20,10 +20,13 @@ export function lodgifyConfigured(): boolean {
 async function lodgifyFetch<T>(
   path: string,
   retries = 3,
-  init?: { method?: string; body?: unknown },
+  init?: { method?: string; body?: unknown; revalidate?: number },
 ): Promise<T> {
   const key = process.env.LODGIFY_API_KEY;
   if (!key) throw new Error('LODGIFY_API_KEY is not set');
+  // Read calls opt into Next's data cache with a short revalidate window so
+  // page loads don't refetch identical Lodgify data on every request.
+  const cacheable = (init?.method ?? 'GET') === 'GET' && (init?.revalidate ?? 0) > 0;
   for (let attempt = 0; ; attempt++) {
     const wait = lastRequestAt + MIN_INTERVAL_MS - Date.now();
     if (wait > 0) await sleep(wait);
@@ -37,7 +40,7 @@ async function lodgifyFetch<T>(
       },
       body: init?.body != null ? JSON.stringify(init.body) : undefined,
       signal: AbortSignal.timeout(25_000),
-      cache: 'no-store',
+      ...(cacheable ? { next: { revalidate: init!.revalidate! } } : { cache: 'no-store' as const }),
     });
     if (res.ok && res.status === 204) return undefined as T;
     if (res.ok) return (await res.json()) as T;
@@ -68,7 +71,9 @@ function normaliseImageUrl(url: unknown): string | null {
 }
 
 export async function listProperties(): Promise<LodgifyProperty[]> {
-  const data = await lodgifyFetch<Json>('/v2/properties?includeCount=false&includeInOut=false');
+  const data = await lodgifyFetch<Json>('/v2/properties?includeCount=false&includeInOut=false', 3, {
+    revalidate: 300, // the rental list barely changes
+  });
   const items: Json[] = Array.isArray(data) ? data : (data?.items ?? []);
   return items.map((p) => ({
     id: Number(p.id),
@@ -98,6 +103,8 @@ export async function getAvailability(
 ): Promise<AvailabilityPeriod[]> {
   const data = await lodgifyFetch<Json>(
     `/v2/availability/${propertyId}?start=${start}&end=${end}&includeDetails=false`,
+    3,
+    { revalidate: 60 },
   );
   const entries: Json[] = Array.isArray(data) ? data : [data];
   const out: AvailabilityPeriod[] = [];
@@ -198,7 +205,9 @@ export async function listBookings(opts?: {
       params.set('periodStart', opts.stayFrom);
       params.set('periodEnd', opts.stayTo);
     }
-    const data = await lodgifyFetch<Json>(`/v2/reservations/bookings?${params}`);
+    const data = await lodgifyFetch<Json>(`/v2/reservations/bookings?${params}`, 3, {
+      revalidate: 30,
+    });
     const items: Json[] = Array.isArray(data) ? data : (data?.items ?? []);
     if (!items.length) break;
     out.push(...items.map(normaliseBooking));
