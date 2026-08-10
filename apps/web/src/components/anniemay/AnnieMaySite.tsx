@@ -20,6 +20,7 @@ import {
   BOOK_URL,
   COMFORTS,
   FACEBOOK_URL,
+  FAQS,
   GALLERY,
   HIGHLIGHTS,
   IMG,
@@ -27,7 +28,9 @@ import {
   MAPS_EMBED_URL,
   MAPS_URL,
   NAV_PAGES,
+  REVIEWS,
   ROOMS,
+  WALKABLE,
 } from './data';
 import './anniemay.css';
 
@@ -123,6 +126,146 @@ function PageIntro({ kicker, lines, lead }: { kicker: string; lines: string[]; l
   );
 }
 
+/**
+ * Breakfast as a signature experience, not a footnote — it is included in
+ * every stay, so it carries value the rooms alone can't.
+ */
+function BreakfastSection() {
+  return (
+    <section className="am-section">
+      <div className="am-shell">
+        <div className="am-grid" style={{ rowGap: 48, alignItems: 'center' }}>
+          <div className="am-frame" style={{ gridColumn: 'span 6', gridRow: 1 }}>
+            <ParallaxImage src={IMG.breakfast} alt="The breakfast room at Annie May" drift={9} style={{ aspectRatio: '4 / 5' }} />
+          </div>
+          <div style={{ gridColumn: 'span 5 / -1', gridRow: 1 }}>
+            <p className="am-kicker">Breakfast, included with every stay</p>
+            <MaskLines as="h2" className="am-display am-d-lg" lines={['Mornings are', 'part of the stay.']} />
+            <Reveal delay={0.3}>
+              <p className="am-lead" style={{ marginTop: 28 }}>
+                Breakfast is never an extra here. Every stay begins downstairs in a room full of
+                morning light, with the table set and no reason to hurry away from it.
+              </p>
+            </Reveal>
+            <Reveal delay={0.45}>
+              <p className="am-body-copy" style={{ marginTop: 18 }}>
+                Come down when it suits you, linger over coffee, plan the day slowly. It is the
+                hour the house does best.
+              </p>
+            </Reveal>
+            <Reveal delay={0.55}>
+              <div style={{ marginTop: 32 }}>
+                <BookButton label="Check availabilities" />
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Concrete walkability: what is actually out her front door, with times. */
+function WalkableSection() {
+  return (
+    <section className="am-dark am-section">
+      <div className="am-shell">
+        <div className="am-grid" style={{ rowGap: 40, alignItems: 'start' }}>
+          <div style={{ gridColumn: 'span 5', gridRow: 1 }}>
+            <p className="am-kicker" style={{ color: 'var(--am-cream-mute)' }}>
+              Out her front door
+            </p>
+            <MaskLines as="h2" className="am-display am-d-lg" lines={['Leave the car', 'where it is.']} />
+            <Reveal delay={0.3}>
+              <p className="am-lead" style={{ marginTop: 26 }}>
+                She sits on the Mersey riverfront with the city a few blocks behind her. Dinner,
+                galleries and the water are all on foot; the day trips can wait for tomorrow.
+              </p>
+            </Reveal>
+          </div>
+          <div style={{ gridColumn: 'span 6 / -1', gridRow: 1 }}>
+            {WALKABLE.map((w, i) => (
+              <Reveal key={w.name} delay={i * 0.07} y={18}>
+                <div style={{ padding: '18px 0', borderTop: '1px solid var(--am-hairline-dark)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, alignItems: 'baseline' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{w.name}</span>
+                    <span className="am-numeral" style={{ whiteSpace: 'nowrap' }}>{w.time}</span>
+                  </div>
+                  <p className="am-body-copy" style={{ marginTop: 6, maxWidth: '30rem' }}>{w.note}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Guest words before the final ask — the proof that the promise holds. */
+function ReviewsSection() {
+  return (
+    <section className="am-tint am-section">
+      <div className="am-shell">
+        <div className="am-centered" style={{ marginBottom: 'clamp(44px, 5vw, 80px)' }}>
+          <p className="am-kicker">Kind words</p>
+          <MaskLines as="h2" className="am-display am-d-lg" lines={['What her guests', 'say about her.']} />
+        </div>
+        <div className="am-grid" style={{ rowGap: 44 }}>
+          {REVIEWS.map((r, i) => (
+            <div key={i} style={{ gridColumn: 'span 4', minWidth: 0 }}>
+              <Reveal delay={i * 0.12}>
+                <blockquote style={{ margin: 0, borderTop: '1px solid var(--am-hairline)', paddingTop: 24 }}>
+                  <span className="am-numeral" aria-hidden>{['I', 'II', 'III'][i]}</span>
+                  <p className="am-lead" style={{ marginTop: 16, fontSize: '1.05rem' }}>
+                    “{r.quote}”
+                  </p>
+                  <footer className="am-body-copy" style={{ marginTop: 16, fontSize: '0.8rem' }}>
+                    — {r.name}
+                  </footer>
+                </blockquote>
+              </Reveal>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** The practical answers a guest wants before committing. */
+function FaqSection({ dark = false }: { dark?: boolean }) {
+  return (
+    <section className={dark ? 'am-dark am-section' : 'am-tint am-section'}>
+      <div className="am-shell">
+        <div className="am-grid" style={{ rowGap: 40, alignItems: 'start' }}>
+          <div style={{ gridColumn: 'span 4', gridRow: 1 }}>
+            <p className="am-kicker" style={dark ? { color: 'var(--am-cream-mute)' } : undefined}>
+              Good to know
+            </p>
+            <MaskLines as="h2" className="am-display am-d-md" lines={['The practical', 'questions,', 'answered.']} />
+          </div>
+          <div style={{ gridColumn: 'span 7 / -1', gridRow: 1 }}>
+            {FAQS.map((f, i) => (
+              <Reveal key={f.q} delay={i * 0.06} y={16}>
+                <div
+                  style={{
+                    padding: '20px 0',
+                    borderTop: `1px solid ${dark ? 'var(--am-hairline-dark)' : 'var(--am-hairline)'}`,
+                  }}
+                >
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 500, margin: 0 }}>{f.q}</h3>
+                  <p className="am-body-copy" style={{ marginTop: 8, maxWidth: '36rem' }}>{f.a}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /** Shared closing invitation, full-bleed image. */
 function ClosingCta({ heading, sub }: { heading: string[]; sub: string }) {
   return (
@@ -139,9 +282,14 @@ function ClosingCta({ heading, sub }: { heading: string[]; sub: string }) {
             {sub}
           </p>
         </Reveal>
+        <Reveal delay={0.5}>
+          <p className="am-body-copy" style={{ marginTop: 18, color: 'var(--am-cream-mute)', fontSize: '0.82rem', letterSpacing: '0.06em' }}>
+            Breakfast included · adults only · book direct with the house
+          </p>
+        </Reveal>
         <Reveal delay={0.55}>
-          <div style={{ marginTop: 36 }}>
-            <BookButton label="Check availability" />
+          <div style={{ marginTop: 30 }}>
+            <BookButton label="Check availabilities" />
           </div>
         </Reveal>
       </div>
@@ -203,7 +351,7 @@ function Nav({ current, standalone, overHero }: { current: string; standalone: b
                 {p.label}
               </a>
             ))}
-            <BookButton label="Book now" />
+            <BookButton label="Check availabilities" />
           </nav>
 
           <button
@@ -388,7 +536,7 @@ function Hero() {
           animate={{ opacity: 1 }}
           transition={{ duration: 1.4, delay: 0.9 }}
         >
-          A heritage guesthouse · Devonport · Tasmania
+          A 1906 heritage guesthouse · Devonport · Tasmania
         </motion.p>
         <MaskLines
           as="h1"
@@ -626,12 +774,9 @@ function RoomsIndex({ standalone }: { standalone: boolean }) {
                     {room.numeral} · {room.rooms}
                   </p>
                   <h3 className="am-display am-d-sm">{room.name}</h3>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 12 }}>
-                    <span className="am-price">{room.price}</span>
-                    <span className="am-body-copy" style={{ fontSize: '0.78rem' }}>
-                      {room.terms}
-                    </span>
-                  </div>
+                  <p className="am-body-copy" style={{ fontSize: '0.78rem', marginTop: 12 }}>
+                    {room.terms}
+                  </p>
                   <div style={{ marginTop: 18 }}>
                     <a href={href('accommodation')} className="am-link am-more">
                       Full details
@@ -804,12 +949,9 @@ function AccommodationPage() {
                   <h2 className="am-display am-d-md" style={{ marginTop: 14 }}>
                     {room.name}
                   </h2>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 16 }}>
-                    <span className="am-price">{room.price}</span>
-                    <span className="am-body-copy" style={{ fontSize: '0.8rem' }}>
-                      {room.terms}
-                    </span>
-                  </div>
+                  <p className="am-body-copy" style={{ fontSize: '0.8rem', marginTop: 16 }}>
+                    {room.terms}
+                  </p>
                   <p className="am-body-copy" style={{ marginTop: 18 }}>
                     {room.body}
                   </p>
@@ -817,7 +959,7 @@ function AccommodationPage() {
                     <Ledger items={room.details.map((d) => [d, ''] as [string, string])} />
                   </div>
                   <div style={{ marginTop: 30 }}>
-                    <BookButton label="View availability & book" />
+                    <BookButton label="Check availabilities" />
                   </div>
                 </div>
               </div>
@@ -841,6 +983,8 @@ function AccommodationPage() {
           </div>
         </div>
       </section>
+
+      <FaqSection />
     </>
   );
 }
@@ -934,7 +1078,7 @@ function ExplorePage() {
       <PageIntro
         kicker="Explore"
         lines={['Her location', 'is central.']}
-        lead="Annie May sits in the sweet spot for exploring Devonport and beyond. Minutes from the Spirit of Tasmania terminal and Devonport Airport, an easy walk to the city for dining and events, and a refined base for coastal drives and North West adventures. Think of her as your gateway to Tasmania, with everything close and the pace kept calm."
+        lead="Annie May sits on the Mersey riverfront in central Devonport: two kilometres from the Spirit of Tasmania terminal, about twenty minutes from Devonport Airport, five minutes on foot to Rooke Street's restaurants and the paranaple arts centre, and a refined base for coastal drives and North West adventures. Arrive easily, explore all day, come back to calm."
       />
 
       <section className="am-tint am-section">
@@ -1185,20 +1329,7 @@ function ContactPage() {
         </div>
       </section>
 
-      <section className="am-tint am-section-sm">
-        <div className="am-shell">
-          <p className="am-kicker">Good to know</p>
-          <Ledger
-            items={[
-              ['Adults only', 'a house for grown ups, guests 18 and over'],
-              ['Seven ensuite rooms', 'each with a king bed, desk, TV and full length mirror'],
-              ['Breakfast', 'included with every stay, served downstairs'],
-              ['Lift access', 'every floor without stairs'],
-              ['Getting here', 'minutes from the Spirit of Tasmania terminal and Devonport Airport'],
-            ]}
-          />
-        </div>
-      </section>
+      <FaqSection />
     </>
   );
 }
@@ -1216,9 +1347,12 @@ export default function AnnieMaySite({ page, standalone }: { page: string; stand
             <Hero />
             <HomeIntro standalone={standalone} />
             <RoomsIndex standalone={standalone} />
+            <BreakfastSection />
+            <WalkableSection />
             <StoryTeaser standalone={standalone} />
             <Features />
             <GalleryStrip />
+            <ReviewsSection />
             <ClosingCta
               heading={['She looks after the details.']}
               sub="You bring the moment. She brings the calm. Reserve a stay that feels effortless."

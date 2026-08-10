@@ -50,7 +50,6 @@ export interface Room {
   numeral: string;
   rooms: string;
   name: string;
-  price: string;
   terms: string;
   body: string;
   details: string[];
@@ -58,14 +57,13 @@ export interface Room {
   detailImage: string;
 }
 
-/** The three room types, priced and described as on anniemay.com.au/accommodation. */
+/** The three room types, described as on anniemay.com.au/accommodation. No pricing on-site by owner's direction. */
 export const ROOMS: Room[] = [
   {
     numeral: 'I',
     rooms: 'Rooms 1 & 2',
     name: 'King Superior with Bath',
-    price: '$385',
-    terms: 'per night · 2 adults · breakfast included',
+    terms: 'Sleeps two · breakfast included',
     body:
       'King bed for real rest, a proper desk when work calls, and a large TV for easy evenings. A full length mirror and considered lighting keep things practical without fuss. The ensuite is a little retreat of its own, with a walk in shower and a separate bath for an unhurried soak.',
     details: ['King bed', 'Walk in shower and freestanding bath', 'Proper desk', 'Large TV', 'Full length mirror', 'Private ensuite'],
@@ -76,8 +74,7 @@ export const ROOMS: Room[] = [
     numeral: 'II',
     rooms: 'Rooms 3 to 6',
     name: 'King Superior',
-    price: '$350',
-    terms: 'per night · 2 adults · breakfast included',
+    terms: 'Sleeps two · breakfast included',
     body:
       'Filled with light and quietly elegant. Generous space, a proper desk when you need it, a large TV for easy evenings and a full length mirror to keep things practical. The ensuite keeps it modern and simple with a walk in shower for an unhurried start or end to the day.',
     details: ['King bed', 'Walk in shower', 'Proper desk', 'Large TV', 'Full length mirror', 'Private ensuite'],
@@ -88,8 +85,7 @@ export const ROOMS: Room[] = [
     numeral: 'III',
     rooms: 'Room 7',
     name: 'Loft Room',
-    price: '$350',
-    terms: 'per night · 2 adults · breakfast included',
+    terms: 'Sleeps two · breakfast included',
     body:
       'Intimate and calm on the second level. A king bed for real rest, two armchairs for quiet moments, a desk when work calls and a large TV for easy evenings. A full length mirror keeps things practical. The ensuite bathroom adds comfort with a walk in shower and underfloor heating.',
     details: ['King bed', 'The whole second level', 'Two armchairs', 'Walk in shower with underfloor heating', 'Desk and large TV', 'Private ensuite'],
@@ -156,6 +152,98 @@ export const GALLERY: Array<{ src: string; alt: string }> = [
   { src: IMG.chandelier, alt: 'Chandelier detail' },
   { src: IMG.kingCaramel, alt: 'King Superior' },
   { src: IMG.curtains, alt: 'Morning light through sheers' },
+];
+
+/**
+ * PLACEHOLDER REVIEWS — swap these for real guest words (Airbnb, Google,
+ * the guest book) before publishing. Keep them short, specific and recent;
+ * three is enough. Attribution stays first-name only.
+ */
+export const REVIEWS: Array<{ quote: string; name: string }> = [
+  {
+    quote:
+      'The quietest night’s sleep we’ve had in years. The room was immaculate, the bed enormous, and breakfast was worth getting up for.',
+    name: 'Placeholder — replace with a real guest review',
+  },
+  {
+    quote:
+      'Deb and Craig have thought of everything. It felt less like a hotel and more like staying with friends who happen to have impeccable taste.',
+    name: 'Placeholder — replace with a real guest review',
+  },
+  {
+    quote:
+      'Rolled off the Spirit, and ten minutes later we were checked in with coffee in hand. The perfect first and last night in Tasmania.',
+    name: 'Placeholder — replace with a real guest review',
+  },
+];
+
+/**
+ * FAQ — the practical answers guests need before booking.
+ * VERIFY WITH DEB before publishing: check-in/out times, parking
+ * arrangement and the cancellation terms are drafted, not confirmed.
+ */
+export const FAQS: Array<{ q: string; a: string }> = [
+  {
+    q: 'When can I check in and out?',
+    a: 'Check-in is from 2pm and check-out is by 10am. Arriving on a late ferry or flight? Let her know and we will arrange it.',
+  },
+  {
+    q: 'Is there parking?',
+    a: 'Yes. Parking is available at the house, with easy street parking on Formby Road as well.',
+  },
+  {
+    q: 'What is the cancellation policy?',
+    a: 'Book direct and plans can change: cancel up to 48 hours before arrival for a full refund. Inside 48 hours the first night is charged.',
+  },
+  {
+    q: 'Can we bring the children?',
+    a: 'Annie May is adults only, guests 18 and over. It is what keeps the house genuinely quiet, for you and everyone else staying.',
+  },
+  {
+    q: 'Can we bring a pet?',
+    a: 'Pets cannot join you at the house, with apologies to good dogs everywhere.',
+  },
+  {
+    q: 'How do we get there?',
+    a: 'Two kilometres from the Spirit of Tasmania terminal and about twenty minutes from Devonport Airport. A lift serves every floor, so arrivals are effortless.',
+  },
+];
+
+/**
+ * On foot from the front door. Walk times are door-to-door estimates from
+ * 16 Formby Road — sanity-check before publishing.
+ */
+export const WALKABLE: Array<{ name: string; time: string; note: string }> = [
+  {
+    name: 'The Mersey riverfront',
+    time: 'At the door',
+    note: 'Formby Road runs along the river. Cross the road and you are on the water.',
+  },
+  {
+    name: 'City centre dining & cafes',
+    time: '5 minutes',
+    note: 'Rooke Street Mall, restaurants and good coffee, a few blocks back from the river.',
+  },
+  {
+    name: 'paranaple arts centre & Devonport Regional Gallery',
+    time: '5 minutes',
+    note: 'Galleries, theatre and events in the heart of town.',
+  },
+  {
+    name: 'Providore Place market hall',
+    time: '10 minutes',
+    note: 'Tasmanian producers, food and drink under one roof.',
+  },
+  {
+    name: 'Bass Strait Maritime Centre',
+    time: '15 minutes',
+    note: 'The city’s seafaring story, an easy stroll north along the river.',
+  },
+  {
+    name: 'Mersey Bluff Lighthouse',
+    time: '40 minutes',
+    note: 'Follow the foreshore path the whole way, or drive it in five.',
+  },
 ];
 
 export const NAV_PAGES = [
