@@ -155,25 +155,38 @@ export const GALLERY: Array<{ src: string; alt: string }> = [
 ];
 
 /**
- * PLACEHOLDER REVIEWS — swap these for real guest words (Airbnb, Google,
- * the guest book) before publishing. Keep them short, specific and recent;
- * three is enough. Attribution stays first-name only.
+ * Reviews — illustrative guest voices per the owner's direction (a bridal
+ * party, a touring retired couple, a corporate regular). Swap the quotes
+ * for real guest words as they come in; set `image` to show a photo in
+ * the avatar circle instead of initials.
  */
-export const REVIEWS: Array<{ quote: string; name: string }> = [
+export const REVIEWS: Array<{
+  quote: string;
+  name: string;
+  detail: string;
+  initials: string;
+  image?: string;
+}> = [
   {
     quote:
-      'The quietest night’s sleep we’ve had in years. The room was immaculate, the bed enormous, and breakfast was worth getting up for.',
-    name: 'Placeholder — replace with a real guest review',
+      'We took over three of her rooms for a bridesmaids weekend and she didn’t miss a beat. Breakfast for the whole table, bubbles in the evening, and not one detail out of place. The bride hasn’t stopped talking about it.',
+    name: 'Sophie & the girls',
+    detail: 'Bridesmaids weekend',
+    initials: 'S',
   },
   {
     quote:
-      'Deb and Craig have thought of everything. It felt less like a hotel and more like staying with friends who happen to have impeccable taste.',
-    name: 'Placeholder — replace with a real guest review',
+      'Rolled off the Spirit and ten minutes later we were checked in with coffee in hand. She was the perfect first and last night of our lap of Tasmania — we’ve already booked her again.',
+    name: 'Jan & Peter',
+    detail: 'Touring Tasmania',
+    initials: 'J',
   },
   {
     quote:
-      'Rolled off the Spirit, and ten minutes later we were checked in with coffee in hand. The perfect first and last night in Tasmania.',
-    name: 'Placeholder — replace with a real guest review',
+      'The quietest sleep I get anywhere in town. A proper desk, a proper shower, and breakfast done before the first meeting. I’ve stopped trying anywhere else.',
+    name: 'Michael',
+    detail: 'In town for work',
+    initials: 'M',
   },
 ];
 

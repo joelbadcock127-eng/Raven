@@ -213,15 +213,48 @@ function ReviewsSection() {
         </div>
         <div className="am-grid" style={{ rowGap: 44 }}>
           {REVIEWS.map((r, i) => (
-            <div key={i} style={{ gridColumn: 'span 4', minWidth: 0 }}>
+            <div key={r.name} style={{ gridColumn: 'span 4', minWidth: 0 }}>
               <Reveal delay={i * 0.12}>
-                <blockquote style={{ margin: 0, borderTop: '1px solid var(--am-hairline)', paddingTop: 24 }}>
-                  <span className="am-numeral" aria-hidden>{['I', 'II', 'III'][i]}</span>
-                  <p className="am-lead" style={{ marginTop: 16, fontSize: '1.05rem' }}>
+                <blockquote style={{ margin: 0, borderTop: '1px solid var(--am-hairline)', paddingTop: 26 }}>
+                  <span
+                    aria-hidden
+                    style={{ display: 'block', color: '#b08d3f', fontSize: '0.82rem', letterSpacing: '0.32em' }}
+                  >
+                    ★★★★★
+                  </span>
+                  <p className="am-lead" style={{ marginTop: 18, fontSize: '1.02rem' }}>
                     “{r.quote}”
                   </p>
-                  <footer className="am-body-copy" style={{ marginTop: 16, fontSize: '0.8rem' }}>
-                    — {r.name}
+                  <footer style={{ marginTop: 22, display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 46,
+                        height: 46,
+                        borderRadius: '50%',
+                        flexShrink: 0,
+                        border: '1px solid var(--am-hairline)',
+                        background: r.image ? undefined : 'var(--am-paper-2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                        fontFamily: 'var(--am-display)',
+                        fontSize: '1.15rem',
+                        color: 'var(--am-sage)',
+                      }}
+                    >
+                      {r.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={r.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        r.initials
+                      )}
+                    </span>
+                    <span style={{ display: 'grid', gap: 2 }}>
+                      <cite style={{ fontStyle: 'normal', fontSize: '0.92rem', fontWeight: 500 }}>{r.name}</cite>
+                      <span className="am-body-copy" style={{ fontSize: '0.78rem' }}>{r.detail}</span>
+                    </span>
                   </footer>
                 </blockquote>
               </Reveal>
@@ -270,7 +303,7 @@ function FaqSection({ dark = false }: { dark?: boolean }) {
 function ClosingCta({ heading, sub }: { heading: string[]; sub: string }) {
   return (
     <section style={{ position: 'relative', color: 'var(--am-cream)' }} className="am-on-image">
-      <ParallaxImage src={IMG.curtains} alt="Morning light through the sheers" drift={12} style={{ height: 'clamp(500px, 88vh, 820px)' }} />
+      <ParallaxImage src={IMG.windowSeat} alt="Morning light at the window seat" drift={12} style={{ height: 'clamp(500px, 88vh, 820px)' }} />
       <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'rgba(29, 32, 26, 0.55)' }} />
       <div
         className="am-shell am-centered"
