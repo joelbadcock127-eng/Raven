@@ -169,74 +169,77 @@ function BreakfastSection() {
 
 
 /**
- * V2: a quiet line animation for the walkable ledger — a car left behind,
- * footsteps setting off on foot. Draws on when scrolled into view, then
- * the steps keep softly walking.
+ * V2: the walkable ledger's line animation, writ large — a car draws on at
+ * the foot of the column, then oversized footsteps walk up and across,
+ * passing straight through the heading text, and the whole thing fades
+ * away once the walk is done. One-shot per visit.
  */
 function WalkSteps() {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { amount: 0.5, once: true });
-  const steps = Array.from({ length: 9 }, (_, i) => ({
-    x: 130 + i * 32,
-    y: 42 + (i % 2 === 0 ? 4 : -4),
-    rot: i % 2 === 0 ? 14 : -10,
+  const inView = useInView(ref, { amount: 0.35, once: true });
+  const steps = Array.from({ length: 10 }, (_, i) => ({
+    x: 175 + i * 34,
+    y: 375 - i * 34 + (i % 2 === 0 ? 10 : -10),
+    rot: i % 2 === 0 ? 22 : -2,
   }));
   return (
-    <div ref={ref} style={{ marginTop: 42, color: 'var(--am-cream-mute)' }} aria-hidden>
+    <motion.div
+      ref={ref}
+      aria-hidden
+      initial={{ opacity: 1 }}
+      animate={inView ? { opacity: [1, 1, 0] } : {}}
+      transition={{ duration: 6.5, times: [0, 0.8, 1] }}
+      style={{ position: 'absolute', inset: 0, pointerEvents: 'none', color: 'var(--am-cream)', opacity: 0.92 }}
+    >
       <svg
-        viewBox="0 0 440 66"
+        viewBox="0 0 520 430"
+        preserveAspectRatio="xMidYMax meet"
         fill="none"
         stroke="currentColor"
-        strokeWidth={1.4}
+        strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
-        style={{ width: 'min(420px, 100%)', display: 'block', overflow: 'visible' }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }}
       >
         {/* the car, drawn on and left behind */}
         <motion.path
-          d="M14 50 v-7 c0-3 2-5 5-5 h7 l9-12 h27 l10 12 h10 c3 0 5 2 5 5 v7 h-6"
+          d="M28 400 v-14 c0-6 4-10 10-10 h14 l18-25 h55 l20 25 h20 c6 0 10 4 10 10 v14 h-11"
           initial={{ pathLength: 0, opacity: 0 }}
           animate={inView ? { pathLength: 1, opacity: 1 } : {}}
-          transition={{ duration: 1.5, ease: 'easeInOut' }}
+          transition={{ duration: 0.9, ease: 'easeInOut' }}
         />
         <motion.path
-          d="M55 26 v17"
+          d="M112 351 v35"
           initial={{ pathLength: 0, opacity: 0 }}
           animate={inView ? { pathLength: 1, opacity: 0.7 } : {}}
-          transition={{ duration: 0.5, delay: 1.3 }}
+          transition={{ duration: 0.35, delay: 0.8 }}
         />
-        {[34, 76].map((cx) => (
+        {[66, 152].map((cx) => (
           <motion.circle
             key={cx}
             cx={cx}
-            cy={50}
-            r={6.5}
+            cy={400}
+            r={12.5}
             initial={{ pathLength: 0, opacity: 0 }}
             animate={inView ? { pathLength: 1, opacity: 1 } : {}}
-            transition={{ duration: 0.9, delay: 1.1, ease: 'easeInOut' }}
+            transition={{ duration: 0.6, delay: 0.7, ease: 'easeInOut' }}
           />
         ))}
-        {/* footsteps, one after another, walking away */}
+        {/* footsteps striding up through the heading, then away */}
         {steps.map((st, i) => (
           <motion.g
             key={i}
             transform={`translate(${st.x} ${st.y}) rotate(${st.rot})`}
             initial={{ opacity: 0 }}
-            animate={inView ? { opacity: [0, 0.9, 0.9, 0.15] } : {}}
-            transition={{
-              duration: 5.4,
-              times: [0, 0.06, 0.62, 1],
-              delay: 1.9 + i * 0.42,
-              repeat: Infinity,
-              repeatDelay: 2.4,
-            }}
+            animate={inView ? { opacity: [0, 0.95, 0.55] } : {}}
+            transition={{ duration: 2.2, times: [0, 0.12, 1], delay: 1.1 + i * 0.24 }}
           >
-            <ellipse cx="0" cy="0" rx="2.5" ry="4.2" fill="currentColor" stroke="none" />
-            <circle cx="0" cy="-6.6" r="1.6" fill="currentColor" stroke="none" />
+            <ellipse cx="0" cy="0" rx="4.6" ry="8" fill="currentColor" stroke="none" />
+            <circle cx="0" cy="-12" r="3" fill="currentColor" stroke="none" />
           </motion.g>
         ))}
       </svg>
-    </div>
+    </motion.div>
   );
 }
 
@@ -246,7 +249,8 @@ function WalkableSection() {
     <section className="am-dark am-section">
       <div className="am-shell">
         <div className="am-grid" style={{ rowGap: 40, alignItems: 'start' }}>
-          <div style={{ gridColumn: 'span 5', gridRow: 1 }}>
+          <div style={{ gridColumn: 'span 5', gridRow: 1, position: 'relative' }}>
+            <WalkSteps />
             <p className="am-kicker" style={{ color: 'var(--am-cream-mute)' }}>
               Out her front door
             </p>
@@ -256,9 +260,6 @@ function WalkableSection() {
                 She sits on the Mersey riverfront with the city a few blocks behind her. Dinner,
                 galleries and the water are all on foot; the day trips can wait for tomorrow.
               </p>
-            </Reveal>
-            <Reveal delay={0.45}>
-              <WalkSteps />
             </Reveal>
           </div>
           <div style={{ gridColumn: 'span 6 / -1', gridRow: 1 }}>
@@ -454,23 +455,18 @@ function wxEmoji(code: number, isDay: boolean): string {
  *
  * A continuous, rAF-driven simulated timelapse over the facade photo —
  * no stepped phases, every layer interpolates smoothly along one clock.
- * The photo's LEFT edge faces EAST: the sun and moon rise on the left,
- * arc overhead, and set on the right. Four simulated days play out
- * (~24s each), then the sky settles back on the untouched photo.
+ * The photo's LEFT edge faces EAST. Four simulated days (~24s each) play
+ * out, then the sky settles back on the untouched photo.
  *
- * Layers, bottom to top:
- *   1. the facade photo (brightness/saturation graded per time of day)
- *   2. a window-glow copy of the same photo — contrast-crushed so only the
- *      lit windows survive, masked to the house, blended `screen`; its
- *      opacity rises at night so the windows genuinely glow
- *   3. a deep-blue multiply tint (night darkness)
- *   4. warm directional washes, east and west, tracking the low sun
- *   5. a cool moonlight wash tracking the moon
- *   6. a drifting, twinkling starfield (masked to the sky)
- *   7. the sun and moon discs themselves, arcing left → right
- *
- * All style writes happen via refs inside useAnimationFrame — React never
- * re-renders during the animation. Reduced motion: the untouched photo.
+ * Realism rules learnt the hard way:
+ *  - the sun and moon live ONLY in the sky band (top ~24% of the frame),
+ *    on a shallow arc, fading in/out as if rising/setting behind the
+ *    rooftops — they are never visible at ground level
+ *  - stars are confined to the sky band and skip the tower's silhouette
+ *  - the night tint is masked so the sky darkens fully but the house
+ *    keeps its shape, and two screen-blend copies of the photo lift the
+ *    lit windows (sharp) and a gentle ambient warmth (soft) out of the dark
+ *  - slow clouds drift through the sky band, brighter by day, faint by night
  */
 
 const DAY_MS = 24_000; // one simulated day
@@ -500,13 +496,14 @@ function readStops(stops: number[][], frac: number): number[] {
   return lo.map((v, i) => (i === 0 ? frac : lerp(v, hi[i], x)));
 }
 
-/** [t, brightness, saturate, nightTintOpacity] — t=0 is dusk, the photo's own light. */
+/** [t, brightness, saturate, nightTintOpacity] — t=0 is dusk, the photo's own
+ *  light. Night stays gentle on the house; the masked tint does the sky. */
 const GRADE_STOPS: number[][] = [
   [0.0, 1.0, 1.0, 0.04],
-  [0.08, 0.8, 0.9, 0.32],
-  [0.18, 0.64, 0.8, 0.52],
-  [0.3, 0.7, 0.84, 0.42],
-  [0.37, 0.88, 0.94, 0.16],
+  [0.08, 0.87, 0.93, 0.3],
+  [0.18, 0.78, 0.86, 0.44],
+  [0.3, 0.82, 0.88, 0.36],
+  [0.37, 0.92, 0.95, 0.14],
   [0.45, 1.02, 1.0, 0.05],
   [0.68, 1.13, 1.06, 0.0],
   [0.85, 1.05, 1.03, 0.0],
@@ -521,28 +518,43 @@ const SUN_SET = 0.99;
 const MOON_RISE = 0.03;
 const MOON_SET = 0.345;
 
+/** Shallow arc across the sky band only: ~23% down at the edges, 6% at apex. */
 function skyArc(p: number): { x: number; y: number } {
-  return { x: lerp(-8, 108, p), y: 76 - Math.sin(p * Math.PI) * 64 };
+  return { x: lerp(4, 96, p), y: 23 - Math.sin(p * Math.PI) * 17 };
+}
+/** Visible only mid-arc — rises/sets "behind the rooftops". */
+function skyEdgeFade(p: number): number {
+  return smooth(0.07, 0.17, p) * smooth(0.93, 0.83, p);
 }
 
-const STAR_COUNT = 110;
-const STARS = Array.from({ length: STAR_COUNT }, (_, i) => ({
+/** Stars: sky band only (container is the top 26% of the frame), skipping
+ *  the tower silhouette that pokes into the band at centre. */
+const STARS = Array.from({ length: 150 }, (_, i) => ({
   x: (i * 37.508) % 100,
-  y: ((i * 61.803) % 60) * ((i * 13) % 3 === 0 ? 0.55 : 1), // cluster higher
+  y: (i * 61.803) % 100,
   size: 0.9 + ((i * 7) % 10) / 7,
   delay: (i % 9) * 0.45,
   dur: 2.8 + (i % 5) * 0.7,
-}));
+})).filter((st) => !(st.x > 42 && st.x < 58 && st.y > 30));
+
+/** Slow clouds for the sky band: soft blurred blobs on two drift speeds. */
+const CLOUDS = [
+  { top: 6, w: 340, h: 60, dur: 64, delay: 0, o: 0.9 },
+  { top: 30, w: 260, h: 44, dur: 88, delay: -30, o: 0.7 },
+  { top: 55, w: 420, h: 70, dur: 76, delay: -55, o: 0.8 },
+];
 
 function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; parallaxY: number }) {
   const img = useRef<HTMLImageElement>(null);
-  const glow = useRef<HTMLImageElement>(null);
+  const glowSharp = useRef<HTMLImageElement>(null);
+  const glowSoft = useRef<HTMLImageElement>(null);
   const tint = useRef<HTMLDivElement>(null);
   const warmEast = useRef<HTMLDivElement>(null);
   const warmWest = useRef<HTMLDivElement>(null);
   const moonlight = useRef<HTMLDivElement>(null);
   const starsOuter = useRef<HTMLDivElement>(null);
   const starsDrift = useRef<HTMLDivElement>(null);
+  const clouds = useRef<HTMLDivElement>(null);
   const sun = useRef<HTMLDivElement>(null);
   const moon = useRef<HTMLDivElement>(null);
   const startAt = useRef<number | null>(null);
@@ -558,9 +570,10 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
     if (tTotal >= DAY_CYCLES) {
       // Rest exactly on the untouched photo, windows lit as shot.
       if (img.current) img.current.style.filter = 'none';
-      for (const r of [tint, warmEast, warmWest, moonlight, starsOuter, sun, moon])
+      for (const r of [tint, warmEast, warmWest, moonlight, starsOuter, sun, moon, clouds])
         if (r.current) r.current.style.opacity = '0';
-      if (glow.current) glow.current.style.opacity = '0';
+      if (glowSharp.current) glowSharp.current.style.opacity = '0';
+      if (glowSoft.current) glowSoft.current.style.opacity = '0';
       done.current = true;
       return;
     }
@@ -576,41 +589,45 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
     if (starsOuter.current) starsOuter.current.style.opacity = nightF.toFixed(3);
     if (starsDrift.current)
       starsDrift.current.style.transform = `translate3d(${(-tTotal * 2.6).toFixed(3)}%, ${(tTotal * 1.1).toFixed(3)}%, 0)`;
-    if (glow.current) glow.current.style.opacity = (0.92 * nightF).toFixed(3);
+    // windows: sharp lit-window pass strong, soft ambient lift gentle
+    if (glowSharp.current) glowSharp.current.style.opacity = Math.min(1, 1.05 * nightF).toFixed(3);
+    if (glowSoft.current) glowSoft.current.style.opacity = (0.34 * nightF).toFixed(3);
+    // clouds: present day and night, brighter by day
+    const dayF = smooth(0.37, 0.45, frac) * (1 - smooth(0.93, 0.995, frac));
+    if (clouds.current) clouds.current.style.opacity = (0.1 + dayF * 0.24 + nightF * 0.04).toFixed(3);
 
-    // ── sun, east to west ──
+    // ── sun, east to west through the sky band ──
     const sp = (frac - SUN_RISE) / (SUN_SET - SUN_RISE);
     if (sun.current) {
       if (sp >= 0 && sp <= 1) {
         const { x, y } = skyArc(sp);
-        const edge = smooth(0, 0.045, sp) * smooth(1, 0.955, sp);
-        const low = 1 - Math.sin(sp * Math.PI); // 1 at horizon, 0 at noon
+        const edge = skyEdgeFade(sp);
+        const low = 1 - Math.sin(sp * Math.PI);
         sun.current.style.opacity = (0.95 * edge).toFixed(3);
         sun.current.style.left = `${x.toFixed(2)}%`;
         sun.current.style.top = `${y.toFixed(2)}%`;
-        // bigger and warmer near the horizon
-        sun.current.style.transform = `translate(-50%, -50%) scale(${(1 + low * 0.45).toFixed(3)})`;
+        sun.current.style.transform = `translate(-50%, -50%) scale(${(1 + low * 0.4).toFixed(3)})`;
         sun.current.style.filter = `sepia(${(low * 0.55).toFixed(3)})`;
       } else {
         sun.current.style.opacity = '0';
       }
     }
 
-    // warm raking light: from the east side in the morning, west in the evening
+    // warm raking light: from the east side mornings, west evenings
     const lowSun = sp >= 0 && sp <= 1 ? clamp01(1.5 * (1 - Math.sin(sp * Math.PI))) : 0;
-    const sunUp = sp >= 0 && sp <= 1 ? smooth(0, 0.04, sp) * smooth(1, 0.96, sp) : 0;
+    const sunUp = sp >= 0 && sp <= 1 ? smooth(0, 0.05, sp) * smooth(1, 0.95, sp) : 0;
     if (warmEast.current) warmEast.current.style.opacity = (lowSun * (1 - sp) * sunUp * 0.85).toFixed(3);
     if (warmWest.current) warmWest.current.style.opacity = (lowSun * sp * sunUp * 0.85).toFixed(3);
 
-    // ── moon, east to west across the night ──
+    // ── moon, east to west across the night sky band ──
     const mp = (frac - MOON_RISE) / (MOON_SET - MOON_RISE);
     if (moon.current) {
       if (mp >= 0 && mp <= 1) {
         const { x, y } = skyArc(mp);
-        const edge = smooth(0, 0.06, mp) * smooth(1, 0.94, mp);
+        const edge = skyEdgeFade(mp);
         moon.current.style.opacity = (0.92 * edge * Math.max(nightF, 0.25)).toFixed(3);
         moon.current.style.left = `${x.toFixed(2)}%`;
-        moon.current.style.top = `${(y - 4).toFixed(2)}%`;
+        moon.current.style.top = `${y.toFixed(2)}%`;
       } else {
         moon.current.style.opacity = '0';
       }
@@ -618,15 +635,16 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
     if (moonlight.current) {
       const side = mp < 0.5 ? 'to right' : 'to left';
       moonlight.current.style.background = `linear-gradient(${side}, rgba(150,180,230,0.5), rgba(150,180,230,0) 62%)`;
-      moonlight.current.style.opacity = (nightF * 0.42 * (mp >= 0 && mp <= 1 ? 1 : 0)).toFixed(3);
+      moonlight.current.style.opacity = (nightF * 0.36 * (mp >= 0 && mp <= 1 ? 1 : 0)).toFixed(3);
     }
   });
 
   const fullBleed: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none' };
+  const glowMask = 'radial-gradient(ellipse 66% 60% at 50% 60%, black 40%, transparent 80%)';
 
   return (
     <>
-      {/* facade + window-glow copy, sharing the intro zoom and parallax */}
+      {/* facade + window-glow copies, sharing the intro zoom and parallax */}
       <motion.div
         initial={reduced ? false : { scale: 1.1 }}
         animate={{ scale: 1 }}
@@ -640,9 +658,10 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
           alt="Annie May at dusk, a heritage home on Formby Road, Devonport"
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />
+        {/* soft ambient lift so the house never goes too dark at night */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          ref={glow}
+          ref={glowSoft}
           src={IMG.facade}
           alt=""
           aria-hidden
@@ -654,15 +673,46 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
             objectFit: 'cover',
             opacity: 0,
             mixBlendMode: 'screen',
-            filter: 'brightness(0.72) contrast(2.1) saturate(1.5)',
-            maskImage: 'radial-gradient(ellipse 62% 58% at 50% 60%, black 35%, transparent 78%)',
-            WebkitMaskImage: 'radial-gradient(ellipse 62% 58% at 50% 60%, black 35%, transparent 78%)',
+            filter: 'brightness(0.9) contrast(1.25) saturate(1.35)',
+            maskImage: glowMask,
+            WebkitMaskImage: glowMask,
+          }}
+        />
+        {/* sharp pass: the lit windows themselves, glowing */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          ref={glowSharp}
+          src={IMG.facade}
+          alt=""
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            opacity: 0,
+            mixBlendMode: 'screen',
+            filter: 'brightness(0.82) contrast(1.85) saturate(1.5)',
+            maskImage: glowMask,
+            WebkitMaskImage: glowMask,
           }}
         />
       </motion.div>
 
-      {/* night tint */}
-      <div ref={tint} aria-hidden style={{ ...fullBleed, background: 'rgb(11, 17, 40)', mixBlendMode: 'multiply', opacity: 0 }} />
+      {/* night tint — full strength on the sky, eased over the house */}
+      <div
+        ref={tint}
+        aria-hidden
+        style={{
+          ...fullBleed,
+          background: 'rgb(11, 17, 40)',
+          mixBlendMode: 'multiply',
+          opacity: 0,
+          maskImage: 'radial-gradient(ellipse 72% 62% at 50% 66%, rgba(0,0,0,0.5) 30%, black 80%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 72% 62% at 50% 66%, rgba(0,0,0,0.5) 30%, black 80%)',
+        }}
+      />
 
       {/* raking sunlight — east (left) and west (right) */}
       <div
@@ -679,15 +729,20 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
       {/* moonlight */}
       <div ref={moonlight} aria-hidden style={{ ...fullBleed, mixBlendMode: 'soft-light', opacity: 0 }} />
 
-      {/* starfield, masked to the sky */}
+      {/* starfield — the sky band only, fading before the rooflines */}
       <div
         ref={starsOuter}
         aria-hidden
         style={{
-          ...fullBleed,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '26%',
           opacity: 0,
-          maskImage: 'linear-gradient(180deg, black 38%, transparent 70%)',
-          WebkitMaskImage: 'linear-gradient(180deg, black 38%, transparent 70%)',
+          pointerEvents: 'none',
+          maskImage: 'linear-gradient(180deg, black 55%, transparent 92%)',
+          WebkitMaskImage: 'linear-gradient(180deg, black 55%, transparent 92%)',
         }}
       >
         <div ref={starsDrift} style={{ position: 'absolute', inset: '-14%' }}>
@@ -710,35 +765,71 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
         </div>
       </div>
 
-      {/* the moon — a pale disc with a soft crescent shadow and halo */}
+      {/* clouds — slow drifters through the sky band */}
+      <div
+        ref={clouds}
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '24%',
+          opacity: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+          maskImage: 'linear-gradient(180deg, black 60%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(180deg, black 60%, transparent 100%)',
+        }}
+      >
+        {CLOUDS.map((c, i) => (
+          <span
+            key={i}
+            style={{
+              position: 'absolute',
+              top: `${c.top}%`,
+              left: 0,
+              width: c.w,
+              height: c.h,
+              opacity: c.o,
+              background:
+                'radial-gradient(ellipse 45% 60% at 35% 55%, rgba(255,255,255,0.5), transparent 70%), radial-gradient(ellipse 55% 70% at 65% 45%, rgba(255,255,255,0.38), transparent 72%)',
+              filter: 'blur(10px)',
+              animation: `am-cloud-drift ${c.dur}s linear ${c.delay}s infinite`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* the moon — pale shaded disc with halo, sky band only */}
       <div
         ref={moon}
         aria-hidden
         style={{
           position: 'absolute',
           left: '-10%',
-          top: '20%',
-          width: 46,
-          height: 46,
+          top: '18%',
+          width: 44,
+          height: 44,
           borderRadius: '50%',
           opacity: 0,
           transform: 'translate(-50%, -50%)',
-          background: 'radial-gradient(circle at 38% 38%, #fdfbf2 0%, #e8e4d2 55%, #cfcaB8 100%)',
-          boxShadow: 'inset -9px -5px 12px rgba(120,120,140,0.55), 0 0 34px 10px rgba(235,240,255,0.28)',
+          background: 'radial-gradient(circle at 38% 38%, #fdfbf2 0%, #ece8d8 55%, #d4cfc0 100%)',
+          boxShadow: 'inset -9px -5px 12px rgba(120,120,140,0.5), 0 0 34px 10px rgba(235,240,255,0.26)',
           pointerEvents: 'none',
         }}
       />
 
-      {/* the sun — bright core, warm halo, screen-blended */}
+      {/* the sun — bright core, warm halo, screen-blended, sky band only */}
       <div
         ref={sun}
         aria-hidden
         style={{
           position: 'absolute',
           left: '-10%',
-          top: '20%',
-          width: 120,
-          height: 120,
+          top: '18%',
+          width: 110,
+          height: 110,
           borderRadius: '50%',
           opacity: 0,
           transform: 'translate(-50%, -50%)',

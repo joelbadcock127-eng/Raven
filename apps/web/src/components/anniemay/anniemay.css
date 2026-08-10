@@ -245,3 +245,8 @@ textarea.am-input { resize: vertical; min-height: 120px; line-height: 1.6; }
 @media (prefers-reduced-motion: reduce) {
   .am-starfield, .am-starfield span { animation: none; }
 }
+
+@keyframes am-cloud-drift {
+  from { transform: translateX(-40%); }
+  to { transform: translateX(calc(100vw + 40%)); }
+}
