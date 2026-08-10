@@ -6,6 +6,7 @@ import { SECTION_TYPES } from '@/lib/siteBuilder';
 import {
   createVersion,
   createDesignedVersion,
+  deleteVersion,
   publishVersion,
   unpublishSite,
   savePageSections,
@@ -214,6 +215,20 @@ export default function SiteBuilder({
               Publish this version
             </button>
           )}
+          {version && version.id !== liveVersionId && (
+            <button
+              type="button"
+              disabled={pending}
+              className="pill-primary"
+              style={{ fontSize: 12, padding: '6px 14px', background: 'var(--canvas)', color: 'var(--ruby)', border: '1px solid var(--hairline)' }}
+              onClick={() => {
+                if (window.confirm(`Delete "${version.label}" and all its pages? This cannot be undone.`))
+                  run(() => deleteVersion(propertyId, version.id));
+              }}
+            >
+              Delete this version
+            </button>
+          )}
           {liveVersionId && (
             <button
               type="button"
@@ -249,24 +264,13 @@ export default function SiteBuilder({
       {versions.length === 0 && (
         <section className="card" style={{ padding: 28, maxWidth: 620, marginBottom: 16 }}>
           <h2 className="heading-md" style={{ marginBottom: 8 }}>
-            {propertyId === 'annie-may' ? 'Annie May’s new website is ready to create' : `No versions yet for ${propertyName}`}
+            No versions yet for {propertyName}
           </h2>
           <p className="caption">
             {propertyId === 'annie-may'
-              ? 'The complete six-page starter includes the existing story and accommodation details, the original Annie May photography, a full gallery and the direct-booking path. Every section remains editable in place and through the AI editor.'
+              ? 'Annie May’s real website is the bespoke build served at /site/annie-may — it needs no draft here. Use the builder only for experiments.'
               : 'Create a draft to start the redesign. You’ll build pages from sections, edit any text by clicking it, and use the chat to direct the AI at whichever section you select.'}
           </p>
-          {propertyId === 'annie-may' && (
-            <button
-              type="button"
-              disabled={pending}
-              className="pill-primary"
-              style={{ marginTop: 18 }}
-              onClick={() => run(() => createVersion(propertyId, 'Annie May · New website'))}
-            >
-              {pending ? 'Creating…' : 'Create Annie May website'}
-            </button>
-          )}
         </section>
       )}
 
