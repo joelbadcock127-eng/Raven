@@ -407,6 +407,89 @@ function Hero() {
   );
 }
 
+/** Straight answers, right under the hero: the questions every onlooker
+ *  arrives with (where is she, who is she for, what's included), answered
+ *  before they have to go looking. Speaks to travellers who only know
+ *  they want the north west coast, not yet where on it. */
+function Essentials({ standalone }: { standalone: boolean }) {
+  const mapHref = standalone ? '/explore#map' : '/site/annie-may?page=explore#map';
+  const items: Array<[string, string]> = [
+    [
+      'Where is she?',
+      'In central Devonport on Tasmania’s north west coast, on the main road beside the Mersey and an easy walk to the city centre.',
+    ],
+    [
+      'Getting here',
+      'Two kilometres from the Spirit of Tasmania terminal and twenty minutes from Devonport Airport. Roll off the ferry and be at her door in minutes.',
+    ],
+    [
+      'Who is she for?',
+      'Adults only, guests 18 and over. Couples, business travellers and quiet weekenders who value privacy and calm.',
+    ],
+    [
+      'What is included?',
+      'Breakfast every morning, a private ensuite with every one of her seven king rooms, and lift access to every floor.',
+    ],
+  ];
+  return (
+    <section className="am-tint am-section-sm">
+      <div className="am-shell">
+        <div className="am-grid" style={{ rowGap: 36, alignItems: 'end', marginBottom: 'clamp(36px, 4vw, 60px)' }}>
+          <div style={{ gridColumn: 'span 6', gridRow: 1 }}>
+            <p className="am-kicker">New to the north west coast?</p>
+            <MaskLines as="h2" className="am-display am-d-md" lines={['Start where', 'the coast does.']} />
+          </div>
+          <div style={{ gridColumn: 'span 5 / -1', gridRow: 1 }}>
+            <Reveal delay={0.25}>
+              <p className="am-body-copy">
+                Planning a stay on Tasmania’s north west coast and not yet sure where to base
+                yourself? Devonport is where the Spirit of Tasmania lands and where the coast
+                begins, and Annie May is its most refined place to stay.
+              </p>
+            </Reveal>
+          </div>
+        </div>
+        <div className="am-grid" style={{ rowGap: 32 }}>
+          {items.map(([q, a], i) => (
+            <Reveal key={q} delay={i * 0.1} style={{ gridColumn: 'span 3', minWidth: 0 }}>
+              <div style={{ borderTop: '1px solid var(--am-hairline)', paddingTop: 18 }}>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: '0.74rem',
+                    fontWeight: 600,
+                    letterSpacing: '0.26em',
+                    textTransform: 'uppercase',
+                    color: 'var(--am-sage)',
+                  }}
+                >
+                  {q}
+                </h3>
+                <p className="am-body-copy" style={{ marginTop: 12, fontSize: '0.92rem' }}>
+                  {a}
+                </p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+        <Reveal delay={0.35}>
+          <div style={{ marginTop: 'clamp(36px, 4vw, 56px)', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+            <motion.a className="am-book" href={mapHref} whileTap={{ scale: 0.97 }} transition={spring}>
+              See her on the map
+              <span className="arrow" aria-hidden>
+                →
+              </span>
+            </motion.a>
+            <a href={standalone ? '/accommodation' : '/site/annie-may?page=accommodation'} className="am-link am-more">
+              Meet the rooms
+            </a>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 function Statement() {
   return (
     <section className="am-section">
@@ -807,7 +890,7 @@ function ExplorePage() {
         </div>
       </section>
 
-      <section className="am-section">
+      <section className="am-section" id="map" style={{ scrollMarginTop: 90 }}>
         <div className="am-shell">
           <div className="am-grid" style={{ rowGap: 40, alignItems: 'center' }}>
             <div style={{ gridColumn: 'span 4', gridRow: 1 }}>
@@ -964,6 +1047,7 @@ export default function AnnieMaySite({ page, standalone }: { page: string; stand
         {current === 'home' && (
           <>
             <Hero />
+            <Essentials standalone={standalone} />
             <Statement />
             <RoomsIndex standalone={standalone} />
             <StoryTeaser standalone={standalone} />
