@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { Cormorant_Garamond, Jost } from 'next/font/google';
 import { supabaseAdmin } from '@/lib/supabase';
+import { AnnieMayChrome } from '@/components/anniemay/AnnieMaySite';
+import AnnieMayEventArticle from '@/components/anniemay/AnnieMayEventArticle';
 
 export const revalidate = 300;
 
@@ -33,16 +36,32 @@ interface PageContent {
   promoCode?: string;
 }
 
-async function getPage(slug: string): Promise<{ content: PageContent; published: boolean } | null> {
+async function getPage(
+  slug: string,
+): Promise<{ content: PageContent; published: boolean; property_id: string | null } | null> {
   const supabase = supabaseAdmin();
   if (!supabase) return null;
   const { data } = await supabase
     .from('event_pages')
-    .select('content, published')
+    .select('content, published, property_id')
     .eq('slug', slug)
     .maybeSingle();
   if (!data) return null;
-  return data as { content: PageContent; published: boolean };
+  return data as { content: PageContent; published: boolean; property_id: string | null };
+}
+
+/** On a property's own domain the site nav uses clean URLs; on Raven's app
+ *  host it links back through /site/annie-may. Same test as middleware.ts. */
+async function isStandaloneHost(): Promise<boolean> {
+  const host = ((await headers()).get('host') ?? '').toLowerCase().split(':')[0];
+  const appHost = (() => {
+    try {
+      return new URL(process.env.NEXT_PUBLIC_APP_URL ?? '').hostname.toLowerCase();
+    } catch {
+      return '';
+    }
+  })();
+  return !(host === appHost || host.endsWith('.vercel.app') || host === 'localhost' || host === '127.0.0.1');
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -65,6 +84,16 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const page = await getPage(slug);
   if (!page) notFound();
   const c = page.content;
+
+  // Annie May pages render in her own design, wrapped in the site chrome —
+  // discreet CMS pages: nothing navigates TO them, everything FROM them.
+  if (page.property_id === 'annie-may') {
+    return (
+      <AnnieMayChrome standalone={await isStandaloneHost()}>
+        <AnnieMayEventArticle content={c} published={page.published} />
+      </AnnieMayChrome>
+    );
+  }
 
   const kicker = [c.eventDates, c.venue, c.locality].filter(Boolean).join(' · ');
 

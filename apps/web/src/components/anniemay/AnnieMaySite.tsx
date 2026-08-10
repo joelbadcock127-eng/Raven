@@ -1334,6 +1334,22 @@ function ContactPage() {
   );
 }
 
+/* ────────────────────────── chrome for CMS pages ──────────────────────────
+ * Wraps AI-generated event/occasion pages (see /events/[slug]) in the site's
+ * nav and footer so they read as part of Annie May, not a campaign template.
+ * Deliberately discreet: nothing in the nav links TO these pages, but from
+ * them a guest can reach the whole site. */
+
+export function AnnieMayChrome({ standalone, children }: { standalone: boolean; children: React.ReactNode }) {
+  return (
+    <div className="am-root">
+      <Nav current="" standalone={standalone} overHero={false} />
+      <main>{children}</main>
+      <Footer standalone={standalone} />
+    </div>
+  );
+}
+
 /* ────────────────────────── root ────────────────────────── */
 
 export default function AnnieMaySite({ page, standalone }: { page: string; standalone: boolean }) {
