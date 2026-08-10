@@ -418,14 +418,14 @@ const ESSENTIALS = [
   {
     q: 'Where is she?',
     a: 'In central Devonport on Tasmania’s north west coast, on the main road beside the Mersey and an easy walk to the city centre. If you only know you want the north west coast, start here: Devonport is where the coast begins.',
-    image: IMG.facade,
-    caption: 'Formby Road, Devonport',
+    image: IMG.windowSeat,
+    caption: 'By the window, above Formby Road',
   },
   {
     q: 'Getting here',
     a: 'Two kilometres from the Spirit of Tasmania terminal and twenty minutes from Devonport Airport. Roll off the ferry and be at her door in minutes.',
-    image: IMG.doorSign,
-    caption: 'Her front door, waiting',
+    image: IMG.chandelier,
+    caption: 'The entrance hall, first impressions',
   },
   {
     q: 'Who is she for?',
