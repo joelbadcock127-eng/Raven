@@ -518,13 +518,14 @@ const SUN_SET = 0.99;
 const MOON_RISE = 0.03;
 const MOON_SET = 0.345;
 
-/** Shallow arc across the sky band only: ~23% down at the edges, 6% at apex. */
+/** The arc: rises at ~30% height on the east edge, apex ~6%, sets west.
+ *  The masked foreground house genuinely occludes whatever it crosses. */
 function skyArc(p: number): { x: number; y: number } {
-  return { x: lerp(4, 96, p), y: 23 - Math.sin(p * Math.PI) * 17 };
+  return { x: lerp(3, 97, p), y: 30 - Math.sin(p * Math.PI) * 24 };
 }
-/** Visible only mid-arc — rises/sets "behind the rooftops". */
+/** Soft rise/set fade at the very edges of the frame. */
 function skyEdgeFade(p: number): number {
-  return smooth(0.07, 0.17, p) * smooth(0.93, 0.83, p);
+  return smooth(0.03, 0.1, p) * smooth(0.97, 0.9, p);
 }
 
 /** Stars: sky band only (container is the top 26% of the frame), skipping
@@ -535,7 +536,7 @@ const STARS = Array.from({ length: 150 }, (_, i) => ({
   size: 0.9 + ((i * 7) % 10) / 7,
   delay: (i % 9) * 0.45,
   dur: 2.8 + (i % 5) * 0.7,
-})).filter((st) => !(st.x > 42 && st.x < 58 && st.y > 30));
+}));
 
 /** Slow clouds for the sky band: soft blurred blobs on two drift speeds. */
 const CLOUDS = [
@@ -546,6 +547,7 @@ const CLOUDS = [
 
 function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; parallaxY: number }) {
   const img = useRef<HTMLImageElement>(null);
+  const fg = useRef<HTMLImageElement>(null);
   const glowSharp = useRef<HTMLImageElement>(null);
   const glowSoft = useRef<HTMLImageElement>(null);
   const tint = useRef<HTMLDivElement>(null);
@@ -570,6 +572,7 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
     if (tTotal >= DAY_CYCLES) {
       // Rest exactly on the untouched photo, windows lit as shot.
       if (img.current) img.current.style.filter = 'none';
+      if (fg.current) fg.current.style.filter = 'none';
       for (const r of [tint, warmEast, warmWest, moonlight, starsOuter, sun, moon, clouds])
         if (r.current) r.current.style.opacity = '0';
       if (glowSharp.current) glowSharp.current.style.opacity = '0';
@@ -581,7 +584,9 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
 
     // ── grade ──
     const [, b, s, tintA] = readStops(GRADE_STOPS, frac);
-    if (img.current) img.current.style.filter = `brightness(${b.toFixed(3)}) saturate(${s.toFixed(3)})`;
+    const grade = `brightness(${b.toFixed(3)}) saturate(${s.toFixed(3)})`;
+    if (img.current) img.current.style.filter = grade;
+    if (fg.current) fg.current.style.filter = grade;
     if (tint.current) tint.current.style.opacity = tintA.toFixed(3);
 
     // ── night ──
@@ -640,96 +645,35 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
   });
 
   const fullBleed: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none' };
+  const coverImg: React.CSSProperties = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' };
   const glowMask = 'radial-gradient(ellipse 66% 60% at 50% 60%, black 40%, transparent 80%)';
+  // The building silhouette, cut from the photo by scripts (same 4:3 frame,
+  // so mask-size cover aligns pixel-perfect with the object-fit cover image).
+  const matteMask: React.CSSProperties = {
+    maskImage: "url('/mirror-assets/am-facade-matte.png')",
+    WebkitMaskImage: "url('/mirror-assets/am-facade-matte.png')",
+    maskSize: 'cover',
+    WebkitMaskSize: 'cover',
+    maskPosition: 'center',
+    WebkitMaskPosition: 'center',
+  };
+  const parallax = {
+    initial: reduced ? false : ({ scale: 1.1 } as const),
+    animate: { scale: 1 } as const,
+    transition: { duration: 2.6, ease: ease.outExpo } as const,
+    style: { ...fullBleed, transform: reduced ? undefined : `translateY(${parallaxY}px)`, willChange: 'transform' as const },
+  };
 
   return (
     <>
-      {/* facade + window-glow copies, sharing the intro zoom and parallax */}
-      <motion.div
-        initial={reduced ? false : { scale: 1.1 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 2.6, ease: ease.outExpo }}
-        style={{ ...fullBleed, transform: reduced ? undefined : `translateY(${parallaxY}px)`, willChange: 'transform' }}
-      >
+      {/* 1 · the full photo — its sky becomes the canvas */}
+      <motion.div {...parallax}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          ref={img}
-          src={IMG.facade}
-          alt="Annie May at dusk, a heritage home on Formby Road, Devonport"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-        {/* soft ambient lift so the house never goes too dark at night */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          ref={glowSoft}
-          src={IMG.facade}
-          alt=""
-          aria-hidden
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: 0,
-            mixBlendMode: 'screen',
-            filter: 'brightness(0.9) contrast(1.25) saturate(1.35)',
-            maskImage: glowMask,
-            WebkitMaskImage: glowMask,
-          }}
-        />
-        {/* sharp pass: the lit windows themselves, glowing */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          ref={glowSharp}
-          src={IMG.facade}
-          alt=""
-          aria-hidden
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: 0,
-            mixBlendMode: 'screen',
-            filter: 'brightness(0.82) contrast(1.85) saturate(1.5)',
-            maskImage: glowMask,
-            WebkitMaskImage: glowMask,
-          }}
-        />
+        <img ref={img} src={IMG.facade} alt="Annie May at dusk, a heritage home on Formby Road, Devonport" style={coverImg} />
       </motion.div>
 
-      {/* night tint — full strength on the sky, eased over the house */}
-      <div
-        ref={tint}
-        aria-hidden
-        style={{
-          ...fullBleed,
-          background: 'rgb(11, 17, 40)',
-          mixBlendMode: 'multiply',
-          opacity: 0,
-          maskImage: 'radial-gradient(ellipse 72% 62% at 50% 66%, rgba(0,0,0,0.5) 30%, black 80%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 72% 62% at 50% 66%, rgba(0,0,0,0.5) 30%, black 80%)',
-        }}
-      />
-
-      {/* raking sunlight — east (left) and west (right) */}
-      <div
-        ref={warmEast}
-        aria-hidden
-        style={{ ...fullBleed, background: 'linear-gradient(to right, rgba(255,168,100,0.5), rgba(255,168,100,0) 58%)', mixBlendMode: 'soft-light', opacity: 0 }}
-      />
-      <div
-        ref={warmWest}
-        aria-hidden
-        style={{ ...fullBleed, background: 'linear-gradient(to left, rgba(255,150,86,0.5), rgba(255,150,86,0) 58%)', mixBlendMode: 'soft-light', opacity: 0 }}
-      />
-
-      {/* moonlight */}
-      <div ref={moonlight} aria-hidden style={{ ...fullBleed, mixBlendMode: 'soft-light', opacity: 0 }} />
-
-      {/* starfield — the sky band only, fading before the rooflines */}
+      {/* 2 · everything celestial lives BEHIND the house from here on */}
+      {/* starfield — upper sky, fading down; the house occludes the rest */}
       <div
         ref={starsOuter}
         aria-hidden
@@ -738,11 +682,11 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
           top: 0,
           left: 0,
           right: 0,
-          height: '26%',
+          height: '40%',
           opacity: 0,
           pointerEvents: 'none',
-          maskImage: 'linear-gradient(180deg, black 55%, transparent 92%)',
-          WebkitMaskImage: 'linear-gradient(180deg, black 55%, transparent 92%)',
+          maskImage: 'linear-gradient(180deg, black 55%, transparent 96%)',
+          WebkitMaskImage: 'linear-gradient(180deg, black 55%, transparent 96%)',
         }}
       >
         <div ref={starsDrift} style={{ position: 'absolute', inset: '-14%' }}>
@@ -765,7 +709,7 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
         </div>
       </div>
 
-      {/* clouds — slow drifters through the sky band */}
+      {/* clouds — slow drifters, also behind the house */}
       <div
         ref={clouds}
         aria-hidden
@@ -774,7 +718,7 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
           top: 0,
           left: 0,
           right: 0,
-          height: '24%',
+          height: '30%',
           opacity: 0,
           pointerEvents: 'none',
           overflow: 'hidden',
@@ -801,7 +745,7 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
         ))}
       </div>
 
-      {/* the moon — pale shaded disc with halo, sky band only */}
+      {/* the moon — pale shaded disc with halo */}
       <div
         ref={moon}
         aria-hidden
@@ -820,7 +764,7 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
         }}
       />
 
-      {/* the sun — bright core, warm halo, screen-blended, sky band only */}
+      {/* the sun — bright core, warm halo */}
       <div
         ref={sun}
         aria-hidden
@@ -828,17 +772,80 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
           position: 'absolute',
           left: '-10%',
           top: '18%',
-          width: 110,
-          height: 110,
+          width: 96,
+          height: 96,
           borderRadius: '50%',
           opacity: 0,
           transform: 'translate(-50%, -50%)',
           background:
-            'radial-gradient(circle, rgba(255,252,240,0.98) 0%, rgba(255,232,180,0.85) 18%, rgba(255,205,130,0.35) 42%, rgba(255,190,120,0) 68%)',
-          mixBlendMode: 'screen',
+            'radial-gradient(circle, #fffdf4 0%, #ffedbe 20%, rgba(255,214,150,0.6) 40%, rgba(255,200,130,0) 66%)',
+          boxShadow: '0 0 60px 24px rgba(255,214,150,0.35)',
           pointerEvents: 'none',
         }}
       />
+
+      {/* 3 · the house itself, matted out of the photo, in FRONT of the sky */}
+      <motion.div {...parallax}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img ref={fg} src={IMG.facade} alt="" aria-hidden style={{ ...coverImg, ...matteMask }} />
+        {/* soft ambient lift so the house never goes too dark at night */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          ref={glowSoft}
+          src={IMG.facade}
+          alt=""
+          aria-hidden
+          style={{
+            ...coverImg,
+            opacity: 0,
+            mixBlendMode: 'screen',
+            filter: 'brightness(0.9) contrast(1.25) saturate(1.35)',
+            maskImage: glowMask,
+            WebkitMaskImage: glowMask,
+          }}
+        />
+        {/* sharp pass: the lit windows themselves, glowing */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          ref={glowSharp}
+          src={IMG.facade}
+          alt=""
+          aria-hidden
+          style={{
+            ...coverImg,
+            opacity: 0,
+            mixBlendMode: 'screen',
+            filter: 'brightness(0.82) contrast(1.85) saturate(1.5)',
+            maskImage: glowMask,
+            WebkitMaskImage: glowMask,
+          }}
+        />
+      </motion.div>
+
+      {/* 4 · atmosphere over the whole scene */}
+      <div
+        ref={tint}
+        aria-hidden
+        style={{
+          ...fullBleed,
+          background: 'rgb(11, 17, 40)',
+          mixBlendMode: 'multiply',
+          opacity: 0,
+          maskImage: 'radial-gradient(ellipse 72% 62% at 50% 66%, rgba(0,0,0,0.5) 30%, black 80%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 72% 62% at 50% 66%, rgba(0,0,0,0.5) 30%, black 80%)',
+        }}
+      />
+      <div
+        ref={warmEast}
+        aria-hidden
+        style={{ ...fullBleed, background: 'linear-gradient(to right, rgba(255,168,100,0.5), rgba(255,168,100,0) 58%)', mixBlendMode: 'soft-light', opacity: 0 }}
+      />
+      <div
+        ref={warmWest}
+        aria-hidden
+        style={{ ...fullBleed, background: 'linear-gradient(to left, rgba(255,150,86,0.5), rgba(255,150,86,0) 58%)', mixBlendMode: 'soft-light', opacity: 0 }}
+      />
+      <div ref={moonlight} aria-hidden style={{ ...fullBleed, mixBlendMode: 'soft-light', opacity: 0 }} />
     </>
   );
 }
