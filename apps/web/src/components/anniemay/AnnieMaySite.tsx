@@ -11,8 +11,8 @@
  * home · accommodation · story · explore · contact.
  */
 
-import { useEffect, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion, useScroll } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion, useInView, useReducedMotion, useScroll } from 'framer-motion';
 import Monogram from './Monogram';
 import { CurtainImage, MaskLines, ParallaxImage, Reveal, ease, spring } from './motion';
 import {
@@ -903,7 +903,63 @@ const GALLERY_ROWS: Array<Array<{ idx: number; span: number; lead?: boolean }>> 
   [{ idx: 6, span: 6, lead: true }, { idx: 7, span: 6, lead: true }],
 ];
 
+const TILE_COUNT = 8;
+const CYCLE_MS = 3400; // one tile crossfades roughly every 3.4s
+
+/**
+ * One mosaic cell cycling through its share of the gallery. Every image in
+ * the pool stays mounted (lazy-loaded, async-decoded) and stacked, so a
+ * crossfade never waits on the network — the incoming image has been on the
+ * page since the section scrolled into view.
+ */
+function GalleryTile({ pool, active, lead }: { pool: Array<{ src: string; alt: string }>; active: number; lead?: boolean }) {
+  const cur = pool.length ? active % pool.length : 0;
+  const fade = 'opacity 1.6s ease, transform 1.4s cubic-bezier(0.22, 1, 0.36, 1)';
+  return (
+    <figure className="am-tile" style={{ margin: 0, height: '100%', ...(lead ? { aspectRatio: '3 / 2' } : {}) }}>
+      {pool.map((g, i) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={g.src}
+          src={g.src}
+          alt={i === cur ? g.alt : ''}
+          loading="lazy"
+          decoding="async"
+          style={{
+            ...(i === 0 ? {} : { position: 'absolute', inset: 0 }),
+            opacity: i === cur ? 1 : 0,
+            transition: fade,
+          }}
+        />
+      ))}
+      <figcaption>{pool[cur].alt}</figcaption>
+    </figure>
+  );
+}
+
 function GalleryStrip() {
+  const reduced = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { amount: 0.2 });
+  const [tick, setTick] = useState(0);
+
+  // The clock only runs while the mosaic is on screen; each tick advances
+  // exactly one tile, walking the grid so swaps never happen in unison.
+  useEffect(() => {
+    if (!inView || reduced) return;
+    const id = setInterval(() => setTick((t) => t + 1), CYCLE_MS);
+    return () => clearInterval(id);
+  }, [inView, reduced]);
+
+  // Tile i draws from GALLERY[i], GALLERY[i + 8], …
+  const pools = useMemo(
+    () =>
+      Array.from({ length: TILE_COUNT }, (_, i) =>
+        GALLERY.filter((_, j) => j % TILE_COUNT === i),
+      ),
+    [],
+  );
+
   return (
     <section className="am-tint am-section-sm" style={{ overflow: 'clip' }}>
       <div className="am-shell am-centered" style={{ marginBottom: 40 }}>
@@ -911,24 +967,22 @@ function GalleryStrip() {
           The house, in light
         </p>
       </div>
-      <div className="am-shell" style={{ display: 'grid', gap: 'clamp(12px, 1.6vw, 24px)' }}>
+      <div ref={ref} className="am-shell" style={{ display: 'grid', gap: 'clamp(12px, 1.6vw, 24px)' }}>
         {GALLERY_ROWS.map((row, r) => (
           <div key={r} className="am-grid am-mosaic-row" style={{ columnGap: 'clamp(12px, 1.6vw, 24px)' }}>
             {row.map((cell, c) => {
-              const g = GALLERY[cell.idx];
-              if (!g) return null;
+              const pool = pools[cell.idx];
+              if (!pool?.length) return null;
+              // Tick t swaps tile t % 8; this tile's swap count so far:
+              const active = Math.floor((tick + (TILE_COUNT - 1 - cell.idx)) / TILE_COUNT);
               return (
                 <Reveal
-                  key={g.src}
+                  key={cell.idx}
                   delay={c * 0.12}
                   x={-30}
                   style={{ gridColumn: `span ${cell.span}`, minWidth: 0, minHeight: 0 }}
                 >
-                  <figure className="am-tile" style={{ margin: 0, height: '100%', ...(cell.lead ? { aspectRatio: '3 / 2' } : {}) }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={g.src} alt={g.alt} loading="lazy" />
-                    <figcaption>{g.alt}</figcaption>
-                  </figure>
+                  <GalleryTile pool={pool} active={active} lead={cell.lead} />
                 </Reveal>
               );
             })}

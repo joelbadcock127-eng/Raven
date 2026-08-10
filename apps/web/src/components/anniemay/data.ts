@@ -143,6 +143,11 @@ export const HIGHLIGHTS: Highlight[] = [
   },
 ];
 
+/**
+ * The living mosaic: 16 images across 8 tiles. Tile i cycles between
+ * GALLERY[i] and GALLERY[i + 8], so pair positions deliberately
+ * (0↔8, 1↔9, …) to keep each crossfade varied but tonally matched.
+ */
 export const GALLERY: Array<{ src: string; alt: string }> = [
   { src: IMG.facade, alt: 'Annie May at dusk, Formby Road' },
   { src: IMG.tealBed, alt: 'King Superior under the chandelier' },
@@ -152,6 +157,14 @@ export const GALLERY: Array<{ src: string; alt: string }> = [
   { src: IMG.chandelier, alt: 'Chandelier detail' },
   { src: IMG.kingCaramel, alt: 'King Superior' },
   { src: IMG.curtains, alt: 'Morning light through sheers' },
+  { src: IMG.windowSeat, alt: 'The window seat' },
+  { src: IMG.greenRoom, alt: 'The green room' },
+  { src: IMG.basin, alt: 'Ensuite detail' },
+  { src: IMG.doorSign, alt: 'Room 1, at her door' },
+  { src: IMG.breakfast, alt: 'Breakfast, served' },
+  { src: IMG.loungeDetail, alt: 'A quiet corner of the lounge' },
+  { src: IMG.kingDesk, alt: 'A proper desk when work calls' },
+  { src: IMG.loftBath, alt: 'The Loft ensuite' },
 ];
 
 /**
