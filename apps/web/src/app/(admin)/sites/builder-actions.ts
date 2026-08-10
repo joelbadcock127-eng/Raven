@@ -98,6 +98,28 @@ export async function createDesignedVersion(propertyId: string): Promise<Builder
   return { ok: true, message: 'Designed draft created — preview it, tweak anything, then publish when happy.', id: version.id };
 }
 
+/** Delete a version and its pages. The live version must be unpublished first. */
+export async function deleteVersion(propertyId: string, versionId: string): Promise<BuilderResult> {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
+
+  const { data: settings } = await supabase
+    .from('site_settings')
+    .select('live_version_id')
+    .eq('property_id', propertyId)
+    .maybeSingle();
+  if (settings?.live_version_id === versionId)
+    return { ok: false, message: 'This version is live — revert domains to the mirror first.' };
+
+  const { error: pageErr } = await supabase.from('site_v2_pages').delete().eq('version_id', versionId);
+  if (pageErr) return { ok: false, message: pageErr.message };
+  const { error } = await supabase.from('site_versions').delete().eq('id', versionId);
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath('/sites');
+  return { ok: true, message: 'Version deleted' };
+}
+
 /** Publish a version: it becomes the live site on the property's domains. */
 export async function publishVersion(propertyId: string, versionId: string): Promise<BuilderResult> {
   const supabase = supabaseAdmin();
