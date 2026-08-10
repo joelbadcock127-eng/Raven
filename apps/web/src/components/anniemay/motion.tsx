@@ -50,30 +50,34 @@ export function useInViewOnce<T extends Element>(margin = '-10% 0px') {
   return { ref, seen };
 }
 
-/** Slow editorial fade-and-rise, tied to entering the viewport. */
+/** Slow editorial fade-and-drift, tied to entering the viewport.
+ *  Rises by default; pass `x` instead for a left to right slide (images). */
 export function Reveal({
   children,
   delay = 0,
   y = 36,
+  x,
   style,
   className,
 }: {
   children: React.ReactNode;
   delay?: number;
   y?: number;
+  x?: number;
   style?: React.CSSProperties;
   className?: string;
 }) {
   const reduced = useReducedMotion();
   const { ref, seen } = useInViewOnce<HTMLDivElement>();
   const shown = seen || Boolean(reduced);
+  const hidden = x !== undefined ? { opacity: 0, x, y: 0 } : { opacity: 0, x: 0, y };
   return (
     <motion.div
       ref={ref}
       className={className}
       style={style}
       initial={false}
-      animate={shown ? { opacity: 1, y: 0 } : { opacity: 0, y }}
+      animate={shown ? { opacity: 1, x: 0, y: 0 } : hidden}
       transition={{ duration: reduced ? 0 : 1.1, delay, ease: ease.outExpo }}
     >
       {children}
@@ -162,7 +166,7 @@ export function ParallaxImage({
   );
 }
 
-/** Image revealed by a curtain wipe as it enters the viewport. */
+/** Image revealed by a curtain wipe, sweeping left to right. */
 export function CurtainImage({
   src,
   alt,
@@ -192,9 +196,9 @@ export function CurtainImage({
       <motion.div
         aria-hidden
         initial={false}
-        animate={{ scaleY: shown ? 0 : 1 }}
+        animate={{ scaleX: shown ? 0 : 1 }}
         transition={{ duration: reduced ? 0 : 1.1, delay, ease: ease.inOutExpo }}
-        style={{ position: 'absolute', inset: 0, background: 'var(--am-paper)', transformOrigin: 'top', willChange: 'transform' }}
+        style={{ position: 'absolute', inset: 0, background: 'var(--am-paper)', transformOrigin: 'right', willChange: 'transform' }}
       />
     </div>
   );
