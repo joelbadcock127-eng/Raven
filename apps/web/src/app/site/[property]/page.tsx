@@ -118,7 +118,7 @@ export async function generateMetadata({
   const q = await searchParams;
 
   // Annie May serves the bespoke site (legacy builder versions via ?version=)
-  if (property === 'annie-may' && !q.version && !q.edit) {
+  if (property === 'annie-may' && (!q.version || q.version === 'seed') && !q.edit) {
     const titles: Record<string, string> = {
       home: 'Annie May · Refined Devonport heritage guesthouse',
       accommodation: 'Accommodation in Devonport · Rooms & amenities · Annie May',
@@ -152,9 +152,10 @@ export default async function SiteV2Page({
   const { property } = await params;
   const q = await searchParams;
 
-  // Annie May: the bespoke redesign is the site. The old builder flow stays
-  // reachable only when a version is explicitly requested (?version=…).
-  if (property === 'annie-may' && !q.version && !q.edit) {
+  // Annie May: the bespoke redesign is the site — it also answers
+  // ?version=seed since no builder seed exists for her. The old builder
+  // flow stays reachable only for a real stored version (?version=<id>).
+  if (property === 'annie-may' && (!q.version || q.version === 'seed') && !q.edit) {
     return (
       <div className={`${amDisplay.variable} ${amBody.variable}`}>
         <AnnieMaySite page={q.page ?? 'home'} standalone={q.standalone === '1'} />

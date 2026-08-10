@@ -189,26 +189,41 @@ export default function SiteBuilder({
           >
             + new draft
           </button>
-          <button
-            type="button"
-            disabled={pending}
-            className="caption"
-            title="A full art-directed site built from this property's photo library. Lands as a draft you can edit and preview before publishing."
-            style={{ background: 'var(--primary)', border: '1px solid var(--primary)', borderRadius: 'var(--r-pill)', padding: '5px 12px', cursor: 'pointer', color: '#fff' }}
-            onClick={() => run(() => createDesignedVersion(propertyId))}
-          >
-            ✦ build designed site
-          </button>
-          <a
-            href={`/site/${propertyId}?version=seed`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="caption"
-            title="See the designed blueprint rendered live, straight from the code — no draft needed"
-            style={{ border: '1px solid var(--primary-subdued)', borderRadius: 'var(--r-pill)', padding: '5px 12px', color: 'var(--primary)' }}
-          >
-            preview blueprint ↗
-          </a>
+          {propertyId === 'annie-may' ? (
+            <a
+              href="/site/annie-may"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="caption"
+              title="Annie May's real website is the bespoke build — it needs no draft or blueprint"
+              style={{ border: '1px solid var(--primary-subdued)', borderRadius: 'var(--r-pill)', padding: '5px 12px', color: 'var(--primary)' }}
+            >
+              open her website ↗
+            </a>
+          ) : (
+            <>
+              <button
+                type="button"
+                disabled={pending}
+                className="caption"
+                title="A full art-directed site built from this property's photo library. Lands as a draft you can edit and preview before publishing."
+                style={{ background: 'var(--primary)', border: '1px solid var(--primary)', borderRadius: 'var(--r-pill)', padding: '5px 12px', cursor: 'pointer', color: '#fff' }}
+                onClick={() => run(() => createDesignedVersion(propertyId))}
+              >
+                ✦ build designed site
+              </button>
+              <a
+                href={`/site/${propertyId}?version=seed`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="caption"
+                title="See the designed blueprint rendered live, straight from the code — no draft needed"
+                style={{ border: '1px solid var(--primary-subdued)', borderRadius: 'var(--r-pill)', padding: '5px 12px', color: 'var(--primary)' }}
+              >
+                preview blueprint ↗
+              </a>
+            </>
+          )}
           <span style={{ flex: 1 }} />
           {version && isDraft && (
             <button type="button" disabled={pending} className="pill-primary" style={{ fontSize: 12, padding: '6px 14px' }} onClick={() => run(() => publishVersion(propertyId, version.id))}>
