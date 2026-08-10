@@ -375,66 +375,155 @@ function wxEmoji(code: number, isDay: boolean): string {
 }
 
 /**
- * The simulated day over the facade. The photo itself is a dusk shot with
- * the windows lit, so each phase is only a grade: a brightness/saturation
- * filter on the image plus two flat colour washes (multiply + soft-light),
- * all smoothly CSS-transitionable. At night the grade darkens the sky and
- * the already-lit windows keep glowing.
+ * The sped-up night-and-day over the facade. The photo itself is a dusk
+ * shot with the windows lit, so every phase is a grade: a filter on the
+ * image plus directional light washes that crossfade per phase — the
+ * lighting direction genuinely swings east to overhead to west across the
+ * day. Deep night clears the sky for a drifting, twinkling starfield.
+ * The sweep always ends back on the untouched photo.
  */
-const SKY_PHASES = [
-  { filter: 'brightness(1.12) saturate(1.06)', tint: 'rgba(255,255,255,0)', glow: 'rgba(150,190,255,0.10)' }, // midday
-  { filter: 'brightness(1.06) saturate(1.03)', tint: 'rgba(255,244,214,0.05)', glow: 'rgba(255,214,150,0.10)' }, // afternoon
-  { filter: 'brightness(0.99)', tint: 'rgba(255,180,110,0.13)', glow: 'rgba(255,150,80,0.20)' }, // golden hour
-  { filter: 'none', tint: 'rgba(70,80,140,0.08)', glow: 'rgba(255,140,90,0.10)' }, // dusk — the photo itself
-  { filter: 'brightness(0.80) saturate(0.92)', tint: 'rgba(24,34,66,0.36)', glow: 'rgba(255,190,120,0.05)' }, // night
-  { filter: 'brightness(0.70) saturate(0.86)', tint: 'rgba(16,24,52,0.48)', glow: 'rgba(255,190,120,0.04)' }, // deep night
-  { filter: 'brightness(0.93)', tint: 'rgba(150,120,160,0.14)', glow: 'rgba(255,170,150,0.16)' }, // dawn
-  { filter: 'brightness(1.06)', tint: 'rgba(220,235,255,0.07)', glow: 'rgba(255,235,190,0.08)' }, // morning
-] as const;
-
-/** Which phase Devonport is actually in, from the real sun times. */
-function phaseForNow(h: number, sunrise: number, sunset: number): number {
-  if (h < sunrise - 1 || h >= sunset + 2.5) return 5; // deep night
-  if (h < sunrise + 0.5) return 6; // dawn
-  if (h < 11) return 7; // morning
-  if (h < 14) return 0; // midday
-  if (h < sunset - 1.5) return 1; // afternoon
-  if (h < sunset - 0.3) return 2; // golden hour
-  if (h < sunset + 0.8) return 3; // dusk
-  return 4; // night
+interface SkyPhase {
+  filter: string;
+  layers: Array<{ background: string; blend: React.CSSProperties['mixBlendMode'] }>;
+  stars: number; // starfield opacity, 0–1
 }
 
-const SWEEP_STEP_MS = 480;
+const SKY_PHASES: SkyPhase[] = [
+  // 0 · the photo itself — dusk, windows lit. Where the sweep ends.
+  { filter: 'none', layers: [], stars: 0 },
+  // 1 · nightfall — the blue hour deepens
+  {
+    filter: 'brightness(0.82) saturate(0.9)',
+    layers: [{ background: 'linear-gradient(180deg, rgba(18,26,52,0.5), rgba(18,26,52,0.16) 70%)', blend: 'multiply' }],
+    stars: 0.45,
+  },
+  // 2 · deep night — sky clears for the stars
+  {
+    filter: 'brightness(0.66) saturate(0.8)',
+    layers: [{ background: 'linear-gradient(180deg, rgba(10,16,38,0.64), rgba(10,16,38,0.28) 75%)', blend: 'multiply' }],
+    stars: 1,
+  },
+  // 3 · first light — a low glow on one horizon, stars thinning
+  {
+    filter: 'brightness(0.74) saturate(0.86)',
+    layers: [
+      { background: 'linear-gradient(180deg, rgba(12,18,42,0.52), rgba(12,18,42,0.22) 70%)', blend: 'multiply' },
+      { background: 'linear-gradient(255deg, rgba(255,150,90,0.26), transparent 45%)', blend: 'screen' },
+    ],
+    stars: 0.3,
+  },
+  // 4 · sunrise — warm light raking in from the east
+  {
+    filter: 'brightness(0.93)',
+    layers: [
+      { background: 'linear-gradient(250deg, rgba(255,170,120,0.32), transparent 55%)', blend: 'soft-light' },
+      { background: 'linear-gradient(250deg, rgba(255,190,140,0.2), transparent 40%)', blend: 'screen' },
+    ],
+    stars: 0,
+  },
+  // 5 · morning — the light climbs
+  {
+    filter: 'brightness(1.05)',
+    layers: [{ background: 'linear-gradient(235deg, rgba(255,235,200,0.2), transparent 60%)', blend: 'soft-light' }],
+    stars: 0,
+  },
+  // 6 · midday — brightest, overhead, near-neutral
+  {
+    filter: 'brightness(1.12) saturate(1.05)',
+    layers: [{ background: 'linear-gradient(180deg, rgba(200,225,255,0.15), transparent 55%)', blend: 'soft-light' }],
+    stars: 0,
+  },
+  // 7 · afternoon — the light has swung west
+  {
+    filter: 'brightness(1.04)',
+    layers: [{ background: 'linear-gradient(125deg, rgba(255,225,170,0.22), transparent 60%)', blend: 'soft-light' }],
+    stars: 0,
+  },
+  // 8 · golden hour — low and warm from the west
+  {
+    filter: 'brightness(0.97)',
+    layers: [
+      { background: 'linear-gradient(110deg, rgba(255,160,90,0.28), transparent 50%)', blend: 'soft-light' },
+      { background: 'linear-gradient(110deg, rgba(255,140,80,0.15), transparent 40%)', blend: 'screen' },
+    ],
+    stars: 0,
+  },
+];
 
-/**
- * Runs the intro: a sped-up day, midday to midday, then keeps stepping to
- * wherever Devonport's clock actually is and stops there.
- */
-function useDayCycle(wx: LiveWx | null, reduced: boolean | null): number {
-  const [step, setStep] = useState(0); // raw step counter along the phase ring
-  const target = wx ? phaseForNow(wx.hourNow, wx.sunriseH, wx.sunsetH) : null;
-  const total = target === null ? null : SKY_PHASES.length + target; // full lap + landing
+/** Phase order for the intro, ending back on the untouched photo. */
+const DAY_SWEEP = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+const SWEEP_STEP_MS = 900;
 
+function useDaySweep(reduced: boolean | null): number {
+  const [phase, setPhase] = useState(0);
   useEffect(() => {
-    if (target === null || total === null) return;
-    if (reduced) {
-      setStep(total);
-      return;
-    }
-    const id = setInterval(() => {
-      setStep((s) => {
-        if (s >= total) {
-          clearInterval(id);
-          return s;
+    if (reduced) return;
+    let step = 0;
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const start = setTimeout(() => {
+      setPhase(DAY_SWEEP[0]);
+      interval = setInterval(() => {
+        step += 1;
+        if (step >= DAY_SWEEP.length) {
+          if (interval) clearInterval(interval);
+          return;
         }
-        return s + 1;
-      });
-    }, SWEEP_STEP_MS);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target, reduced]);
+        setPhase(DAY_SWEEP[step]);
+      }, SWEEP_STEP_MS);
+    }, 1600);
+    return () => {
+      clearTimeout(start);
+      if (interval) clearInterval(interval);
+    };
+  }, [reduced]);
+  return phase;
+}
 
-  return step % SKY_PHASES.length;
+/** Deterministic starfield (no randomness — SSR-safe), drifting slowly. */
+function Stars({ opacity }: { opacity: number }) {
+  const stars = useMemo(
+    () =>
+      Array.from({ length: 90 }, (_, i) => ({
+        x: (i * 37.508) % 100,
+        y: (i * 61.803) % 58,
+        size: 1 + ((i * 7) % 10) / 8,
+        delay: (i % 7) * 0.55,
+      })),
+    [],
+  );
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: 'absolute',
+        inset: 0,
+        opacity,
+        transition: 'opacity 1.6s ease',
+        pointerEvents: 'none',
+        maskImage: 'linear-gradient(180deg, black 40%, transparent 72%)',
+        WebkitMaskImage: 'linear-gradient(180deg, black 40%, transparent 72%)',
+      }}
+    >
+      <div className="am-starfield" style={{ position: 'absolute', inset: '-12%' }}>
+        {stars.map((st, i) => (
+          <span
+            key={i}
+            style={{
+              position: 'absolute',
+              left: `${st.x}%`,
+              top: `${st.y}%`,
+              width: st.size,
+              height: st.size,
+              borderRadius: '50%',
+              background: '#fff',
+              boxShadow: '0 0 3px rgba(255,255,255,0.7)',
+              animation: `am-twinkle 3.6s ease-in-out ${st.delay}s infinite`,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /* ────────────────── V2: book-direct walk offer ────────────────── */
@@ -529,7 +618,7 @@ function DirectOfferPopup() {
               <img
                 src={OFFER_IMG}
                 alt="Walking the coastal plain at Narawntapu National Park"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'left center', display: 'block' }}
               />
             </div>
             <div style={{ flex: '1 1 340px', padding: 'clamp(28px, 4vw, 44px)' }}>
@@ -545,10 +634,10 @@ function DirectOfferPopup() {
               <p className="am-body-copy" style={{ marginTop: 12 }}>
                 Her gift, and only when you book with her directly.
               </p>
-              <div style={{ marginTop: 26, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ marginTop: 26, display: 'flex', gap: 22, alignItems: 'center', whiteSpace: 'nowrap' }}>
                 <BookButton label="Book now" solid />
                 <a href={OFFER_URL} target="_blank" rel="noopener noreferrer" className="am-link am-more">
-                  About the walk
+                  Learn more
                 </a>
               </div>
             </div>
@@ -760,9 +849,8 @@ function Hero() {
   useEffect(() => scrollY.on('change', (v) => setOffset(Math.min(v, 900))), [scrollY]);
 
   const wx = useLiveWx();
-  const phase = useDayCycle(wx, reduced);
+  const phase = useDaySweep(reduced);
   const sky = SKY_PHASES[phase];
-  const gradeFade = 'opacity 1s ease, background 1s ease, filter 1.1s ease';
 
   return (
     <section style={{ position: 'relative', height: '100svh', minHeight: 560, overflow: 'clip', color: 'var(--am-cream)' }}>
@@ -781,12 +869,22 @@ function Hero() {
           willChange: 'transform',
           transform: reduced ? undefined : `translateY(${offset * 0.2}px)`,
           filter: sky.filter,
-          transition: gradeFade,
+          transition: 'filter 1.2s ease',
         }}
       />
-      {/* the sped-up day: two colour washes graded per phase */}
-      <div aria-hidden style={{ position: 'absolute', inset: 0, background: sky.tint, mixBlendMode: 'multiply', transition: gradeFade }} />
-      <div aria-hidden style={{ position: 'absolute', inset: 0, background: sky.glow, mixBlendMode: 'soft-light', transition: gradeFade }} />
+      {/* the sped-up day: per-phase directional light washes, crossfaded */}
+      {SKY_PHASES.map((ph, i) => (
+        <div
+          key={i}
+          aria-hidden
+          style={{ position: 'absolute', inset: 0, opacity: i === phase ? 1 : 0, transition: 'opacity 1.2s ease', pointerEvents: 'none' }}
+        >
+          {ph.layers.map((l, j) => (
+            <div key={j} style={{ position: 'absolute', inset: 0, background: l.background, mixBlendMode: l.blend }} />
+          ))}
+        </div>
+      ))}
+      <Stars opacity={sky.stars} />
       <div
         aria-hidden
         style={{
@@ -796,6 +894,32 @@ function Hero() {
             'linear-gradient(180deg, rgba(29,32,26,0.34) 0%, rgba(29,32,26,0.12) 40%, rgba(29,32,26,0.6) 100%)',
         }}
       />
+      {/* live conditions, tucked in the top-left of the image */}
+      <AnimatePresence>
+        {wx && (
+          <motion.p
+            initial={reduced ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.2, delay: 0.6 }}
+            style={{
+              position: 'absolute',
+              top: 104,
+              left: 'clamp(24px, 5vw, 64px)',
+              zIndex: 2,
+              margin: 0,
+              fontSize: '0.95rem',
+              letterSpacing: '0.06em',
+              color: 'var(--am-cream)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 9,
+            }}
+          >
+            <span aria-hidden style={{ fontSize: '1.15rem' }}>{wxEmoji(wx.code, wx.isDay)}</span>
+            {wx.tempC}°
+          </motion.p>
+        )}
+      </AnimatePresence>
       <div
         className="am-shell am-on-image am-centered"
         style={{ position: 'relative', height: '100%', justifyContent: 'center' }}
@@ -810,19 +934,6 @@ function Hero() {
         >
           A 1906 heritage guesthouse · Devonport · Tasmania
         </motion.p>
-        <AnimatePresence>
-          {wx && (
-            <motion.p
-              initial={reduced ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.3 }}
-              style={{ margin: '10px 0 0', fontSize: '0.85rem', letterSpacing: '0.05em', color: 'var(--am-cream)' }}
-            >
-              <span aria-hidden style={{ marginRight: 8 }}>{wxEmoji(wx.code, wx.isDay)}</span>
-              {wx.tempC}° right now · {wx.flourish}
-            </motion.p>
-          )}
-        </AnimatePresence>
         <MaskLines
           as="h1"
           className="am-display am-d-xl"
