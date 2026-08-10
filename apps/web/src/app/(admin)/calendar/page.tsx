@@ -13,8 +13,9 @@ export const revalidate = 0;
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+// Available days render empty — colour only marks booked/blocked.
 const STATUS_BG = {
-  available: '#e7f5ec',
+  available: 'var(--canvas)',
   booked: '#f4b9b3',
   blocked: '#e6e6e6',
 } as const;
@@ -226,6 +227,8 @@ export default async function CalendarPage({
                           <span key={p.id} className="micro-cap" style={{ color: 'var(--ink-mute)' }}>blocked</span>
                         ) : null;
                       }
+                      // Available days stay empty — a quiet cell means free.
+                      if (status === 'available') return null;
                       return (
                         <span
                           key={p.id}
