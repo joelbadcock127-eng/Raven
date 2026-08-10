@@ -108,6 +108,27 @@ export default async function SettingsPage() {
       </header>
 
       <section className="card" style={{ padding: '22px 24px', maxWidth: 720, marginBottom: 24 }}>
+        <h2 className="heading-md" style={{ marginBottom: 4 }}>Outreach</h2>
+        <p className="caption" style={{ marginBottom: 14 }}>
+          Organiser contacts, partnership emails and the outreach pipeline moved here out of the
+          side menu.
+        </p>
+        <a
+          href="/outreach"
+          className="caption"
+          style={{
+            display: 'inline-block',
+            padding: '7px 16px',
+            borderRadius: 'var(--r-pill)',
+            border: '1px solid var(--primary-subdued)',
+            color: 'var(--primary)',
+          }}
+        >
+          Open Outreach →
+        </a>
+      </section>
+
+      <section className="card" style={{ padding: '22px 24px', maxWidth: 720, marginBottom: 24 }}>
         <h2 className="heading-md" style={{ marginBottom: 4 }}>Side menu</h2>
         <p className="caption" style={{ marginBottom: 16 }}>
           Show or hide the PMS section (Dashboard, Reservations, Calendar) at the top of the side

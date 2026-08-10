@@ -389,9 +389,9 @@ function LiveNowStrip() {
 /* ────────────────── V2: book-direct walk offer ────────────────── */
 
 const OFFER_URL = 'https://www.bakerswalkingco.com.au/narawntapu';
-// Swap for the Narawntapu walk photo (Deb on the plain) once it's uploaded
-// to mirror-assets — the popup takes any landscape image.
-const OFFER_IMG = '/mirror-assets/6413f3ac99-Bakers-Walking-Co.jpg';
+// Bakers Walking Co's own Narawntapu photo (bakerswalkingco.com.au/narawntapu),
+// resized to 1600px for the popup.
+const OFFER_IMG = '/mirror-assets/am-bwc-narawntapu-walk.jpg';
 
 /**
  * The elegant once-per-session invitation: book direct and a private
@@ -495,7 +495,7 @@ function DirectOfferPopup() {
                 Her gift, and only when you book with her directly.
               </p>
               <div style={{ marginTop: 26, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-                <BookButton label="Check availabilities" solid />
+                <BookButton label="Book now" solid />
                 <a href={OFFER_URL} target="_blank" rel="noopener noreferrer" className="am-link am-more">
                   About the walk
                 </a>

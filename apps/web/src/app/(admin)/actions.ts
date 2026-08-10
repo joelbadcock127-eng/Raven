@@ -146,3 +146,23 @@ export async function logSignal(input: {
   revalidatePath('/');
   return { ok: true, message: 'Signal logged — it’s in the feed' };
 }
+
+/**
+ * Approve an opportunity FOR a specific property (the Campaigns page's
+ * best-bet rows): points the recommendation at that property first so the
+ * campaign that opens belongs to it, then runs the normal approval.
+ */
+export async function approveOpportunityFor(
+  id: string,
+  propertyId: string,
+): Promise<OpportunityActionResult> {
+  if (!id || !propertyId) return { ok: false, message: 'Invalid request' };
+  const supabase = supabaseAdmin();
+  if (!supabase) return { ok: false, message: 'Supabase is not configured on the server.' };
+  const { error } = await supabase
+    .from('opportunities')
+    .update({ recommended_property_id: propertyId })
+    .eq('id', id);
+  if (error) return { ok: false, message: `Update failed: ${error.message}` };
+  return setOpportunityStatus(id, 'approved');
+}

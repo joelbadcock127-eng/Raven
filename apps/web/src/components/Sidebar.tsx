@@ -86,10 +86,9 @@ const PMS_ITEMS = [
   { href: '/calendar', label: 'Calendar', icon: Icon.calendar },
 ];
 
+// Feed lives inside Campaigns now; Outreach lives inside Settings.
 const ITEMS = [
-  { href: '/', label: 'Feed', icon: Icon.feed },
   { href: '/campaigns', label: 'Campaigns', icon: Icon.campaigns },
-  { href: '/outreach', label: 'Outreach', icon: Icon.outreach },
   { href: '/sites', label: 'Sites', icon: Icon.sites },
   { href: '/media', label: 'Media', icon: Icon.media },
   { href: '/social', label: 'Social', icon: Icon.social },
