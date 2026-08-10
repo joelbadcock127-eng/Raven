@@ -89,12 +89,10 @@ Two exchanges. Do them in the browser address bar, or with curl.
 You need your App ID and App Secret from the app dashboard
 (Settings → Basic; click **Show** for the secret).
 
+Paste as **one line** — the URL must contain no spaces or line breaks:
+
 ```
-https://graph.facebook.com/v21.0/oauth/access_token
-  ?grant_type=fb_exchange_token
-  &client_id=YOUR_APP_ID
-  &client_secret=YOUR_APP_SECRET
-  &fb_exchange_token=SHORT_LIVED_TOKEN_FROM_STEP_2
+https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=YOUR_APP_ID&client_secret=YOUR_APP_SECRET&fb_exchange_token=SHORT_LIVED_TOKEN_FROM_STEP_2
 ```
 
 Copy the `access_token` from the response.
@@ -102,8 +100,7 @@ Copy the `access_token` from the response.
 ### 3b. Long-lived user token → Page token (does not expire)
 
 ```
-https://graph.facebook.com/v21.0/me/accounts
-  ?access_token=LONG_LIVED_USER_TOKEN_FROM_3A
+https://graph.facebook.com/v21.0/me/accounts?access_token=LONG_LIVED_USER_TOKEN_FROM_3A
 ```
 
 The response lists your Pages. For the right Page, copy:
@@ -122,9 +119,7 @@ permissions, in which case redo steps 2 and 3.
 Using the Page ID and Page token from the previous step:
 
 ```
-https://graph.facebook.com/v21.0/YOUR_FB_PAGE_ID
-  ?fields=instagram_business_account
-  &access_token=YOUR_PAGE_TOKEN
+https://graph.facebook.com/v21.0/YOUR_FB_PAGE_ID?fields=instagram_business_account&access_token=YOUR_PAGE_TOKEN
 ```
 
 The response looks like:
