@@ -37,7 +37,7 @@ export const IMG = {
   lift: `${A}/aac28457f8-DEB_AIRBNB_-106.jpg`,
   doorSign: `${A}/ba027d43ac-DEB_AIRBNB_-79-1-1024x769.jpg`,
   windowSeat: `${A}/ba7d162897-DEB_AIRBNB_-19.jpg`,
-  host: `${A}/87018b3805-Annie-May-Deb-Badcock.jpg`,
+  host: `${A}/am-hd-Deb-Badcock.jpg`,
 } as const;
 
 export interface Room {
@@ -61,20 +61,20 @@ export const ROOMS: Room[] = [
     price: '$385',
     terms: 'per night · 2 adults · breakfast included',
     body:
-      'King bed for real rest, a proper desk when work calls, and a large TV for easy evenings. A full-length mirror and considered lighting keep things practical without fuss. The ensuite is a little retreat of its own, with a walk-in shower and a separate bath for an unhurried soak.',
-    details: ['King bed', 'Walk-in shower and freestanding bath', 'Proper desk', 'Large TV', 'Full-length mirror', 'Private ensuite'],
+      'King bed for real rest, a proper desk when work calls, and a large TV for easy evenings. A full length mirror and considered lighting keep things practical without fuss. The ensuite is a little retreat of its own, with a walk in shower and a separate bath for an unhurried soak.',
+    details: ['King bed', 'Walk in shower and freestanding bath', 'Proper desk', 'Large TV', 'Full length mirror', 'Private ensuite'],
     image: IMG.kingBath,
     detailImage: IMG.basin,
   },
   {
     numeral: 'II',
-    rooms: 'Rooms 3 – 6',
+    rooms: 'Rooms 3 to 6',
     name: 'King Superior',
     price: '$350',
     terms: 'per night · 2 adults · breakfast included',
     body:
-      'Light-filled and quietly elegant. Generous space, a proper desk when you need it, a large TV for easy evenings and a full-length mirror to keep things practical. The ensuite keeps it modern and simple with a walk-in shower for an unhurried start or end to the day.',
-    details: ['King bed', 'Walk-in shower', 'Proper desk', 'Large TV', 'Full-length mirror', 'Private ensuite'],
+      'Filled with light and quietly elegant. Generous space, a proper desk when you need it, a large TV for easy evenings and a full length mirror to keep things practical. The ensuite keeps it modern and simple with a walk in shower for an unhurried start or end to the day.',
+    details: ['King bed', 'Walk in shower', 'Proper desk', 'Large TV', 'Full length mirror', 'Private ensuite'],
     image: IMG.kingCaramel,
     detailImage: IMG.bedDetail,
   },
@@ -85,8 +85,8 @@ export const ROOMS: Room[] = [
     price: '$350',
     terms: 'per night · 2 adults · breakfast included',
     body:
-      'Intimate and calm on the second level. A king bed for real rest, two armchairs for quiet moments, a desk when work calls and a large TV for easy evenings. A full-length mirror keeps things practical. The ensuite bathroom adds comfort with a walk-in shower and underfloor heating.',
-    details: ['King bed', 'The whole second level', 'Two armchairs', 'Walk-in shower, underfloor heating', 'Desk and large TV', 'Private ensuite'],
+      'Intimate and calm on the second level. A king bed for real rest, two armchairs for quiet moments, a desk when work calls and a large TV for easy evenings. A full length mirror keeps things practical. The ensuite bathroom adds comfort with a walk in shower and underfloor heating.',
+    details: ['King bed', 'The whole second level', 'Two armchairs', 'Walk in shower with underfloor heating', 'Desk and large TV', 'Private ensuite'],
     image: IMG.loftBed,
     detailImage: IMG.loftDesk,
   },
@@ -104,34 +104,30 @@ export const COMFORTS: string[] = [
 export interface Highlight {
   name: string;
   body: string;
-  image?: string;
+  image: string;
 }
 
 /** Explore highlights, as on the live explore page. */
 export const HIGHLIGHTS: Highlight[] = [
   {
     name: 'Ghost Rock Vineyard',
-    body: 'Coastal cool-climate wines and a relaxed cellar-door restaurant.',
+    body: 'Coastal cool climate wines and a relaxed cellar door restaurant.',
     image: `${A}/e2a227f0e6-Annie-May-Ghost-Rock-Vineyard.jpg`,
   },
   {
     name: 'The Tasmanian Arboretum',
     body: 'A peaceful sanctuary of trees, lakes and quiet paths, perfect for a slow afternoon and the chance to spot a platypus.',
-    image: `${A}/5e369d42c8-Annie-May-Tasmanian-Arboretum.jpg`,
+    image: `${A}/am-hd-Tasmanian-Arboretum.jpg`,
   },
   {
     name: 'Ashgrove Cheese',
-    body: 'Award-winning artisan dairy, crafted at Elizabeth Town.',
+    body: 'Award winning artisan dairy, crafted at Elizabeth Town.',
     image: `${A}/8998d1fa26-Annie-May-Ashgrove-Cheese-.jpg`,
   },
   {
     name: 'Bakers Walking Co',
-    body: 'Guided day walks exploring private tracks, wildlife-rich bushland and coastal views beside Narawntapu National Park, with a gourmet Tasmanian lunch included.',
+    body: 'Guided day walks exploring private tracks, bushland rich with wildlife and coastal views beside Narawntapu National Park, with a gourmet Tasmanian lunch included.',
     image: `${A}/6413f3ac99-Bakers-Walking-Co.jpg`,
-  },
-  {
-    name: 'Forth Falls walking track',
-    body: 'A short, scenic walk through lush bushland, rewarded with cascading waterfalls and quiet moments in nature.',
   },
   {
     name: 'From Sky to Sea light show',
@@ -139,13 +135,8 @@ export const HIGHLIGHTS: Highlight[] = [
     image: `${A}/f96b970ae1-Annie-May-From-Sky-to-Sky.jpg`,
   },
   {
-    name: 'Sheffield — the Town of Murals',
-    body: 'Streets and laneways transformed into an open-air gallery celebrating Tasmania’s history and landscape.',
-    image: `${A}/5bdb001499-Annie-May-Sheffield-Mural.jpg`,
-  },
-  {
     name: 'Southern Wild Distillery',
-    body: 'Award-winning spirits made in Devonport, blending wild Tasmanian botanicals with precision and passion.',
+    body: 'Award winning spirits made in Devonport, blending wild Tasmanian botanicals with precision and passion.',
     image: `${A}/e77e24bcb7-Annie-May-Southern-Wild-Distillery.jpg`,
   },
 ];

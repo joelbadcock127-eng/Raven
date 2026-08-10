@@ -13,6 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion, useScroll } from 'framer-motion';
+import Monogram from './Monogram';
 import { CurtainImage, MaskLines, ParallaxImage, Reveal, ease, spring } from './motion';
 import {
   ADDRESS,
@@ -165,8 +166,9 @@ function Nav({ current, standalone, overHero }: { current: string; standalone: b
         >
           <a
             href={href('home')}
-            style={{ fontFamily: 'var(--am-display)', fontSize: '1.4rem', letterSpacing: '0.04em' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 14, fontFamily: 'var(--am-display)', fontSize: '1.4rem', letterSpacing: '0.04em' }}
           >
+            <Monogram size={34} />
             Annie May
           </a>
 
@@ -261,6 +263,9 @@ function Footer({ standalone }: { standalone: boolean }) {
   return (
     <footer className="am-dark">
       <div className="am-shell am-section-sm am-centered">
+        <Reveal>
+          <Monogram size={64} style={{ margin: '0 auto 26px', color: 'var(--am-cream)' }} />
+        </Reveal>
         <p className="am-kicker" style={{ color: 'var(--am-cream-mute)' }}>
           Refined stays in a Devonport heritage guesthouse
         </p>
@@ -356,6 +361,7 @@ function Hero() {
         className="am-shell am-on-image am-centered"
         style={{ position: 'relative', height: '100%', justifyContent: 'center' }}
       >
+        <Monogram animate size="clamp(72px, 10vw, 120px)" delay={0.4} style={{ marginBottom: 28 }} />
         <motion.p
           className="am-kicker"
           style={{ color: 'var(--am-cream)' }}
@@ -409,13 +415,14 @@ function Statement() {
         <MaskLines
           as="h2"
           className="am-display am-d-lg"
-          lines={['Seven elegant ensuite rooms,', 'hotel-level ease and the grace', 'of a private residence.']}
+          lines={['Seven elegant ensuite rooms,', 'the ease of a fine hotel and', 'the grace of a private residence.']}
           style={{ maxWidth: '18em' }}
         />
         <Reveal delay={0.5}>
           <p className="am-lead am-narrow" style={{ marginTop: 38 }}>
-            Soft light, quiet-close details and space that keeps the world at bay. No interruptions,
-            no fuss — just a beautifully prepared stay that lets everything else fall away.
+            Soft light, doors that close quietly and space that keeps the world at bay. No
+            interruptions, no fuss, just a beautifully prepared stay that lets everything else fall
+            away.
           </p>
         </Reveal>
         <Reveal delay={0.65}>
@@ -509,7 +516,7 @@ function StoryTeaser({ standalone }: { standalone: boolean }) {
               <p className="am-lead" style={{ marginTop: 30 }}>
                 This heritage home was renovated around how you actually live while away. Seating set
                 for conversation. Bedside switches where your hand falls. Linens that breathe. The
-                balance you want — character intact, everything simply works.
+                balance you want: character intact, everything simply works.
               </p>
             </Reveal>
             <Reveal delay={0.5}>
@@ -531,7 +538,7 @@ function StoryTeaser({ standalone }: { standalone: boolean }) {
 
 function Features() {
   const features = [
-    { title: 'Breakfast room', body: 'A light-filled room for slow starts and easy conversation.', image: IMG.lounge },
+    { title: 'Breakfast room', body: 'A room full of light, for slow starts and easy conversation.', image: IMG.lounge },
     { title: 'Lift access', body: 'Her compact lift makes arrivals and departures effortless.', image: IMG.lift },
     { title: 'Luxury amenities', body: 'Premium linens and towels, quality bath products and layered lighting.', image: IMG.basin },
   ];
@@ -574,7 +581,7 @@ function GalleryStrip() {
       </div>
       <div className="am-grid am-shell" style={{ rowGap: 14 }}>
         {GALLERY.slice(0, 8).map((g, i) => (
-          <Reveal key={g.src} delay={(i % 4) * 0.1} y={26} style={{ gridColumn: 'span 3', minWidth: 0 }}>
+          <Reveal key={g.src} delay={(i % 4) * 0.1} x={-30} style={{ gridColumn: 'span 3', minWidth: 0 }}>
             <div className="am-zoom">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -661,7 +668,7 @@ function AccommodationPage() {
           <div className="am-grid" style={{ rowGap: 40, alignItems: 'start' }}>
             <div style={{ gridColumn: 'span 5', gridRow: 1 }}>
               <p className="am-kicker" style={{ color: 'var(--am-cream-mute)' }}>
-                In-room comforts
+                Room comforts
               </p>
               <MaskLines as="h2" className="am-display am-d-md" lines={['Everything you need,', 'nothing in the way.']} />
             </div>
@@ -731,13 +738,13 @@ function StoryPage() {
                 <p className="am-body-copy" style={{ marginTop: 18 }}>
                   Naming the house after her just made sense. Because like her, the house is full of
                   warmth and grace. It holds you without fuss. It knows beauty is in the little
-                  things. This is a homemade recipe to make you feel looked after — just like Annie
-                  May always did.
+                  things. This is a homemade recipe to make you feel looked after, just like Annie May
+                  always did.
                 </p>
               </Reveal>
             </div>
             <div className="am-frame" style={{ gridColumn: 'span 6 / -1', gridRow: 1 }}>
-              <ParallaxImage src={IMG.host} alt="Deb at Annie May" drift={9} style={{ aspectRatio: '4 / 5' }} />
+              <ParallaxImage src={IMG.host} alt="Deb at Annie May" drift={6} style={{ aspectRatio: '4 / 5' }} imgStyle={{ objectPosition: '30% 32%' }} />
             </div>
           </div>
         </div>
@@ -748,7 +755,7 @@ function StoryPage() {
           <MaskLines
             as="p"
             className="am-display am-d-lg"
-            lines={['“Character intact.', 'Everything made', 'beautifully simple.”']}
+            lines={['Character intact.', 'Everything made', 'beautifully simple.']}
           />
         </div>
       </section>
@@ -783,25 +790,9 @@ function ExplorePage() {
           <div className="am-grid" style={{ rowGap: 48 }}>
             {HIGHLIGHTS.map((h, i) => (
               <div key={h.name} style={{ gridColumn: 'span 4', minWidth: 0 }}>
-                {h.image ? (
-                  <div className="am-zoom">
-                    <CurtainImage src={h.image} alt={h.name} delay={(i % 3) * 0.12} style={{ aspectRatio: '4 / 3' }} />
-                  </div>
-                ) : (
-                  <div
-                    className="am-centered"
-                    style={{
-                      aspectRatio: '4 / 3',
-                      border: '1px solid var(--am-hairline)',
-                      justifyContent: 'center',
-                      padding: 24,
-                    }}
-                  >
-                    <span className="am-display am-d-sm" style={{ color: 'var(--am-sage)', fontStyle: 'italic' }}>
-                      A walk worth taking
-                    </span>
-                  </div>
-                )}
+                <div className="am-zoom">
+                  <CurtainImage src={h.image} alt={h.name} delay={(i % 3) * 0.12} style={{ aspectRatio: '4 / 3' }} />
+                </div>
                 <Reveal delay={0.2 + (i % 3) * 0.12}>
                   <h3 className="am-display am-d-sm" style={{ marginTop: 20 }}>
                     {h.name}
@@ -812,6 +803,50 @@ function ExplorePage() {
                 </Reveal>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="am-section">
+        <div className="am-shell">
+          <div className="am-grid" style={{ rowGap: 40, alignItems: 'center' }}>
+            <div style={{ gridColumn: 'span 4', gridRow: 1 }}>
+              <p className="am-kicker">Find her on the map</p>
+              <MaskLines as="h2" className="am-display am-d-md" lines={['Everything starts', 'at Formby Road.']} />
+              <Reveal delay={0.3}>
+                <p className="am-body-copy" style={{ marginTop: 22 }}>
+                  {ADDRESS}. Minutes from the Spirit of Tasmania terminal and Devonport Airport, an
+                  easy walk to the city, and the calm centre of every day trip on this page.
+                </p>
+              </Reveal>
+              <Reveal delay={0.4}>
+                <p className="am-body-copy" style={{ marginTop: 16 }}>
+                  <a href={MAPS_URL} target="_blank" rel="noopener noreferrer" className="am-link">
+                    Open in Google Maps
+                  </a>
+                </p>
+              </Reveal>
+            </div>
+            <div style={{ gridColumn: 'span 7 / -1', gridRow: 1 }}>
+              <Reveal x={-30}>
+                <div style={{ aspectRatio: '16 / 10', overflow: 'hidden', position: 'relative', background: 'var(--am-paper-2)' }}>
+                  <iframe
+                    src={MAPS_EMBED_URL}
+                    title="Map to Annie May, 16 Formby Road, Devonport"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    allowFullScreen
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      border: 0,
+                      display: 'block',
+                      filter: 'grayscale(0.55) sepia(0.12) contrast(0.96)',
+                    }}
+                  />
+                </div>
+              </Reveal>
+            </div>
           </div>
         </div>
       </section>
@@ -827,7 +862,7 @@ function ContactPage() {
       <PageIntro
         kicker="Connect with us"
         lines={['Come and', 'stay awhile.']}
-        lead="We keep things simple, just as your stay will be. Reach out on Instagram or Facebook to make an enquiry — we’ll get back to you within 48 hours."
+        lead="We keep things simple, just as your stay will be. Reach out on Instagram or Facebook to make an enquiry and we will get back to you within 48 hours."
       />
 
       <section className="am-section" style={{ paddingTop: 0 }}>
@@ -836,7 +871,7 @@ function ContactPage() {
             <div style={{ gridColumn: 'span 5', gridRow: 1 }}>
               <Reveal>
                 <p className="am-lead">
-                  The quickest way to check dates and stay with her is the booking page — it shows
+                  The quickest way to check dates and stay with her is the booking page. It shows
                   live availability for all seven rooms.
                 </p>
               </Reveal>
@@ -905,8 +940,8 @@ function ContactPage() {
           <p className="am-kicker">Good to know</p>
           <Ledger
             items={[
-              ['Adults only', 'a house for grown-ups, guests 18 and over'],
-              ['Seven ensuite rooms', 'each with a king bed, desk, TV and full-length mirror'],
+              ['Adults only', 'a house for grown ups, guests 18 and over'],
+              ['Seven ensuite rooms', 'each with a king bed, desk, TV and full length mirror'],
               ['Breakfast', 'included with every stay, served downstairs'],
               ['Lift access', 'every floor without stairs'],
               ['Getting here', 'minutes from the Spirit of Tasmania terminal and Devonport Airport'],
