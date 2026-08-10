@@ -407,109 +407,180 @@ function Hero() {
   );
 }
 
-/** The essentials, answered in one quiet ledger: where she is, how to
- *  get here, who she is for, what is included. Speaks to travellers who
- *  only know they want the north west coast, not yet where on it. */
-function Essentials({ standalone }: { standalone: boolean }) {
+/**
+ * The opening movement after the hero: statement and essentials merged
+ * into one composition. The headline and lead sit beside a tall image;
+ * beneath them the four questions every onlooker arrives with unfold as
+ * an accordion, and choosing one crossfades the image to match — where
+ * she is shows the house, getting here the front door, and so on.
+ */
+const ESSENTIALS = [
+  {
+    q: 'Where is she?',
+    a: 'In central Devonport on Tasmania’s north west coast, on the main road beside the Mersey and an easy walk to the city centre. If you only know you want the north west coast, start here: Devonport is where the coast begins.',
+    image: IMG.facade,
+    caption: 'Formby Road, Devonport',
+  },
+  {
+    q: 'Getting here',
+    a: 'Two kilometres from the Spirit of Tasmania terminal and twenty minutes from Devonport Airport. Roll off the ferry and be at her door in minutes.',
+    image: IMG.doorSign,
+    caption: 'Her front door, waiting',
+  },
+  {
+    q: 'Who is she for?',
+    a: 'Adults only, guests 18 and over. Couples, business travellers and quiet weekenders who value privacy and calm.',
+    image: IMG.loungeDetail,
+    caption: 'The lounge, late afternoon',
+  },
+  {
+    q: 'What is included?',
+    a: 'Breakfast every morning, a private ensuite with every one of her seven king rooms, and lift access to every floor.',
+    image: IMG.breakfast,
+    caption: 'The breakfast room',
+  },
+];
+
+function HomeIntro({ standalone }: { standalone: boolean }) {
+  const [active, setActive] = useState(0);
+  const reduced = useReducedMotion();
   const mapHref = standalone ? '/explore#map' : '/site/annie-may?page=explore#map';
-  const items: Array<[string, string]> = [
-    [
-      'Where is she?',
-      'In central Devonport on Tasmania\u2019s north west coast, on the main road beside the Mersey and an easy walk to the city centre.',
-    ],
-    [
-      'Getting here',
-      'Two kilometres from the Spirit of Tasmania terminal and twenty minutes from Devonport Airport. Roll off the ferry and be at her door in minutes.',
-    ],
-    [
-      'Who is she for?',
-      'Adults only, guests 18 and over. Couples, business travellers and quiet weekenders who value privacy and calm.',
-    ],
-    [
-      'What is included?',
-      'Breakfast every morning, a private ensuite with every one of her seven king rooms, and lift access to every floor.',
-    ],
-  ];
   return (
-    <section className="am-tint am-section-sm">
+    <section className="am-section">
       <div className="am-shell">
-        <div className="am-grid" style={{ rowGap: 48 }}>
-          <div style={{ gridColumn: 'span 4', gridRow: 1 }}>
-            <p className="am-kicker">The essentials</p>
-            <Reveal>
-              <p className="am-body-copy">
-                Searching for places to stay on Tasmania’s north west coast and not yet sure
-                where to base yourself? Devonport is where the Spirit of Tasmania lands and where
-                the coast begins. Annie May is its most refined place to stay.
+        <div className="am-grid" style={{ rowGap: 56 }}>
+          {/* the changing image — sticky so it keeps pace with the questions */}
+          <div style={{ gridColumn: 'span 5', gridRow: 1, alignSelf: 'stretch' }}>
+            <div style={{ position: 'sticky', top: 110 }}>
+            <div style={{ position: 'relative', aspectRatio: '4 / 5', overflow: 'hidden' }}>
+              {ESSENTIALS.map((item, i) => (
+                <motion.img
+                  key={item.q}
+                  src={item.image}
+                  alt={item.caption}
+                  initial={false}
+                  animate={{ opacity: i === active ? 1 : 0, scale: reduced ? 1 : i === active ? 1 : 1.06 }}
+                  transition={{ duration: reduced ? 0 : 1.1, ease: ease.outQuint }}
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ))}
+            </div>
+            <div style={{ marginTop: 14, minHeight: '1.2em', position: 'relative' }}>
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={active}
+                  className="am-body-copy"
+                  style={{ fontSize: '0.8rem' }}
+                  initial={reduced ? false : { opacity: 0, x: -14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5, ease: ease.outQuint }}
+                >
+                  {ESSENTIALS[active].caption}
+                </motion.p>
+              </AnimatePresence>
+            </div>
+            </div>
+          </div>
+
+          {/* statement + unfolding essentials */}
+          <div style={{ gridColumn: 'span 6 / -1', gridRow: 1 }}>
+            <p className="am-kicker">She knows how to hold a moment</p>
+            <MaskLines
+              as="h2"
+              className="am-display am-d-md"
+              lines={['Seven elegant ensuite rooms,', 'the ease of a fine hotel and', 'the grace of a private residence.']}
+            />
+            <Reveal delay={0.4}>
+              <p className="am-lead" style={{ marginTop: 30, maxWidth: '32rem' }}>
+                Soft light, doors that close quietly and space that keeps the world at bay. The
+                questions you arrive with, answered before you have to ask.
               </p>
             </Reveal>
-            <Reveal delay={0.2}>
-              <div style={{ marginTop: 30, display: 'flex', gap: 22, alignItems: 'center', flexWrap: 'wrap' }}>
+
+            <div style={{ marginTop: 'clamp(36px, 4vw, 56px)' }}>
+              {ESSENTIALS.map((item, i) => {
+                const open = i === active;
+                return (
+                  <Reveal key={item.q} delay={0.5 + i * 0.08} y={16}>
+                    <div style={{ borderTop: '1px solid var(--am-hairline)' }}>
+                      <button
+                        type="button"
+                        onClick={() => setActive(i)}
+                        aria-expanded={open}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'baseline',
+                          gap: 20,
+                          padding: '20px 0',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'inherit',
+                          textAlign: 'left',
+                          font: 'inherit',
+                        }}
+                      >
+                        <span className="am-numeral" style={{ minWidth: '2.2em' }}>
+                          {['I', 'II', 'III', 'IV'][i]}
+                        </span>
+                        <span
+                          className="am-display am-d-sm"
+                          style={{ flex: 1, transition: 'opacity .4s', opacity: open ? 1 : 0.55 }}
+                        >
+                          {item.q}
+                        </span>
+                        <motion.span
+                          aria-hidden
+                          animate={{ rotate: open ? 90 : 0, opacity: open ? 1 : 0.45 }}
+                          transition={{ duration: 0.5, ease: ease.outQuint }}
+                          style={{ fontSize: '1rem', color: 'var(--am-sage)' }}
+                        >
+                          →
+                        </motion.span>
+                      </button>
+                      <AnimatePresence initial={false}>
+                        {open && (
+                          <motion.div
+                            key="answer"
+                            initial={reduced ? false : { height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={reduced ? undefined : { height: 0, opacity: 0 }}
+                            transition={{ duration: 0.7, ease: ease.outQuint }}
+                            style={{ overflow: 'hidden' }}
+                          >
+                            <p className="am-body-copy" style={{ padding: '0 0 24px calc(2.2em + 20px)', maxWidth: '30rem' }}>
+                              {item.a}
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </Reveal>
+                );
+              })}
+              <div style={{ borderTop: '1px solid var(--am-hairline)' }} />
+            </div>
+
+            <Reveal delay={0.7}>
+              <div style={{ marginTop: 34, display: 'flex', gap: 26, alignItems: 'center', flexWrap: 'wrap' }}>
                 <motion.a className="am-book" href={mapHref} whileTap={{ scale: 0.97 }} transition={spring}>
                   See her on the map
                   <span className="arrow" aria-hidden>
                     →
                   </span>
                 </motion.a>
+                <a
+                  href={standalone ? '/accommodation' : '/site/annie-may?page=accommodation'}
+                  className="am-link am-more"
+                >
+                  Meet the rooms
+                </a>
               </div>
             </Reveal>
           </div>
-          <div style={{ gridColumn: 'span 7 / -1', gridRow: 1 }}>
-            {items.map(([q, a], i) => (
-              <Reveal key={q} delay={i * 0.08} y={18}>
-                <div
-                  className="am-grid"
-                  style={{
-                    gridTemplateColumns: 'minmax(150px, 1fr) 2fr',
-                    columnGap: 'clamp(16px, 2.5vw, 40px)',
-                    borderTop: '1px solid var(--am-hairline)',
-                    padding: '20px 0',
-                  }}
-                >
-                  <h3
-                    style={{
-                      margin: 0,
-                      fontSize: '0.72rem',
-                      fontWeight: 600,
-                      letterSpacing: '0.24em',
-                      textTransform: 'uppercase',
-                      color: 'var(--am-sage)',
-                      paddingTop: 4,
-                    }}
-                  >
-                    {q}
-                  </h3>
-                  <p className="am-body-copy" style={{ margin: 0 }}>
-                    {a}
-                  </p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
         </div>
-      </div>
-    </section>
-  );
-}
-
-function Statement() {
-  return (
-    <section className="am-section">
-      <div className="am-shell am-centered">
-        <p className="am-kicker">She knows how to hold a moment</p>
-        <MaskLines
-          as="h2"
-          className="am-display am-d-lg"
-          lines={['Seven elegant ensuite rooms,', 'the ease of a fine hotel and', 'the grace of a private residence.']}
-          style={{ maxWidth: '18em' }}
-        />
-        <Reveal delay={0.5}>
-          <p className="am-lead am-narrow" style={{ marginTop: 38 }}>
-            Soft light, doors that close quietly and space that keeps the world at bay. No
-            interruptions, no fuss, just a beautifully prepared stay that lets everything else fall
-            away.
-          </p>
-        </Reveal>
       </div>
     </section>
   );
@@ -1020,8 +1091,7 @@ export default function AnnieMaySite({ page, standalone }: { page: string; stand
         {current === 'home' && (
           <>
             <Hero />
-            <Statement />
-            <Essentials standalone={standalone} />
+            <HomeIntro standalone={standalone} />
             <RoomsIndex standalone={standalone} />
             <StoryTeaser standalone={standalone} />
             <Features />
