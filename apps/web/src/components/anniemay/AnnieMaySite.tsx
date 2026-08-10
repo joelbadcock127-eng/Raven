@@ -84,6 +84,26 @@ function Ledger({ items, dark = false }: { items: Array<[string, string]>; dark?
   );
 }
 
+function SocialLinks({ size = 20, gap = 18 }: { size?: number; gap?: number }) {
+  const iconStyle: React.CSSProperties = { display: 'block', width: size, height: size };
+  return (
+    <div style={{ display: 'flex', gap, alignItems: 'center' }}>
+      <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Annie May on Instagram" className="am-social">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={iconStyle} aria-hidden>
+          <rect x="3" y="3" width="18" height="18" rx="5" />
+          <circle cx="12" cy="12" r="4.2" />
+          <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none" />
+        </svg>
+      </a>
+      <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" aria-label="Annie May on Facebook" className="am-social">
+        <svg viewBox="0 0 24 24" fill="currentColor" style={iconStyle} aria-hidden>
+          <path d="M13.5 21v-7h2.4l.4-2.9h-2.8V9.2c0-.84.23-1.4 1.44-1.4h1.5V5.2c-.26-.03-1.15-.11-2.19-.11-2.17 0-3.65 1.32-3.65 3.75v2.27H8.2V14h2.4v7h2.9z" />
+        </svg>
+      </a>
+    </div>
+  );
+}
+
 /** Page header for the interior pages — centred, Alma-style. */
 function PageIntro({ kicker, lines, lead }: { kicker: string; lines: string[]; lead?: string }) {
   return (
@@ -301,13 +321,12 @@ function Footer({ standalone }: { standalone: boolean }) {
                 {p.label}
               </a>
             ))}
-            <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="am-link" style={{ fontSize: '0.76rem', letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 500 }}>
-              Instagram
-            </a>
-            <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="am-link" style={{ fontSize: '0.76rem', letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 500 }}>
-              Facebook
-            </a>
           </nav>
+        </Reveal>
+        <Reveal delay={0.3}>
+          <div style={{ marginTop: 26, display: 'flex', justifyContent: 'center' }}>
+            <SocialLinks size={22} gap={22} />
+          </div>
         </Reveal>
         <Reveal delay={0.35}>
           <div style={{ marginTop: 38 }}>
@@ -418,14 +437,14 @@ const ESSENTIALS = [
   {
     q: 'Where is she?',
     a: 'In central Devonport on Tasmania’s north west coast, on the main road beside the Mersey and an easy walk to the city centre. If you only know you want the north west coast, start here: Devonport is where the coast begins.',
-    image: IMG.windowSeat,
-    caption: 'By the window, above Formby Road',
+    image: IMG.kingDesk,
+    caption: 'Room to breathe, King Superior',
   },
   {
     q: 'Getting here',
     a: 'Two kilometres from the Spirit of Tasmania terminal and twenty minutes from Devonport Airport. Roll off the ferry and be at her door in minutes.',
-    image: IMG.chandelier,
-    caption: 'The entrance hall, first impressions',
+    image: IMG.greenRoom,
+    caption: 'Ready when you arrive',
   },
   {
     q: 'Who is she for?',
@@ -698,6 +717,14 @@ function Features() {
   );
 }
 
+/** Deliberate mosaic: each row shares one height (the wide 3:2 cell sets
+ *  it, portrait cells stretch to match), captions surface on hover. */
+const GALLERY_ROWS: Array<Array<{ idx: number; span: number; lead?: boolean }>> = [
+  [{ idx: 0, span: 6, lead: true }, { idx: 1, span: 3 }, { idx: 2, span: 3 }],
+  [{ idx: 3, span: 3 }, { idx: 4, span: 6, lead: true }, { idx: 5, span: 3 }],
+  [{ idx: 6, span: 6, lead: true }, { idx: 7, span: 6, lead: true }],
+];
+
 function GalleryStrip() {
   return (
     <section className="am-tint am-section-sm" style={{ overflow: 'clip' }}>
@@ -706,19 +733,28 @@ function GalleryStrip() {
           The house, in light
         </p>
       </div>
-      <div className="am-grid am-shell" style={{ rowGap: 14 }}>
-        {GALLERY.slice(0, 8).map((g, i) => (
-          <Reveal key={g.src} delay={(i % 4) * 0.1} x={-30} style={{ gridColumn: 'span 3', minWidth: 0 }}>
-            <div className="am-zoom">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={g.src}
-                alt={g.alt}
-                loading="lazy"
-                style={{ width: '100%', aspectRatio: i % 2 === 0 ? '3 / 4' : '4 / 3', objectFit: 'cover', display: 'block' }}
-              />
-            </div>
-          </Reveal>
+      <div className="am-shell" style={{ display: 'grid', gap: 'clamp(12px, 1.6vw, 24px)' }}>
+        {GALLERY_ROWS.map((row, r) => (
+          <div key={r} className="am-grid am-mosaic-row" style={{ columnGap: 'clamp(12px, 1.6vw, 24px)' }}>
+            {row.map((cell, c) => {
+              const g = GALLERY[cell.idx];
+              if (!g) return null;
+              return (
+                <Reveal
+                  key={g.src}
+                  delay={c * 0.12}
+                  x={-30}
+                  style={{ gridColumn: `span ${cell.span}`, minWidth: 0, minHeight: 0 }}
+                >
+                  <figure className="am-tile" style={{ margin: 0, height: '100%', ...(cell.lead ? { aspectRatio: '3 / 2' } : {}) }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={g.src} alt={g.alt} loading="lazy" />
+                    <figcaption>{g.alt}</figcaption>
+                  </figure>
+                </Reveal>
+              );
+            })}
+          </div>
         ))}
       </div>
     </section>
@@ -983,59 +1019,141 @@ function ExplorePage() {
 
 /* ────────────────────────── contact page ────────────────────────── */
 
+function EnquiryForm() {
+  const [fields, setFields] = useState({ name: '', email: '', phone: '', message: '', website: '' });
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [error, setError] = useState('');
+
+  const set = (k: keyof typeof fields) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setFields((f) => ({ ...f, [k]: e.target.value }));
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (status === 'sending') return;
+    setStatus('sending');
+    setError('');
+    try {
+      const res = await fetch('/api/site-enquiry', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ...fields, property_id: 'annie-may' }),
+      });
+      const data = (await res.json()) as { ok: boolean; message?: string };
+      if (data.ok) {
+        setStatus('sent');
+      } else {
+        setStatus('error');
+        setError(data.message ?? 'Something went wrong. Please try again.');
+      }
+    } catch {
+      setStatus('error');
+      setError('Something went wrong sending your enquiry. Please try again.');
+    }
+  };
+
+  if (status === 'sent') {
+    return (
+      <div style={{ borderTop: '1px solid var(--am-hairline)', paddingTop: 40 }}>
+        <MaskLines as="p" className="am-display am-d-md" lines={['Thank you.', 'She has your note.']} />
+        <p className="am-body-copy" style={{ marginTop: 20, maxWidth: '28rem' }}>
+          We will get back to you within 48 hours. If it is about dates, the booking page always
+          shows live availability.
+        </p>
+        <div style={{ marginTop: 28 }}>
+          <BookButton label="Check availability" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} noValidate>
+      <div className="am-grid" style={{ rowGap: 34, columnGap: 'clamp(16px, 2.5vw, 40px)' }}>
+        <label style={{ gridColumn: 'span 6' }}>
+          <span className="am-label">First name *</span>
+          <input className="am-input" type="text" name="name" autoComplete="given-name" required value={fields.name} onChange={set('name')} />
+        </label>
+        <label style={{ gridColumn: 'span 6' }}>
+          <span className="am-label">Email address *</span>
+          <input className="am-input" type="email" name="email" autoComplete="email" required value={fields.email} onChange={set('email')} />
+        </label>
+        <label style={{ gridColumn: '1 / -1' }}>
+          <span className="am-label">Phone number</span>
+          <input className="am-input" type="tel" name="phone" autoComplete="tel" value={fields.phone} onChange={set('phone')} />
+        </label>
+        <label style={{ gridColumn: '1 / -1' }}>
+          <span className="am-label">Message *</span>
+          <textarea className="am-input" name="message" rows={5} required value={fields.message} onChange={set('message')} />
+        </label>
+        {/* honeypot — humans never see or fill this */}
+        <input
+          className="am-input"
+          type="text"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden
+          style={{ position: 'absolute', left: '-9999px', height: 0, padding: 0, border: 0 }}
+          value={fields.website}
+          onChange={set('website')}
+        />
+      </div>
+      {status === 'error' && (
+        <p className="am-body-copy" style={{ marginTop: 20, color: 'var(--am-sage)' }}>
+          {error}
+        </p>
+      )}
+      <div style={{ marginTop: 38, display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+        <motion.button type="submit" className="am-book" disabled={status === 'sending'} whileTap={{ scale: 0.97 }} transition={spring}>
+          {status === 'sending' ? 'Sending…' : 'Send your enquiry'}
+          <span className="arrow" aria-hidden>
+            →
+          </span>
+        </motion.button>
+        <span className="am-body-copy" style={{ fontSize: '0.8rem' }}>
+          We reply within 48 hours.
+        </span>
+      </div>
+    </form>
+  );
+}
+
 function ContactPage() {
   return (
     <>
       <PageIntro
         kicker="Connect with us"
         lines={['Come and', 'stay awhile.']}
-        lead="We keep things simple, just as your stay will be. Reach out on Instagram or Facebook to make an enquiry and we will get back to you within 48 hours."
+        lead="We keep things simple, just as your stay will be. Send an enquiry below and we will get back to you within 48 hours."
       />
 
       <section className="am-section" style={{ paddingTop: 0 }}>
         <div className="am-shell">
-          <div className="am-grid" style={{ rowGap: 48 }}>
-            <div style={{ gridColumn: 'span 5', gridRow: 1 }}>
+          <div className="am-grid" style={{ rowGap: 56 }}>
+            <div style={{ gridColumn: 'span 7', gridRow: 1 }}>
               <Reveal>
-                <p className="am-lead">
-                  The quickest way to check dates and stay with her is the booking page. It shows
-                  live availability for all seven rooms.
-                </p>
-              </Reveal>
-              <Reveal delay={0.15}>
-                <div style={{ marginTop: 30 }}>
-                  <BookButton label="Check availability" />
-                </div>
-              </Reveal>
-              <Reveal delay={0.3}>
-                <div style={{ marginTop: 48 }}>
-                  <Ledger
-                    items={[
-                      ['Address', ADDRESS],
-                      ['Instagram', '@anniemaybnb'],
-                      ['Facebook', 'facebook.com/anniemaybnb'],
-                    ]}
-                  />
-                </div>
-              </Reveal>
-              <Reveal delay={0.4}>
-                <p className="am-body-copy" style={{ marginTop: 24 }}>
-                  Send her a message on{' '}
-                  <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="am-link">
-                    Instagram
-                  </a>{' '}
-                  or{' '}
-                  <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="am-link">
-                    Facebook
-                  </a>{' '}
-                  and she will answer within 48 hours.
-                </p>
+                <EnquiryForm />
               </Reveal>
             </div>
-            <div style={{ gridColumn: 'span 6 / -1', gridRow: 1 }}>
-              <CurtainImage src={IMG.facade} alt="Annie May, 16 Formby Road" style={{ aspectRatio: '16 / 9' }} />
-              <Reveal delay={0.2} style={{ marginTop: 'clamp(12px, 1.5vw, 22px)' }}>
-                <div style={{ aspectRatio: '4 / 3', overflow: 'hidden', position: 'relative', background: 'var(--am-paper-2)' }}>
+            <aside style={{ gridColumn: 'span 4 / -1', gridRow: 1 }}>
+              <Reveal delay={0.15}>
+                <p className="am-kicker">Find her</p>
+                <p className="am-body-copy">
+                  <a href={MAPS_URL} target="_blank" rel="noopener noreferrer" className="am-link">
+                    {ADDRESS}
+                  </a>
+                </p>
+              </Reveal>
+              <Reveal delay={0.25}>
+                <div style={{ marginTop: 26 }}>
+                  <p className="am-kicker" style={{ marginBottom: 14 }}>
+                    Say hello
+                  </p>
+                  <SocialLinks size={22} />
+                </div>
+              </Reveal>
+              <Reveal delay={0.35}>
+                <div style={{ marginTop: 34, aspectRatio: '4 / 3', overflow: 'hidden', background: 'var(--am-paper-2)' }}>
                   <iframe
                     src={MAPS_EMBED_URL}
                     title="Map to Annie May, 16 Formby Road, Devonport"
@@ -1052,12 +1170,17 @@ function ContactPage() {
                   />
                 </div>
               </Reveal>
-              <p className="am-body-copy" style={{ marginTop: 12, fontSize: '0.8rem' }}>
-                <a href={MAPS_URL} target="_blank" rel="noopener noreferrer" className="am-link">
-                  Open in Google Maps
-                </a>
-              </p>
-            </div>
+              <Reveal delay={0.45}>
+                <div style={{ marginTop: 30 }}>
+                  <p className="am-body-copy" style={{ fontSize: '0.85rem' }}>
+                    Ready to book? The booking page shows live availability for all seven rooms.
+                  </p>
+                  <div style={{ marginTop: 18 }}>
+                    <BookButton label="Check availability" />
+                  </div>
+                </div>
+              </Reveal>
+            </aside>
           </div>
         </div>
       </section>
