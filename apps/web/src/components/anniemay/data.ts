@@ -38,6 +38,12 @@ export const IMG = {
   doorSign: `${A}/ba027d43ac-DEB_AIRBNB_-79-1-1024x769.jpg`,
   windowSeat: `${A}/ba7d162897-DEB_AIRBNB_-19.jpg`,
   host: `${A}/am-hd-Deb-Badcock.jpg`,
+  // Stock: Mersey Bluff Lighthouse — photo by Synyan, Wikimedia Commons, CC BY 3.0
+  merseyBluff: `${A}/am-stock-mersey-bluff-lighthouse.jpg`,
+  // Stock: Spirit of Tasmania I passing Mersey Bluff — photo by Cody Williams, Wikimedia Commons, CC BY-SA 2.0
+  spirit: `${A}/am-stock-spirit-of-tasmania.jpg`,
+  // Stock: wine toast — Pixabay licence, no attribution required
+  wineToast: `${A}/am-stock-wine-toast.jpg`,
 } as const;
 
 export interface Room {

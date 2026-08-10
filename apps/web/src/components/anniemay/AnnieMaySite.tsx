@@ -437,20 +437,20 @@ const ESSENTIALS = [
   {
     q: 'Where is she?',
     a: 'In central Devonport on Tasmania’s north west coast, on the main road beside the Mersey and an easy walk to the city centre. If you only know you want the north west coast, start here: Devonport is where the coast begins.',
-    image: IMG.kingDesk,
-    caption: 'Room to breathe, King Superior',
+    image: IMG.merseyBluff,
+    caption: 'Mersey Bluff, Devonport · photo Synyan (CC BY)',
   },
   {
     q: 'Getting here',
     a: 'Two kilometres from the Spirit of Tasmania terminal and twenty minutes from Devonport Airport. Roll off the ferry and be at her door in minutes.',
-    image: IMG.greenRoom,
-    caption: 'Ready when you arrive',
+    image: IMG.spirit,
+    caption: 'The Spirit passing Mersey Bluff · photo Cody Williams (CC BY-SA)',
   },
   {
     q: 'Who is she for?',
     a: 'Adults only, guests 18 and over. Couples, business travellers and quiet weekenders who value privacy and calm.',
-    image: IMG.loungeDetail,
-    caption: 'The lounge, late afternoon',
+    image: IMG.wineToast,
+    caption: 'Good company, always',
   },
   {
     q: 'What is included?',
