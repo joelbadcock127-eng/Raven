@@ -48,13 +48,25 @@ export async function GET() {
   try {
     const url =
       `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
-      '&current=temperature_2m,weather_code,wind_direction_10m' +
+      '&current=temperature_2m,weather_code,wind_direction_10m,is_day' +
       '&daily=sunrise,sunset&forecast_days=2&timezone=Australia%2FHobart';
     const res = await fetch(url, { next: { revalidate: 600 } });
     if (!res.ok) throw new Error(`open-meteo ${res.status}`);
     const data = (await res.json()) as {
-      current: { temperature_2m: number; weather_code: number; wind_direction_10m: number; time: string };
+      current: {
+        temperature_2m: number;
+        weather_code: number;
+        wind_direction_10m: number;
+        is_day: number;
+        time: string;
+      };
       daily: { sunrise: string[]; sunset: string[] };
+    };
+
+    /** Decimal hour (e.g. 17.47) from an in-zone ISO timestamp. */
+    const decHour = (iso: string): number => {
+      const m = iso.match(/T(\d{2}):(\d{2})/);
+      return m ? Number(m[1]) + Number(m[2]) / 60 : 12;
     };
 
     const temp = Math.round(data.current.temperature_2m);
@@ -77,7 +89,18 @@ export async function GET() {
       .filter(Boolean)
       .join(' ');
 
-    return NextResponse.json({ ok: true, line });
+    return NextResponse.json({
+      ok: true,
+      line,
+      // For the hero's day-cycle grade and weather chip (V2):
+      tempC: temp,
+      code: data.current.weather_code,
+      isDay: data.current.is_day === 1,
+      flourish: flourish(temp, data.current.weather_code, hour),
+      hourNow: decHour(data.current.time),
+      sunriseH: decHour(data.daily.sunrise[0]),
+      sunsetH: decHour(data.daily.sunset[0]),
+    });
   } catch {
     // The strip simply doesn't render without a line — never an error state.
     return NextResponse.json({ ok: false, line: null });

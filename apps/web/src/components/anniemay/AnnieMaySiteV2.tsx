@@ -332,58 +332,109 @@ function ClosingCta({ heading, sub }: { heading: string[]; sub: string }) {
   );
 }
 
-/* ────────────────── V2: the awake strip ────────────────── */
+/* ────────────────── V2: live conditions + hero day cycle ────────────────── */
 
-/**
- * "What she's like right now" — one live line of house-voice copy from
- * /api/site/weather (Open-Meteo, cached 10 min). Renders nothing at all
- * until a line arrives; the site never shows a loading or error state.
- */
-function LiveNowStrip() {
-  const [line, setLine] = useState<string | null>(null);
+interface LiveWx {
+  line: string;
+  tempC: number;
+  code: number;
+  isDay: boolean;
+  flourish: string;
+  hourNow: number;
+  sunriseH: number;
+  sunsetH: number;
+}
+
+/** Fetch the live Devonport conditions once; null until they arrive. */
+function useLiveWx(): LiveWx | null {
+  const [wx, setWx] = useState<LiveWx | null>(null);
   useEffect(() => {
     let alive = true;
     fetch('/api/site/weather')
       .then((r) => r.json())
-      .then((d: { line?: string | null }) => {
-        if (alive && d?.line) setLine(d.line);
+      .then((d: Partial<LiveWx> & { ok?: boolean }) => {
+        if (alive && d?.ok && d.line && typeof d.hourNow === 'number') setWx(d as LiveWx);
       })
       .catch(() => {});
     return () => {
       alive = false;
     };
   }, []);
-  return (
-    <AnimatePresence>
-      {line && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          transition={{ duration: 1, ease: ease.outQuint }}
-          className="am-tint"
-          style={{ overflow: 'hidden', borderBottom: '1px solid var(--am-hairline)' }}
-        >
-          <div className="am-shell" style={{ padding: '13px 0', textAlign: 'center' }}>
-            <p className="am-body-copy" style={{ fontSize: '0.82rem', letterSpacing: '0.05em', margin: 0 }}>
-              <span
-                aria-hidden
-                style={{
-                  display: 'inline-block',
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: 'var(--am-sage)',
-                  marginRight: 10,
-                  verticalAlign: 'middle',
-                }}
-              />
-              {line}
-            </p>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+  return wx;
+}
+
+function wxEmoji(code: number, isDay: boolean): string {
+  if (code === 0) return isDay ? '☀️' : '🌙';
+  if (code <= 2) return isDay ? '🌤️' : '🌙';
+  if (code === 3) return '☁️';
+  if (code === 45 || code === 48) return '🌫️';
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return '🌧️';
+  if (code >= 71 && code <= 77) return '❄️';
+  if (code >= 95) return '⛈️';
+  return isDay ? '🌤️' : '🌙';
+}
+
+/**
+ * The simulated day over the facade. The photo itself is a dusk shot with
+ * the windows lit, so each phase is only a grade: a brightness/saturation
+ * filter on the image plus two flat colour washes (multiply + soft-light),
+ * all smoothly CSS-transitionable. At night the grade darkens the sky and
+ * the already-lit windows keep glowing.
+ */
+const SKY_PHASES = [
+  { filter: 'brightness(1.12) saturate(1.06)', tint: 'rgba(255,255,255,0)', glow: 'rgba(150,190,255,0.10)' }, // midday
+  { filter: 'brightness(1.06) saturate(1.03)', tint: 'rgba(255,244,214,0.05)', glow: 'rgba(255,214,150,0.10)' }, // afternoon
+  { filter: 'brightness(0.99)', tint: 'rgba(255,180,110,0.13)', glow: 'rgba(255,150,80,0.20)' }, // golden hour
+  { filter: 'none', tint: 'rgba(70,80,140,0.08)', glow: 'rgba(255,140,90,0.10)' }, // dusk — the photo itself
+  { filter: 'brightness(0.80) saturate(0.92)', tint: 'rgba(24,34,66,0.36)', glow: 'rgba(255,190,120,0.05)' }, // night
+  { filter: 'brightness(0.70) saturate(0.86)', tint: 'rgba(16,24,52,0.48)', glow: 'rgba(255,190,120,0.04)' }, // deep night
+  { filter: 'brightness(0.93)', tint: 'rgba(150,120,160,0.14)', glow: 'rgba(255,170,150,0.16)' }, // dawn
+  { filter: 'brightness(1.06)', tint: 'rgba(220,235,255,0.07)', glow: 'rgba(255,235,190,0.08)' }, // morning
+] as const;
+
+/** Which phase Devonport is actually in, from the real sun times. */
+function phaseForNow(h: number, sunrise: number, sunset: number): number {
+  if (h < sunrise - 1 || h >= sunset + 2.5) return 5; // deep night
+  if (h < sunrise + 0.5) return 6; // dawn
+  if (h < 11) return 7; // morning
+  if (h < 14) return 0; // midday
+  if (h < sunset - 1.5) return 1; // afternoon
+  if (h < sunset - 0.3) return 2; // golden hour
+  if (h < sunset + 0.8) return 3; // dusk
+  return 4; // night
+}
+
+const SWEEP_STEP_MS = 480;
+
+/**
+ * Runs the intro: a sped-up day, midday to midday, then keeps stepping to
+ * wherever Devonport's clock actually is and stops there.
+ */
+function useDayCycle(wx: LiveWx | null, reduced: boolean | null): number {
+  const [step, setStep] = useState(0); // raw step counter along the phase ring
+  const target = wx ? phaseForNow(wx.hourNow, wx.sunriseH, wx.sunsetH) : null;
+  const total = target === null ? null : SKY_PHASES.length + target; // full lap + landing
+
+  useEffect(() => {
+    if (target === null || total === null) return;
+    if (reduced) {
+      setStep(total);
+      return;
+    }
+    const id = setInterval(() => {
+      setStep((s) => {
+        if (s >= total) {
+          clearInterval(id);
+          return s;
+        }
+        return s + 1;
+      });
+    }, SWEEP_STEP_MS);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, reduced]);
+
+  return step % SKY_PHASES.length;
 }
 
 /* ────────────────── V2: book-direct walk offer ────────────────── */
@@ -708,6 +759,11 @@ function Hero() {
   const [offset, setOffset] = useState(0);
   useEffect(() => scrollY.on('change', (v) => setOffset(Math.min(v, 900))), [scrollY]);
 
+  const wx = useLiveWx();
+  const phase = useDayCycle(wx, reduced);
+  const sky = SKY_PHASES[phase];
+  const gradeFade = 'opacity 1s ease, background 1s ease, filter 1.1s ease';
+
   return (
     <section style={{ position: 'relative', height: '100svh', minHeight: 560, overflow: 'clip', color: 'var(--am-cream)' }}>
       <motion.img
@@ -724,8 +780,13 @@ function Hero() {
           objectFit: 'cover',
           willChange: 'transform',
           transform: reduced ? undefined : `translateY(${offset * 0.2}px)`,
+          filter: sky.filter,
+          transition: gradeFade,
         }}
       />
+      {/* the sped-up day: two colour washes graded per phase */}
+      <div aria-hidden style={{ position: 'absolute', inset: 0, background: sky.tint, mixBlendMode: 'multiply', transition: gradeFade }} />
+      <div aria-hidden style={{ position: 'absolute', inset: 0, background: sky.glow, mixBlendMode: 'soft-light', transition: gradeFade }} />
       <div
         aria-hidden
         style={{
@@ -749,6 +810,19 @@ function Hero() {
         >
           A 1906 heritage guesthouse · Devonport · Tasmania
         </motion.p>
+        <AnimatePresence>
+          {wx && (
+            <motion.p
+              initial={reduced ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.3 }}
+              style={{ margin: '10px 0 0', fontSize: '0.85rem', letterSpacing: '0.05em', color: 'var(--am-cream)' }}
+            >
+              <span aria-hidden style={{ marginRight: 8 }}>{wxEmoji(wx.code, wx.isDay)}</span>
+              {wx.tempC}° right now · {wx.flourish}
+            </motion.p>
+          )}
+        </AnimatePresence>
         <MaskLines
           as="h1"
           className="am-display am-d-xl"
@@ -1614,7 +1688,6 @@ export default function AnnieMaySiteV2({ page, standalone }: { page: string; sta
         {current === 'home' && (
           <>
             <Hero />
-            <LiveNowStrip />
             <HomeIntro standalone={standalone} />
             <RoomsIndex standalone={standalone} />
             <BreakfastSection />
