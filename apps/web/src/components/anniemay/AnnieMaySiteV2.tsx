@@ -168,81 +168,6 @@ function BreakfastSection() {
 }
 
 
-/**
- * V2: the walkable ledger's line animation, writ large — a car draws on at
- * the foot of the column, then oversized footsteps walk up and across,
- * passing straight through the heading text, and the whole thing fades
- * away once the walk is done. One-shot per visit.
- */
-function WalkSteps() {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { amount: 0.35, once: true });
-  const steps = Array.from({ length: 10 }, (_, i) => ({
-    x: 175 + i * 34,
-    y: 375 - i * 34 + (i % 2 === 0 ? 10 : -10),
-    rot: i % 2 === 0 ? 22 : -2,
-  }));
-  return (
-    <motion.div
-      ref={ref}
-      aria-hidden
-      initial={{ opacity: 1 }}
-      animate={inView ? { opacity: [1, 1, 0] } : {}}
-      transition={{ duration: 6.5, times: [0, 0.8, 1] }}
-      style={{ position: 'absolute', inset: 0, pointerEvents: 'none', color: 'var(--am-cream)', opacity: 0.92 }}
-    >
-      <svg
-        viewBox="0 0 520 430"
-        preserveAspectRatio="xMidYMax meet"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }}
-      >
-        {/* the car, drawn on and left behind */}
-        <motion.path
-          d="M28 400 v-14 c0-6 4-10 10-10 h14 l18-25 h55 l20 25 h20 c6 0 10 4 10 10 v14 h-11"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={inView ? { pathLength: 1, opacity: 1 } : {}}
-          transition={{ duration: 0.9, ease: 'easeInOut' }}
-        />
-        <motion.path
-          d="M112 351 v35"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={inView ? { pathLength: 1, opacity: 0.7 } : {}}
-          transition={{ duration: 0.35, delay: 0.8 }}
-        />
-        {[66, 152].map((cx) => (
-          <motion.circle
-            key={cx}
-            cx={cx}
-            cy={400}
-            r={12.5}
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={inView ? { pathLength: 1, opacity: 1 } : {}}
-            transition={{ duration: 0.6, delay: 0.7, ease: 'easeInOut' }}
-          />
-        ))}
-        {/* footsteps striding up through the heading, then away */}
-        {steps.map((st, i) => (
-          <motion.g
-            key={i}
-            transform={`translate(${st.x} ${st.y}) rotate(${st.rot})`}
-            initial={{ opacity: 0 }}
-            animate={inView ? { opacity: [0, 0.95, 0.55] } : {}}
-            transition={{ duration: 2.2, times: [0, 0.12, 1], delay: 1.1 + i * 0.24 }}
-          >
-            <ellipse cx="0" cy="0" rx="4.6" ry="8" fill="currentColor" stroke="none" />
-            <circle cx="0" cy="-12" r="3" fill="currentColor" stroke="none" />
-          </motion.g>
-        ))}
-      </svg>
-    </motion.div>
-  );
-}
-
 /** Concrete walkability: what is actually out her front door, with times. */
 function WalkableSection() {
   return (
@@ -250,7 +175,6 @@ function WalkableSection() {
       <div className="am-shell">
         <div className="am-grid" style={{ rowGap: 40, alignItems: 'start' }}>
           <div style={{ gridColumn: 'span 5', gridRow: 1, position: 'relative' }}>
-            <WalkSteps />
             <p className="am-kicker" style={{ color: 'var(--am-cream-mute)' }}>
               Out her front door
             </p>
@@ -390,12 +314,12 @@ function ClosingCta({ heading, sub }: { heading: string[]; sub: string }) {
       >
         <MaskLines as="h2" className="am-display am-d-lg" lines={heading} />
         <Reveal delay={0.4}>
-          <p className="am-lead" style={{ marginTop: 22, color: 'var(--am-cream-mute)', maxWidth: '30rem' }}>
+          <p className="am-lead" style={{ marginTop: 22, color: 'rgba(246, 242, 233, 0.94)', textShadow: '0 1px 14px rgba(0,0,0,0.35)', maxWidth: '30rem' }}>
             {sub}
           </p>
         </Reveal>
         <Reveal delay={0.5}>
-          <p className="am-body-copy" style={{ marginTop: 18, color: 'var(--am-cream-mute)', fontSize: '0.82rem', letterSpacing: '0.06em' }}>
+          <p className="am-body-copy" style={{ marginTop: 18, color: 'rgba(246, 242, 233, 0.85)', textShadow: '0 1px 12px rgba(0,0,0,0.35)', fontSize: '0.82rem', letterSpacing: '0.06em' }}>
             Breakfast included · adults only · book direct with the house
           </p>
         </Reveal>

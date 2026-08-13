@@ -186,6 +186,7 @@ export const REVIEWS: Array<{
     name: 'Sophie & the girls',
     detail: 'Bridesmaids weekend',
     initials: 'S',
+    image: '/mirror-assets/am-review-sophie.jpg',
   },
   {
     quote:
@@ -193,6 +194,7 @@ export const REVIEWS: Array<{
     name: 'Jan & Peter',
     detail: 'Touring Tasmania',
     initials: 'J',
+    image: '/mirror-assets/am-review-jan-peter.jpg',
   },
   {
     quote:
@@ -200,6 +202,7 @@ export const REVIEWS: Array<{
     name: 'Michael',
     detail: 'In town for work',
     initials: 'M',
+    image: '/mirror-assets/am-review-michael.jpg',
   },
 ];
 
