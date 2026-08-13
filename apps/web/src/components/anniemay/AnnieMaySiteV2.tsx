@@ -459,9 +459,8 @@ function wxEmoji(code: number, isDay: boolean): string {
  * out, then the sky settles back on the untouched photo.
  *
  * Realism rules learnt the hard way:
- *  - the sun and moon live ONLY in the sky band (top ~24% of the frame),
- *    on a shallow arc, fading in/out as if rising/setting behind the
- *    rooftops — they are never visible at ground level
+ *  - no literal sun or moon discs — the light itself tells the time of day:
+ *    warm raking gradients at sunrise/sunset, a cool moonlight wash at night
  *  - stars are confined to the sky band and skip the tower's silhouette
  *  - the night tint is masked so the sky darkens fully but the house
  *    keeps its shape, and two screen-blend copies of the photo lift the
@@ -511,22 +510,12 @@ const GRADE_STOPS: number[][] = [
   [1.0, 1.0, 1.0, 0.04],
 ];
 
-/** Sun above the horizon between these day-fractions (rises east = left). */
+/** Daylight between these day-fractions (sun rises east = left). */
 const SUN_RISE = 0.37;
 const SUN_SET = 0.99;
-/** Moon crosses during the night, same east → west direction. */
+/** Moonlight during the night, same east → west direction. */
 const MOON_RISE = 0.03;
 const MOON_SET = 0.345;
-
-/** The arc: rises at ~30% height on the east edge, apex ~6%, sets west.
- *  The masked foreground house genuinely occludes whatever it crosses. */
-function skyArc(p: number): { x: number; y: number } {
-  return { x: lerp(3, 97, p), y: 30 - Math.sin(p * Math.PI) * 24 };
-}
-/** Soft rise/set fade at the very edges of the frame. */
-function skyEdgeFade(p: number): number {
-  return smooth(0.03, 0.1, p) * smooth(0.97, 0.9, p);
-}
 
 /** Stars: sky band only (container is the top 26% of the frame), skipping
  *  the tower silhouette that pokes into the band at centre. */
@@ -557,8 +546,6 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
   const starsOuter = useRef<HTMLDivElement>(null);
   const starsDrift = useRef<HTMLDivElement>(null);
   const clouds = useRef<HTMLDivElement>(null);
-  const sun = useRef<HTMLDivElement>(null);
-  const moon = useRef<HTMLDivElement>(null);
   const startAt = useRef<number | null>(null);
   const done = useRef(false);
 
@@ -573,7 +560,7 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
       // Rest exactly on the untouched photo, windows lit as shot.
       if (img.current) img.current.style.filter = 'none';
       if (fg.current) fg.current.style.filter = 'none';
-      for (const r of [tint, warmEast, warmWest, moonlight, starsOuter, sun, moon, clouds])
+      for (const r of [tint, warmEast, warmWest, moonlight, starsOuter, clouds])
         if (r.current) r.current.style.opacity = '0';
       if (glowSharp.current) glowSharp.current.style.opacity = '0';
       if (glowSoft.current) glowSoft.current.style.opacity = '0';
@@ -601,42 +588,15 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
     const dayF = smooth(0.37, 0.45, frac) * (1 - smooth(0.93, 0.995, frac));
     if (clouds.current) clouds.current.style.opacity = (0.1 + dayF * 0.24 + nightF * 0.04).toFixed(3);
 
-    // ── sun, east to west through the sky band ──
+    // ── warm raking light: from the east side mornings, west evenings ──
     const sp = (frac - SUN_RISE) / (SUN_SET - SUN_RISE);
-    if (sun.current) {
-      if (sp >= 0 && sp <= 1) {
-        const { x, y } = skyArc(sp);
-        const edge = skyEdgeFade(sp);
-        const low = 1 - Math.sin(sp * Math.PI);
-        sun.current.style.opacity = (0.95 * edge).toFixed(3);
-        sun.current.style.left = `${x.toFixed(2)}%`;
-        sun.current.style.top = `${y.toFixed(2)}%`;
-        sun.current.style.transform = `translate(-50%, -50%) scale(${(1 + low * 0.4).toFixed(3)})`;
-        sun.current.style.filter = `sepia(${(low * 0.55).toFixed(3)})`;
-      } else {
-        sun.current.style.opacity = '0';
-      }
-    }
-
-    // warm raking light: from the east side mornings, west evenings
     const lowSun = sp >= 0 && sp <= 1 ? clamp01(1.5 * (1 - Math.sin(sp * Math.PI))) : 0;
     const sunUp = sp >= 0 && sp <= 1 ? smooth(0, 0.05, sp) * smooth(1, 0.95, sp) : 0;
     if (warmEast.current) warmEast.current.style.opacity = (lowSun * (1 - sp) * sunUp * 0.85).toFixed(3);
     if (warmWest.current) warmWest.current.style.opacity = (lowSun * sp * sunUp * 0.85).toFixed(3);
 
-    // ── moon, east to west across the night sky band ──
+    // ── cool moonlight wash, east to west across the night ──
     const mp = (frac - MOON_RISE) / (MOON_SET - MOON_RISE);
-    if (moon.current) {
-      if (mp >= 0 && mp <= 1) {
-        const { x, y } = skyArc(mp);
-        const edge = skyEdgeFade(mp);
-        moon.current.style.opacity = (0.92 * edge * Math.max(nightF, 0.25)).toFixed(3);
-        moon.current.style.left = `${x.toFixed(2)}%`;
-        moon.current.style.top = `${y.toFixed(2)}%`;
-      } else {
-        moon.current.style.opacity = '0';
-      }
-    }
     if (moonlight.current) {
       const side = mp < 0.5 ? 'to right' : 'to left';
       moonlight.current.style.background = `linear-gradient(${side}, rgba(150,180,230,0.5), rgba(150,180,230,0) 62%)`;
@@ -744,45 +704,6 @@ function HolyGrailSky({ reduced, parallaxY }: { reduced: boolean | null; paralla
           />
         ))}
       </div>
-
-      {/* the moon — pale shaded disc with halo */}
-      <div
-        ref={moon}
-        aria-hidden
-        style={{
-          position: 'absolute',
-          left: '-10%',
-          top: '18%',
-          width: 44,
-          height: 44,
-          borderRadius: '50%',
-          opacity: 0,
-          transform: 'translate(-50%, -50%)',
-          background: 'radial-gradient(circle at 38% 38%, #fdfbf2 0%, #ece8d8 55%, #d4cfc0 100%)',
-          boxShadow: 'inset -9px -5px 12px rgba(120,120,140,0.5), 0 0 34px 10px rgba(235,240,255,0.26)',
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* the sun — bright core, warm halo */}
-      <div
-        ref={sun}
-        aria-hidden
-        style={{
-          position: 'absolute',
-          left: '-10%',
-          top: '18%',
-          width: 96,
-          height: 96,
-          borderRadius: '50%',
-          opacity: 0,
-          transform: 'translate(-50%, -50%)',
-          background:
-            'radial-gradient(circle, #fffdf4 0%, #ffedbe 20%, rgba(255,214,150,0.6) 40%, rgba(255,200,130,0) 66%)',
-          boxShadow: '0 0 60px 24px rgba(255,214,150,0.35)',
-          pointerEvents: 'none',
-        }}
-      />
 
       {/* 3 · the house itself, matted out of the photo, in FRONT of the sky */}
       <motion.div {...parallax}>
