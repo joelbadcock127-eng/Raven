@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { Cormorant_Garamond, Jost } from 'next/font/google';
 import { supabaseAdmin } from '@/lib/supabase';
-import { AnnieMayChrome } from '@/components/anniemay/AnnieMaySite';
+import { AnnieMayChromeV2 } from '@/components/anniemay/AnnieMaySiteV2';
 import AnnieMayEventArticle from '@/components/anniemay/AnnieMayEventArticle';
 
 export const revalidate = 300;
@@ -85,13 +85,13 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   if (!page) notFound();
   const c = page.content;
 
-  // Annie May pages render in her own design, wrapped in the site chrome —
+  // Annie May pages render in her own design, wrapped in the V2 site chrome —
   // discreet CMS pages: nothing navigates TO them, everything FROM them.
   if (page.property_id === 'annie-may') {
     return (
-      <AnnieMayChrome standalone={await isStandaloneHost()}>
+      <AnnieMayChromeV2 standalone={await isStandaloneHost()}>
         <AnnieMayEventArticle content={c} published={page.published} />
-      </AnnieMayChrome>
+      </AnnieMayChromeV2>
     );
   }
 

@@ -1939,6 +1939,18 @@ function ContactPage() {
 
 /* ────────────────────────── root ────────────────────────── */
 
+/** V2 site chrome for standalone content pages (event articles etc.):
+ *  the V2 nav and footer around arbitrary children. */
+export function AnnieMayChromeV2({ standalone, children }: { standalone: boolean; children: React.ReactNode }) {
+  return (
+    <div className="am-root">
+      <Nav current="" standalone={standalone} overHero={false} />
+      <main>{children}</main>
+      <Footer standalone={standalone} />
+    </div>
+  );
+}
+
 export default function AnnieMaySiteV2({ page, standalone }: { page: string; standalone: boolean }) {
   const current = ['accommodation', 'story', 'explore', 'contact'].includes(page) ? page : 'home';
   return (
