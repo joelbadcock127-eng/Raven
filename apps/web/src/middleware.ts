@@ -99,6 +99,8 @@ export async function middleware(req: NextRequest) {
   // ── Standalone property-site domain ──
   const site = SITES.find((s) => s.propertyId === pid);
   const liveV2 = settings.find((r) => r.property_id === pid)?.live_version_id ?? null;
+  // Annie May's bespoke site is her live site — no builder version needed.
+  const bespoke = pid === 'annie-may';
 
   const mirrorMatch = pathname.match(/^\/mirror\/[^/]+\/([^/]+)\.html$/);
   if (mirrorMatch) {
@@ -111,9 +113,15 @@ export async function middleware(req: NextRequest) {
   if (pathname === '/sitemap.xml')
     return NextResponse.rewrite(new URL('/api/standalone/sitemap', req.url));
 
-  const slug = pathname === '/' || pathname === '' ? 'home' : pathname.replace(/^\/+|\/+$/g, '');
+  let slug = pathname === '/' || pathname === '' ? 'home' : pathname.replace(/^\/+|\/+$/g, '');
 
-  if (liveV2 && /^[a-z0-9-]*$/.test(slug)) {
+  // 301s from the old WordPress URLs so existing rankings carry over.
+  if (bespoke) {
+    const legacy: Record<string, string> = { 'annie-mays-story': 'story', 'contact-us': 'contact' };
+    if (legacy[slug]) return NextResponse.redirect(new URL(`/${legacy[slug]}`, req.url), 301);
+  }
+
+  if ((liveV2 || bespoke) && /^[a-z0-9-]*$/.test(slug)) {
     // published v2 site takes over the domain
     const dest = new URL(`/site/${pid}`, req.url);
     dest.searchParams.set('page', slug || 'home');

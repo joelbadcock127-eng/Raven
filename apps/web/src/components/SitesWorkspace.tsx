@@ -22,6 +22,15 @@ export default function SitesWorkspace({
 
   const site = sites.find((s) => s.propertyId === activeSiteId) ?? sites[0];
 
+  // Annie May's live site is the bespoke V2 app, not a WordPress mirror.
+  // Its edit bridge speaks the same protocol, with 'v2-' prefixed slugs.
+  const isBespoke = (pid: string) => pid === 'annie-may';
+  const frameSrc = (pid: string, slug: string) =>
+    isBespoke(pid)
+      ? `/site/${pid}?page=${slug.replace(/^v2-/, '')}`
+      : `/mirror/${pid}/${slug}.html`;
+  const displaySlug = (slug: string) => slug.replace(/^v2-/, '');
+
   const postToFrame = (msg: unknown) =>
     iframeRef.current?.contentWindow?.postMessage(msg, '*');
 
@@ -83,7 +92,7 @@ export default function SitesWorkspace({
           return next;
         });
         // reload the current page fresh
-        iframeRef.current.src = `/mirror/${site.propertyId}/${currentSlug}.html`;
+        iframeRef.current.src = frameSrc(site.propertyId, currentSlug);
       }
     });
 
@@ -94,7 +103,7 @@ export default function SitesWorkspace({
     shownSiteRef.current = activeSiteId;
     setCurrentSlug('home');
     setEditMode(false);
-    if (iframeRef.current) iframeRef.current.src = `/mirror/${activeSiteId}/home.html`;
+    if (iframeRef.current) iframeRef.current.src = frameSrc(activeSiteId, 'home');
   }, [activeSiteId]);
 
   return (
@@ -183,13 +192,13 @@ export default function SitesWorkspace({
             ))}
           </span>
           <span className="caption tnum" style={{ marginLeft: 8 }}>
-            {site.domain}/{currentSlug === 'home' ? '' : currentSlug + '/'}
+            {site.domain}/{displaySlug(currentSlug) === 'home' ? '' : displaySlug(currentSlug) + '/'}
           </span>
           {dirty.has(pageKey) && (
             <span className="caption" style={{ color: 'var(--ruby)' }}>· unsaved edits</span>
           )}
           <a
-            href={`https://${site.domain}/${currentSlug === 'home' ? '' : currentSlug + '/'}`}
+            href={`https://${site.domain}/${displaySlug(currentSlug) === 'home' ? '' : displaySlug(currentSlug) + '/'}`}
             target="_blank"
             rel="noopener noreferrer"
             className="caption"
@@ -201,7 +210,7 @@ export default function SitesWorkspace({
 
         <iframe
           ref={iframeRef}
-          src={`/mirror/${site.propertyId}/home.html`}
+          src={frameSrc(site.propertyId, 'home')}
           title={`${site.name} website`}
           style={{ width: '100%', height: '78vh', border: 'none', display: 'block', background: '#fff' }}
         />

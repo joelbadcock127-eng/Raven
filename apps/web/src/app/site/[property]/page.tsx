@@ -158,7 +158,8 @@ export default async function SiteV2Page({
   // ?version=seed since no builder seed exists for her. The old builder
   // flow stays reachable only for a real stored version (?version=<id>).
   if (property === 'annie-may' && (!q.version || q.version === 'seed') && !q.edit) {
-    const Site = q.v === '2' ? AnnieMaySiteV2 : AnnieMaySite;
+    // V2 is the site; ?v=1 keeps the previous bespoke version reachable.
+    const Site = q.v === '1' ? AnnieMaySite : AnnieMaySiteV2;
     return (
       <div className={`${amDisplay.variable} ${amBody.variable}`}>
         <Site page={q.page ?? 'home'} standalone={q.standalone === '1'} />

@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
     'Allow: /',
     'Disallow: /mirror/',
     'Disallow: /api/',
+    'Disallow: /site/',
+    'Disallow: /go/',
     `Sitemap: https://${host}/sitemap.xml`,
     '',
   ].join('\n');

@@ -24,6 +24,7 @@ export const SITES: SiteDef[] = [
     propertyId: 'annie-may',
     name: 'Annie May',
     domain: 'anniemay.com.au',
-    pages: ['home', 'accommodation', 'annie-mays-story', 'explore', 'contact-us'],
+    // V2 bespoke-site slugs (the old WordPress slugs 301 to these)
+    pages: ['home', 'accommodation', 'story', 'explore', 'contact'],
   },
 ];

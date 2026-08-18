@@ -15,6 +15,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useAnimationFrame, useInView, useReducedMotion, useScroll } from 'framer-motion';
+import AnnieMayEditBridge from './AnnieMayEditBridge';
 import Monogram from './Monogram';
 import { CurtainImage, MaskLines, ParallaxImage, Reveal, ease, spring } from './motion';
 import {
@@ -756,10 +757,10 @@ function DirectOfferPopup() {
           }}
         >
           <motion.div
-            initial={reduced ? false : { y: 34, opacity: 0 }}
+            initial={reduced ? false : { y: 96, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 20, opacity: 0 }}
-            transition={{ duration: 0.8, ease: ease.outExpo }}
+            exit={{ y: 48, opacity: 0 }}
+            transition={{ duration: 1.05, ease: ease.outExpo }}
             onClick={(e) => e.stopPropagation()}
             style={{
               background: 'var(--am-paper, #f6f2e9)',
@@ -1955,6 +1956,7 @@ export default function AnnieMaySiteV2({ page, standalone }: { page: string; sta
   const current = ['accommodation', 'story', 'explore', 'contact'].includes(page) ? page : 'home';
   return (
     <div className="am-root">
+      <AnnieMayEditBridge page={current} />
       <Nav current={current} standalone={standalone} overHero={current === 'home'} />
       <main>
         {current === 'home' && (

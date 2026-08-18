@@ -58,9 +58,10 @@ export default async function SitesPage() {
       <header style={{ marginBottom: 32 }}>
         <h1 className="display-lg" style={{ marginBottom: 12 }}>Property websites</h1>
         <p className="caption" style={{ maxWidth: 620 }}>
-          Current sites are exact mirrors of the live WordPress pages — browse and edit them in
-          place. The builder holds the from-scratch redesigns: versioned, section-based, with the
-          AI editor. Publish a builder version and the property&apos;s domain switches to it.
+          Current sites show each property&apos;s live website — Annie May&apos;s bespoke new site,
+          WordPress mirrors for the rest — browse and edit them in place. The builder holds the
+          from-scratch redesigns: versioned, section-based, with the AI editor. Publish a builder
+          version and the property&apos;s domain switches to it.
         </p>
       </header>
       <SitesHub sites={SITES} builder={builder} />
