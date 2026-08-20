@@ -1,4 +1,4 @@
--- Raven: site builder v2 (versioned, section-based sites), posting plans,
+-- Decra: site builder v2 (versioned, section-based sites), posting plans,
 -- and the reel render pipeline.
 
 -- ── Site builder ──

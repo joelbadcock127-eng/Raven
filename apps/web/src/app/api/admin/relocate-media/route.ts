@@ -7,13 +7,13 @@ export const maxDuration = 300;
 
 /**
  * Relocate media blobs from Supabase storage into R2, batch by batch.
- * Open in a browser: /api/admin/relocate-media?token=RAVEN_UPLOAD_TOKEN
+ * Open in a browser: /api/admin/relocate-media?token=DECRA_UPLOAD_TOKEN
  * The page auto-refreshes until every asset reports provider 'r2'.
  * Rows are updated in place — ids, folders, tags and usage stay intact.
  */
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token');
-  if (!process.env.RAVEN_UPLOAD_TOKEN || token !== process.env.RAVEN_UPLOAD_TOKEN)
+  if (!(process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN) || token !== (process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN))
     return NextResponse.json({ ok: false, message: 'Bad token' }, { status: 401 });
 
   const supabase = supabaseAdmin();

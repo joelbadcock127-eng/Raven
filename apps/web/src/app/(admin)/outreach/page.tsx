@@ -26,7 +26,7 @@ export default async function OutreachPage() {
       </header>
       <OutreachBook contacts={contacts} />
       <footer className="caption" style={{ paddingTop: 64 }}>
-        Raven · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie May.
+        Decra · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie May.
       </footer>
     </>
   );

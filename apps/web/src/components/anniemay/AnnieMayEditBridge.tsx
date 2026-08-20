@@ -79,7 +79,7 @@ export default function AnnieMayEditBridge({ page }: { page: string }) {
     const slug = `v2-${page}`;
     let editing = false;
     let overrides: Override[] = [];
-    let hoverEl: (HTMLElement & { __ravenOutline?: string }) | null = null;
+    let hoverEl: (HTMLElement & { __decraOutline?: string }) | null = null;
     let cancelled = false;
 
     const post = (msg: Record<string, unknown>) => window.parent?.postMessage(msg, '*');
@@ -106,12 +106,12 @@ export default function AnnieMayEditBridge({ page }: { page: string }) {
 
     const onMouseOver = (e: MouseEvent) => {
       if (!editing) return;
-      const el = e.target as HTMLElement & { __ravenOutline?: string };
+      const el = e.target as HTMLElement & { __decraOutline?: string };
       const ok = el.tagName === 'IMG' || isTextTarget(el);
-      if (hoverEl && hoverEl !== el) hoverEl.style.outline = hoverEl.__ravenOutline ?? '';
+      if (hoverEl && hoverEl !== el) hoverEl.style.outline = hoverEl.__decraOutline ?? '';
       if (ok) {
         if (hoverEl !== el) {
-          el.__ravenOutline = el.style.outline;
+          el.__decraOutline = el.style.outline;
           el.style.outline = '2px dashed #533afd';
         }
         hoverEl = el;
@@ -161,7 +161,7 @@ export default function AnnieMayEditBridge({ page }: { page: string }) {
         editing = !!d.on;
         document.body.style.cursor = editing ? 'context-menu' : '';
         if (!editing && hoverEl) {
-          hoverEl.style.outline = hoverEl.__ravenOutline ?? '';
+          hoverEl.style.outline = hoverEl.__decraOutline ?? '';
           hoverEl = null;
         }
       } else if (d.type === 'mirror-collect') {

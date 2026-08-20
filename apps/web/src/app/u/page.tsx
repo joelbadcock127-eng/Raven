@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import PhoneUpload from '@/components/PhoneUpload';
 
 export const metadata: Metadata = {
-  title: 'Raven — quick upload',
+  title: 'Decra — quick upload',
   robots: { index: false, follow: false },
 };
 

@@ -1,4 +1,4 @@
--- Raven Module 4 groundwork: media library, social queue, campaign records,
+-- Decra Module 4 groundwork: media library, social queue, campaign records,
 -- and fact-based event columns for the scraper.
 
 -- ── Event facts (scraper collects facts, not articles) ──

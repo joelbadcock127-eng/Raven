@@ -1,9 +1,9 @@
 /**
- * One-shot Cloudflare R2 setup for the Raven media library.
+ * One-shot Cloudflare R2 setup for the Decra media library.
  *
  * Usage:
  *   R2_ACCOUNT_ID=… R2_ACCESS_KEY_ID=… R2_SECRET_ACCESS_KEY=… \
- *     node scripts/setup-r2.mjs [--bucket raven-media] [--origin https://your-app.vercel.app]
+ *     node scripts/setup-r2.mjs [--bucket decra-media] [--origin https://your-app.vercel.app]
  *
  * Creates the bucket (if missing) and sets the CORS policy that lets the
  * browser and the iOS Shortcut PUT files straight to R2 via presigned URLs.
@@ -30,7 +30,7 @@ const flag = (name, fallback) => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : fallback;
 };
-const bucket = flag('bucket', 'raven-media');
+const bucket = flag('bucket', 'decra-media');
 const origin = flag('origin', '*');
 
 const s3 = new S3Client({
@@ -69,4 +69,4 @@ console.log('     (or connect a custom domain like media.yourdomain.com)');
 console.log('  2. In Vercel env vars set:');
 console.log('     R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,');
 console.log(`     R2_BUCKET=${bucket}, R2_PUBLIC_BASE=<the public URL from step 1>,`);
-console.log('     RAVEN_UPLOAD_TOKEN=<any long random string, for the iOS Shortcut>');
+console.log('     DECRA_UPLOAD_TOKEN=<any long random string, for the iOS Shortcut>');

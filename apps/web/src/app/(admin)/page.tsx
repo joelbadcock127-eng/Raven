@@ -185,7 +185,7 @@ export default async function Home() {
           <h1 className="display-lg" style={{ marginBottom: 8 }}>Feed</h1>
           <p className="caption" style={{ maxWidth: 560, color: 'var(--ink-mute)' }}>
             Reasons people will need a bed, matched to your properties. Approve the good ones and
-            Raven builds the campaign.
+            Decra builds the campaign.
           </p>
         </header>
 
@@ -226,7 +226,7 @@ export default async function Home() {
         )}
 
         <footer className="caption" style={{ paddingTop: 64 }}>
-          Raven · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie
+          Decra · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie
           May. Data refreshes every 5 minutes.
         </footer>
     </>

@@ -8,8 +8,8 @@ import { useEffect, useState } from 'react';
  * change event so it updates without a reload. The pages themselves stay
  * reachable by URL either way.
  */
-export const PMS_MENU_KEY = 'raven-pms-menu';
-export const PMS_MENU_EVENT = 'raven:pms-menu';
+export const PMS_MENU_KEY = 'decra-pms-menu';
+export const PMS_MENU_EVENT = 'decra:pms-menu';
 
 export function pmsMenuVisible(): boolean {
   if (typeof window === 'undefined') return true;

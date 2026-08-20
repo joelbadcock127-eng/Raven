@@ -1,11 +1,11 @@
-# Connecting Meta so Raven can publish
+# Connecting Meta so Decra can publish
 
-Until this is done, Raven still drafts and schedules everything — posts just stop
+Until this is done, Decra still drafts and schedules everything — posts just stop
 at **approved** and the Social page shows "Meta not connected, manual posting for
 now". Once connected, the Publish button posts straight to Instagram and Facebook
 and the nightly insights sync starts filling in reach, likes and saves.
 
-Raven calls Graph API **v21.0** (`apps/web/src/lib/meta.ts`).
+Decra calls Graph API **v21.0** (`apps/web/src/lib/meta.ts`).
 
 ---
 
@@ -19,7 +19,7 @@ Three values, set as environment variables in Vercel:
 | `IG_USER_ID` | The Instagram **Business account** ID (a number, not the @handle) | Yes |
 | `FB_PAGE_ID` | The Facebook Page ID | Only for posting to Facebook |
 
-Raven treats Meta as connected when `META_ACCESS_TOKEN` **and** `IG_USER_ID` are
+Decra treats Meta as connected when `META_ACCESS_TOKEN` **and** `IG_USER_ID` are
 both set. Facebook posting additionally needs `FB_PAGE_ID`.
 
 ---
@@ -35,7 +35,7 @@ both set. Facebook posting additionally needs `FB_PAGE_ID`.
    Facebook, or from the Page: Settings → Linked accounts → Instagram.
 3. You must be an **admin** of that Facebook Page.
 
-Repeat per property if each has its own Instagram account. Raven currently holds
+Repeat per property if each has its own Instagram account. Decra currently holds
 one set of credentials, so it publishes to one account — see "Multiple
 properties" at the bottom.
 
@@ -46,7 +46,7 @@ properties" at the bottom.
 1. Go to <https://developers.facebook.com/apps/> and log in as the account that
    administers the Page.
 2. **Create app** → use case **Other** → type **Business** → name it something
-   like `Raven Publisher` → create.
+   like `Decra Publisher` → create.
 3. In the app dashboard, add the **Instagram** product (in some consoles it is
    listed as "Instagram Graph API").
 
@@ -138,7 +138,7 @@ a Business account or not linked to that Page — go back to Step 0.
 
 ## Step 5 — Set the variables in Vercel
 
-1. Vercel → the Raven project → **Settings** → **Environment Variables**.
+1. Vercel → the Decra project → **Settings** → **Environment Variables**.
 2. Add each one for **Production** (and Preview if you want to test there):
 
    ```
@@ -154,7 +154,7 @@ a Business account or not linked to that Page — go back to Step 0.
 
 ## Step 6 — Verify
 
-Open Raven → **Social**. The badge at the top of the queue should now read
+Open Decra → **Social**. The badge at the top of the queue should now read
 **"Meta connected"** instead of "Meta not connected".
 
 Then do one real end-to-end test:
@@ -191,13 +191,13 @@ Run either by hand with:
 
 ## Things that will bite you
 
-- **Media must be public.** Meta downloads the file from the URL Raven supplies.
+- **Media must be public.** Meta downloads the file from the URL Decra supplies.
   Anything behind auth fails with an unhelpful media error.
-- **Reels and stories are slow.** Raven polls Meta for up to 2 minutes while it
+- **Reels and stories are slow.** Decra polls Meta for up to 2 minutes while it
   transcodes. A "timed out waiting for Meta to process media" error usually means
   the video is large or not a standard MP4 (H.264/AAC).
 - **Instagram allows 50 published posts per rolling 24 hours** via the API.
-- **Carousels are capped at 10 images** — Raven trims to 10 automatically.
+- **Carousels are capped at 10 images** — Decra trims to 10 automatically.
 - **Facebook posts are photo-only** in the current implementation, using the
   first attached image (`/photos` endpoint).
 - **Stories don't return insights** the same way posts do; blank metrics there
@@ -209,7 +209,7 @@ Run either by hand with:
 
 ## Multiple properties
 
-Raven holds one Meta credential set, so it publishes to a single Instagram
+Decra holds one Meta credential set, so it publishes to a single Instagram
 account and single Page. To post to all three properties' accounts, the options
 are:
 

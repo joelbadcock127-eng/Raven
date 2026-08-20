@@ -4,7 +4,7 @@
  * philosophy in the brief (section 12) even for non-API sources.
  */
 const UA =
-  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36 RavenEventMonitor/0.1';
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36 DecraEventMonitor/0.1';
 
 const MIN_INTERVAL_MS = 1500; // per host
 const lastRequestAt = new Map<string, number>();

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" role="img" aria-label="Raven">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" role="img" aria-label="Decra">
   <defs>
     <linearGradient id="featherTop" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#6d28d9"/>
@@ -57,5 +57,5 @@
   <circle cx="176" cy="76" r="9" fill="#ffffff"/>
 
   <!-- Wordmark -->
-  <text x="290" y="192" font-family="Inter, 'SF Pro Display', system-ui, sans-serif" font-size="132" font-weight="600" letter-spacing="-4" fill="url(#word)">Raven</text>
+  <text x="290" y="192" font-family="Inter, 'SF Pro Display', system-ui, sans-serif" font-size="132" font-weight="600" letter-spacing="-4" fill="url(#word)">Decra</text>
 </svg>

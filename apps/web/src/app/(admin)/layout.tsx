@@ -8,7 +8,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <script
         dangerouslySetInnerHTML={{
           __html:
-            "try{if(localStorage.getItem('raven-theme')==='dark')document.documentElement.setAttribute('data-raven-theme','dark')}catch(e){}",
+            "try{if(localStorage.getItem('decra-theme')==='dark')document.documentElement.setAttribute('data-decra-theme','dark')}catch(e){}",
         }}
       />
       <Sidebar />

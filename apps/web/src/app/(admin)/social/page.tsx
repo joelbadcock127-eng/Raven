@@ -42,7 +42,7 @@ export default async function SocialPage() {
         <header style={{ marginBottom: 32 }}>
           <h1 className="display-lg" style={{ marginBottom: 12 }}>Social queue</h1>
           <p className="caption" style={{ maxWidth: 620 }}>
-            Every post and reel Raven prepares — the 3-day regular and campaign content both land
+            Every post and reel Decra prepares — the 3-day regular and campaign content both land
             here as drafts. Nothing goes out without your approval.
           </p>
         </header>
@@ -50,7 +50,7 @@ export default async function SocialPage() {
         <PostingPlans plans={plans} folders={folders} />
         <SocialQueue posts={posts} media={media} metaConnected={metaConfigured()} />
         <footer className="caption" style={{ paddingTop: 64 }}>
-          Raven · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie May.
+          Decra · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie May.
         </footer>
     </>
   );

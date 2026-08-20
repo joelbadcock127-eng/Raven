@@ -5,8 +5,8 @@ import { createStorageUploadUrl, type StorageProvider } from '@/lib/storage';
 export const dynamic = 'force-dynamic';
 
 /**
- * Phone ingestion endpoint for the "Send to Raven" iOS Shortcut.
- * Token-protected via RAVEN_UPLOAD_TOKEN (query `token` or `x-raven-token`
+ * Phone ingestion endpoint for the "Send to Decra" iOS Shortcut.
+ * Token-protected via DECRA_UPLOAD_TOKEN (query `token` or `x-decra-token`
  * header). Two steps so large videos upload straight to R2, never through
  * Vercel's request-body limit:
  *
@@ -18,10 +18,14 @@ export const dynamic = 'force-dynamic';
  */
 
 function authed(req: NextRequest, bodyToken?: string): boolean {
-  const secret = process.env.RAVEN_UPLOAD_TOKEN;
+  const secret = (process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN);
   if (!secret) return false;
   const provided =
-    bodyToken ?? req.nextUrl.searchParams.get('token') ?? req.headers.get('x-raven-token');
+    bodyToken ??
+    req.nextUrl.searchParams.get('token') ??
+    req.headers.get('x-decra-token') ??
+    // existing iOS Shortcuts still send the old header name
+    req.headers.get('x-raven-token');
   return provided === secret;
 }
 
@@ -30,7 +34,7 @@ const PROPERTY_IDS = new Set(['ten-fifty-bakers', 'prescription-pad', 'annie-may
 export async function GET(req: NextRequest) {
   if (!authed(req))
     return NextResponse.json(
-      { ok: false, message: process.env.RAVEN_UPLOAD_TOKEN ? 'Bad token' : 'RAVEN_UPLOAD_TOKEN not set' },
+      { ok: false, message: (process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN) ? 'Bad token' : 'DECRA_UPLOAD_TOKEN not set' },
       { status: 401 },
     );
 

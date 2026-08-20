@@ -21,13 +21,13 @@ const ANNOTATE_SCHEMA = {
 
 /**
  * Auto-caption + tag library images that have no caption yet (Haiku vision).
- * Open in a browser: /api/admin/annotate-media?token=RAVEN_UPLOAD_TOKEN
+ * Open in a browser: /api/admin/annotate-media?token=DECRA_UPLOAD_TOKEN
  * Auto-refreshes until every image is annotated. Costs ~a cent per pass.
  * Captions double as alt text wherever the image is placed.
  */
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token');
-  if (!process.env.RAVEN_UPLOAD_TOKEN || token !== process.env.RAVEN_UPLOAD_TOKEN)
+  if (!(process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN) || token !== (process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN))
     return NextResponse.json({ ok: false, message: 'Bad token' }, { status: 401 });
 
   const supabase = supabaseAdmin();

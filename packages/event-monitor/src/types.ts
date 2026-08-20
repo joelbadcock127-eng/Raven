@@ -1,4 +1,4 @@
-/** Tags Raven uses to characterise an event so it can be matched to properties. */
+/** Tags Decra uses to characterise an event so it can be matched to properties. */
 export type EventTag =
   | 'festival'
   | 'music'

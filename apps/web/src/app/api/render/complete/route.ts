@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     outputUrl?: string;
     error?: string;
   };
-  if (!process.env.RAVEN_UPLOAD_TOKEN || body.token !== process.env.RAVEN_UPLOAD_TOKEN)
+  if (!(process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN) || body.token !== (process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN))
     return NextResponse.json({ ok: false }, { status: 401 });
   if (!body.jobId || !body.status) return NextResponse.json({ ok: false }, { status: 400 });
 

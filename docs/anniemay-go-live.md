@@ -1,7 +1,7 @@
 # Annie May — go-live checklist
 
 How to point anniemay.com.au at the new (V2) site and get it indexed by
-Google and the AI engines — without exposing the rest of the Raven app.
+Google and the AI engines — without exposing the rest of the Decra app.
 
 **All the code prep is done and merged.** As of this doc's last update:
 
@@ -16,7 +16,7 @@ Google and the AI engines — without exposing the rest of the Raven app.
   `/mirror/`, `/api/`, `/site/`, `/go/`) and a **sitemap.xml** listing
   the five site pages plus every published event article — new articles
   join it automatically.
-- The **Raven app host** (raven5.vercel.app or any other host) serves a
+- The **Decra app host** (decra5.vercel.app or any other host) serves a
   `Disallow: /` robots.txt, so the admin, the builder, and duplicate
   copies of the site are never indexed. Only the property domains are.
 - **Click-to-edit works for the V2 site** in the admin → Sites →
@@ -35,11 +35,11 @@ What remains is account-level work only you can do:
 1. **Back up WordPress first** (export from the WP admin, or ask the
    current host for a backup). Once DNS moves, the old site is no
    longer reachable at the domain.
-2. In **Vercel → the raven5 project → Settings → Domains**, add
+2. In **Vercel → the decra5 project → Settings → Domains**, add
    `anniemay.com.au` and `www.anniemay.com.au`. Vercel shows the exact
    DNS records it wants.
 3. In **Vercel → Settings → Environment Variables**, confirm
-   `NEXT_PUBLIC_APP_URL` is set (e.g. `https://raven5.vercel.app`) so
+   `NEXT_PUBLIC_APP_URL` is set (e.g. `https://decra5.vercel.app`) so
    the app can tell its own host apart from the property domain.
 4. At your **domain registrar**, replace the current records with the
    ones Vercel showed — typically `A` on the apex to `76.76.21.21` and
@@ -74,7 +74,7 @@ What remains is account-level work only you can do:
 
 ## 3 · Editing the site day to day
 
-- **Site copy**: Raven admin → Sites → Current sites → Annie May →
+- **Site copy**: Decra admin → Sites → Current sites → Annie May →
   Edit mode on → click any sentence, type, click away → Save page.
   Revert page removes every override for that page.
 - **Images**: in Edit mode, click an image and paste a new URL

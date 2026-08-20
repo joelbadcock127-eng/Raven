@@ -35,7 +35,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ code: strin
     ]);
 
     const target = appendUtm(link.target_url, {
-      source: 'raven',
+      source: 'decra',
       medium: 'link',
       campaign: link.campaign_id ?? link.property_id ?? 'social',
     });

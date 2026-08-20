@@ -91,7 +91,7 @@ export default function PostingPlans({ plans, folders }: { plans: Plan[]; folder
     <section className="card" style={{ padding: 0, marginBottom: 20, overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderBottom: plans.length || showForm ? '1px solid var(--hairline)' : 'none' }}>
         <h2 className="heading-md" style={{ fontSize: 17 }}>Posting plans</h2>
-        <span className="caption">recurring or one-off — Raven drafts, you approve before anything goes out</span>
+        <span className="caption">recurring or one-off — Decra drafts, you approve before anything goes out</span>
         <span style={{ flex: 1 }} />
         {notice && <span className="caption">{notice}</span>}
         <button type="button" className="pill-primary" style={{ fontSize: 12, padding: '7px 14px' }} onClick={() => setShowForm((v) => !v)}>

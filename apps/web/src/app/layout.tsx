@@ -9,13 +9,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Raven — booking-generation platform',
+  title: 'Decra — booking-generation platform',
   description:
-    'Raven finds accommodation demand, identifies empty dates and turns those opportunities into direct bookings.',
+    'Decra finds accommodation demand, identifies empty dates and turns those opportunities into direct bookings.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    title: 'Raven',
+    title: 'Decra',
     statusBarStyle: 'default',
   },
 };

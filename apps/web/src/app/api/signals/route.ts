@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams;
   const cronOk = secret && (header === `Bearer ${secret}` || q.get('secret') === secret);
   // owner can also trigger a run manually with the upload token
-  const tokenOk = process.env.RAVEN_UPLOAD_TOKEN && q.get('token') === process.env.RAVEN_UPLOAD_TOKEN;
+  const tokenOk = (process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN) && q.get('token') === (process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN);
   if (!cronOk && !tokenOk) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }

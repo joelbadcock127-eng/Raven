@@ -1,4 +1,4 @@
--- Raven: demand engine depth — campaign goal dates, offers, distribution
+-- Decra: demand engine depth — campaign goal dates, offers, distribution
 -- checklist, and one-opportunity-per-event so scheduled scrapes can upsert.
 
 alter table campaigns add column if not exists target_start date;

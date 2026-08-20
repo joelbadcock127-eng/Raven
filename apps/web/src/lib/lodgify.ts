@@ -1,7 +1,7 @@
 /**
  * Lodgify v2 client — server-side only, per the brief (section 10-12):
  * throttled well below the published 750 req/min ceiling, exponential
- * backoff honouring Retry-After, all calls behind Raven's backend.
+ * backoff honouring Retry-After, all calls behind Decra's backend.
  *
  * NOTE: response shapes are normalised defensively; verify against the
  * live account on first sync (use /api/sync/availability?dryRun=1).

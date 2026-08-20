@@ -135,7 +135,7 @@ export default function Sidebar() {
         }}
       >
         <div className="heading-md" style={{ fontWeight: 400, letterSpacing: '-0.4px', padding: '0 12px 20px' }}>
-          Raven
+          Decra
         </div>
         {showPms && PMS_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
@@ -238,7 +238,7 @@ export default function Sidebar() {
       </aside>
 
       {/* ── Mobile bottom tab bar (upload front and centre) ── */}
-      <nav className="bottomnav" aria-label="Raven">
+      <nav className="bottomnav" aria-label="Decra">
         {ITEMS.slice(0, 2).map((item) => (
           <Link key={item.href} href={item.href} className={isActive(pathname, item.href) ? 'active' : ''}>
             <span className="navicon" aria-hidden>{item.icon}</span>

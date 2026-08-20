@@ -1,6 +1,6 @@
 # Annie May — content style guide
 
-The single source of truth for how Raven generates Annie May's social content:
+The single source of truth for how Decra generates Annie May's social content:
 captions, reels, music picks, text cards and logo usage. The machine-readable
 version lives in the `style_guides` table (`property_id = 'annie-may'`, seeded
 by `supabase/migrations/0016_anniemay_style_guide.sql`) and is threaded into
@@ -84,7 +84,7 @@ blue, never black-and-white for photography.
 ### Type
 
 Display face is a high-contrast old-style serif with elegant long extenders.
-Working match in Raven's renderer: **Cormorant Garamond** (already loaded in
+Working match in Decra's renderer: **Cormorant Garamond** (already loaded in
 `apps/web/src/app/site/[property]/page.tsx`). Rules:
 
 - Sentence case or lowercase; never all-caps headlines.

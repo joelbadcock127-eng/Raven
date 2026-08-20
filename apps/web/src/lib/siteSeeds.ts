@@ -28,7 +28,7 @@ const A = (file: string) => `/mirror-assets/${file}`;
 const TFB_BOOK = 'https://tenfiftybakers.com.au/book-now/';
 
 const tenFiftyBakers: SiteSeed = {
-  label: 'Raven designed',
+  label: 'Decra designed',
   theme: DEFAULT_THEMES['ten-fifty-bakers'],
   pages: [
     {
@@ -283,7 +283,7 @@ const tenFiftyBakers: SiteSeed = {
 const RX_BOOK = 'https://theprescriptionpad.com.au/bookings/';
 
 const prescriptionPad: SiteSeed = {
-  label: 'Raven designed',
+  label: 'Decra designed',
   theme: DEFAULT_THEMES['prescription-pad'],
   pages: [
     {

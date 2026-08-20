@@ -1,4 +1,4 @@
-/* Raven design tokens — from docs/DESIGN.md (Stripe-inspired system) */
+/* Decra design tokens — from docs/DESIGN.md (Stripe-inspired system) */
 :root {
   --primary: #533afd;
   --primary-deep: #4434d4;
@@ -273,12 +273,12 @@ a {
   animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 
-/* ── Raven dark mode ─────────────────────────────────────────────
-   Applied via data-raven-theme="dark" on <html>, set only by the admin
+/* ── Decra dark mode ─────────────────────────────────────────────
+   Applied via data-decra-theme="dark" on <html>, set only by the admin
    layout (Settings → Appearance). The property websites live outside the
    admin layout and never receive the attribute, so they keep their own
    designs untouched. */
-[data-raven-theme='dark'] {
+[data-decra-theme='dark'] {
   --ink: #e7edf6;
   --ink-secondary: #c4cfdf;
   --ink-mute: #8e9bb0;
@@ -294,13 +294,13 @@ a {
   --shadow-1: rgba(0, 0, 0, 0.35) 0 1px 3px;
   --shadow-2: rgba(0, 0, 0, 0.4) 0 8px 24px, rgba(0, 0, 0, 0.25) 0 2px 6px;
 }
-[data-raven-theme='dark'] body {
+[data-decra-theme='dark'] body {
   background: var(--canvas-soft);
   color: var(--ink);
 }
-[data-raven-theme='dark'] .mesh {
+[data-decra-theme='dark'] .mesh {
   opacity: 0.16;
 }
-[data-raven-theme='dark'] .skeleton {
+[data-decra-theme='dark'] .skeleton {
   background: var(--canvas);
 }

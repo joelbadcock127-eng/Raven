@@ -6,10 +6,10 @@ import { createStorageUploadUrl } from './storage';
  *
  * Env vars:
  *   GH_DISPATCH_TOKEN  fine-grained GitHub token with Actions read/write
- *                      on the Raven repo (fires the render workflow)
- *   GH_REPO            owner/repo, default joelbadcock127-eng/Raven
+ *                      on the Decra repo (fires the render workflow)
+ *   GH_REPO            owner/repo, default joelbadcock127-eng/Decra
  *   NEXT_PUBLIC_APP_URL  the deployed app URL (for the completion callback)
- *   RAVEN_UPLOAD_TOKEN   shared secret for the completion callback
+ *   DECRA_UPLOAD_TOKEN   shared secret for the completion callback
  */
 
 export interface RenderSpec {
@@ -31,7 +31,7 @@ export interface RenderSpec {
 }
 
 export function renderConfigured(): boolean {
-  return Boolean(process.env.GH_DISPATCH_TOKEN && process.env.RAVEN_UPLOAD_TOKEN);
+  return Boolean(process.env.GH_DISPATCH_TOKEN && (process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN));
 }
 
 export async function enqueueRenderJob(
@@ -55,7 +55,7 @@ export async function enqueueRenderJob(
       ok: true,
       jobId: job.id,
       message:
-        'Job queued, but rendering is not connected yet — set GH_DISPATCH_TOKEN (GitHub token with Actions write) and RAVEN_UPLOAD_TOKEN in Vercel.',
+        'Job queued, but rendering is not connected yet — set GH_DISPATCH_TOKEN (GitHub token with Actions write) and DECRA_UPLOAD_TOKEN in Vercel.',
     };
 
   // presigned destination for the finished MP4
@@ -63,7 +63,7 @@ export async function enqueueRenderJob(
   if (!ticket.ok || !ticket.signedUrl)
     return { ok: false, message: ticket.message ?? 'Could not create output upload URL' };
 
-  const repo = process.env.GH_REPO || 'joelbadcock127-eng/Raven';
+  const repo = process.env.GH_REPO || 'joelbadcock127-eng/Decra';
   const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? '';
   const res = await fetch(`https://api.github.com/repos/${repo}/dispatches`, {
     method: 'POST',
@@ -80,7 +80,7 @@ export async function enqueueRenderJob(
         uploadUrl: ticket.signedUrl,
         publicUrl: ticket.publicUrl,
         completeUrl: base ? `${base}/api/render/complete` : null,
-        completeToken: process.env.RAVEN_UPLOAD_TOKEN,
+        completeToken: (process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN),
       },
     }),
   });

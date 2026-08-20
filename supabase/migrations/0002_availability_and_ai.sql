@@ -1,4 +1,4 @@
--- Raven stage 2: availability (Lodgify + iCal), occupancy gaps, sync log, AI enrichment
+-- Decra stage 2: availability (Lodgify + iCal), occupancy gaps, sync log, AI enrichment
 
 -- Booking-source config per property
 alter table properties add column if not exists ical_urls jsonb;          -- Annie May: {"room-1": "https://...ics", ...}

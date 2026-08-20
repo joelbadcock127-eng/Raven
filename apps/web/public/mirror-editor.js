@@ -1,11 +1,11 @@
 /**
- * Raven mirror editor bridge.
+ * Decra mirror editor bridge.
  * Injected into every mirrored site page. Applies saved overrides on load,
  * and when the parent workspace turns on edit mode it makes text elements
  * contentEditable and images click-to-replace, reporting changes back up.
  */
 (function () {
-  var meta = document.querySelector('meta[name="raven-mirror"]');
+  var meta = document.querySelector('meta[name="decra-mirror"]');
   if (!meta) return;
   var parts = meta.getAttribute('content').split('|');
   var property = parts[0];
@@ -92,10 +92,10 @@
     if (!editing) return;
     var el = e.target;
     var ok = el.tagName === 'IMG' || isTextTarget(el);
-    if (hoverEl && hoverEl !== el) hoverEl.style.outline = hoverEl.__ravenOutline || '';
+    if (hoverEl && hoverEl !== el) hoverEl.style.outline = hoverEl.__decraOutline || '';
     if (ok) {
       if (hoverEl !== el) {
-        el.__ravenOutline = el.style.outline;
+        el.__decraOutline = el.style.outline;
         el.style.outline = '2px dashed #533afd';
       }
       hoverEl = el;
@@ -146,7 +146,7 @@
       editing = !!d.on;
       document.body.style.cursor = editing ? 'context-menu' : '';
       if (!editing && hoverEl) {
-        hoverEl.style.outline = hoverEl.__ravenOutline || '';
+        hoverEl.style.outline = hoverEl.__decraOutline || '';
         hoverEl = null;
       }
     } else if (d.type === 'mirror-collect') {

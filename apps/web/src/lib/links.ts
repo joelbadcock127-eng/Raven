@@ -15,7 +15,7 @@ function randomCode(len = 6): string {
 }
 
 export function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL || 'https://raven5.vercel.app').replace(/\/$/, '');
+  return (process.env.NEXT_PUBLIC_APP_URL || 'https://decra5.vercel.app').replace(/\/$/, '');
 }
 
 /** Append UTM params, correctly handling URLs that carry a #hash (Lodgify). */

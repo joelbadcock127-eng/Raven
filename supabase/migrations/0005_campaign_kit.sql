@@ -1,4 +1,4 @@
--- Raven: one-click campaign kit — generated landing pages + kit content.
+-- Decra: one-click campaign kit — generated landing pages + kit content.
 
 -- AI-generated event accommodation landing pages, served at /events/<slug>.
 create table if not exists event_pages (

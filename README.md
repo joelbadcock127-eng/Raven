@@ -1,14 +1,14 @@
-# Raven
+# Decra
 
-**A booking-generation platform for short-term accommodation.** Raven finds accommodation demand, identifies empty dates, and turns those opportunities into direct bookings for three Tasmanian properties: **Ten Fifty Bakers**, **The Prescription Pad**, and **Annie May**.
+**A booking-generation platform for short-term accommodation.** Decra finds accommodation demand, identifies empty dates, and turns those opportunities into direct bookings for three Tasmanian properties: **Ten Fifty Bakers**, **The Prescription Pad**, and **Annie May**.
 
-<img src="assets/logo/raven-logo.svg" alt="Raven" width="360">
+<img src="assets/logo/decra-logo.svg" alt="Decra" width="360">
 
-> Full brief: [`docs/Raven_Product_Build_Brief.pdf`](docs/Raven_Product_Build_Brief.pdf) · Design system: [`docs/DESIGN.md`](docs/DESIGN.md)
+> Full brief: [`docs/Decra_Product_Build_Brief.pdf`](docs/Decra_Product_Build_Brief.pdf) · Design system: [`docs/DESIGN.md`](docs/DESIGN.md)
 
-## What Raven is (and isn't)
+## What Decra is (and isn't)
 
-Raven is **not** a property-management system. Lodgify continues to own bookings, calendars, availability, channel management and guest messaging. Raven sits alongside it and owns:
+Decra is **not** a property-management system. Lodgify continues to own bookings, calendars, availability, channel management and guest messaging. Decra sits alongside it and owns:
 
 - Event intelligence
 - Opportunity recommendations
@@ -28,7 +28,7 @@ Raven is **not** a property-management system. Lodgify continues to own bookings
 
 ## Architecture (target)
 
-One multi-tenant **Vercel** deployment serving all three custom domains · **Supabase** for content, users, events and media · **Lodgify** as the booking source of truth (server-side API calls only, well below rate limits, cached + queued) · **Raven admin** for editing, approval and publishing.
+One multi-tenant **Vercel** deployment serving all three custom domains · **Supabase** for content, users, events and media · **Lodgify** as the booking source of truth (server-side API calls only, well below rate limits, cached + queued) · **Decra admin** for editing, approval and publishing.
 
 Key rules from the brief:
 

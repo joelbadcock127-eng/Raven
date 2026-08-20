@@ -72,7 +72,7 @@ export default function PhoneUpload() {
       }}
     >
       <header style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 20 }}>
-        <span className="heading-md" style={{ fontWeight: 500 }}>Raven</span>
+        <span className="heading-md" style={{ fontWeight: 500 }}>Decra</span>
         <span className="caption">quick upload</span>
         <a href="/" className="caption" style={{ marginLeft: 'auto' }}>Open app</a>
       </header>
@@ -226,7 +226,7 @@ export default function PhoneUpload() {
             <br />
             Tip: Share → “Add to Home Screen” makes this an app.
             <br />
-            Want “Send to Raven” in the iOS share sheet? <a href="/u/shortcut">Set up the shortcut →</a>
+            Want “Send to Decra” in the iOS share sheet? <a href="/u/shortcut">Set up the shortcut →</a>
           </p>
         )}
       </div>

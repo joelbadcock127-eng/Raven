@@ -3,16 +3,16 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Light/dark toggle for the Raven admin. Stored per device; applied as
- * data-raven-theme on <html> by the admin layout's inline script on load
+ * Light/dark toggle for the Decra admin. Stored per device; applied as
+ * data-decra-theme on <html> by the admin layout's inline script on load
  * and live by this toggle. The property websites render outside the admin
  * layout and never get the attribute — they keep their own designs.
  */
-export const THEME_KEY = 'raven-theme';
+export const THEME_KEY = 'decra-theme';
 
 export function applyTheme(dark: boolean) {
-  if (dark) document.documentElement.setAttribute('data-raven-theme', 'dark');
-  else document.documentElement.removeAttribute('data-raven-theme');
+  if (dark) document.documentElement.setAttribute('data-decra-theme', 'dark');
+  else document.documentElement.removeAttribute('data-decra-theme');
 }
 
 export default function ThemeToggle() {

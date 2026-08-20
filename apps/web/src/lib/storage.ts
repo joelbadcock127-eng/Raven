@@ -14,7 +14,7 @@ import { supabaseAdmin } from './supabase';
  *   R2_ACCOUNT_ID         Cloudflare account id
  *   R2_ACCESS_KEY_ID      S3 API token key
  *   R2_SECRET_ACCESS_KEY  S3 API token secret
- *   R2_BUCKET             bucket name (default: raven-media)
+ *   R2_BUCKET             bucket name (default: decra-media)
  *   R2_PUBLIC_BASE        public base URL — the bucket's r2.dev public URL
  *                         or a connected custom domain, no trailing slash
  *   R2_S3_ENDPOINT        optional: jurisdiction-specific S3 endpoint from
@@ -60,7 +60,7 @@ function r2Client(): S3Client {
   });
 }
 
-const r2Bucket = () => process.env.R2_BUCKET || 'raven-media';
+const r2Bucket = () => process.env.R2_BUCKET || 'decra-media';
 
 function cleanPath(fileName: string): string {
   const clean = fileName.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/-+/g, '-');

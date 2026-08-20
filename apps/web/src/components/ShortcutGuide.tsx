@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Step-by-step guide to building the "Send to Raven" iOS Shortcut —
+ * Step-by-step guide to building the "Send to Decra" iOS Shortcut —
  * the only way a web app can appear in the iOS share sheet. URLs are
  * pre-filled with this deployment's origin; the owner pastes their
- * RAVEN_UPLOAD_TOKEN where marked.
+ * DECRA_UPLOAD_TOKEN where marked.
  */
 
 const PROPERTIES = [
@@ -75,15 +75,15 @@ export default function ShortcutGuide() {
         Back to upload
       </a>
       <header style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
-        <span className="heading-md" style={{ fontWeight: 500 }}>Raven</span>
+        <span className="heading-md" style={{ fontWeight: 500 }}>Decra</span>
         <span className="caption">share-sheet shortcut</span>
       </header>
       <p className="caption" style={{ marginBottom: 20 }}>
         iOS only shows App Store apps and <strong>Shortcuts</strong> in the share sheet — a
         home-screen web app can&apos;t appear there. This one-time setup (~3 minutes) adds
-        &quot;Send to Raven&quot; so you can share any photo or video straight from Photos or the
+        &quot;Send to Decra&quot; so you can share any photo or video straight from Photos or the
         Camera. You&apos;ll need the upload token (ask whoever set up Vercel for
-        <code> RAVEN_UPLOAD_TOKEN</code>).
+        <code> DECRA_UPLOAD_TOKEN</code>).
       </p>
 
       <div className="card" style={{ padding: 16, marginBottom: 16 }}>
@@ -153,9 +153,9 @@ export default function ShortcutGuide() {
           <CopyRow label="Step 6 URL" value={registerUrl} />
         </li>
         <li>
-          Name it <strong>Send to Raven ({PROPERTIES.find((p) => p.id === property)?.name})</strong>{' '}
+          Name it <strong>Send to Decra ({PROPERTIES.find((p) => p.id === property)?.name})</strong>{' '}
           and tap Done. Now: Photos → any photo/video → Share → scroll the actions list → Send to
-          Raven.
+          Decra.
         </li>
       </ol>
 

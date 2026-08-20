@@ -26,7 +26,7 @@ interface Props {
 }
 
 interface ChatMsg {
-  role: 'you' | 'raven';
+  role: 'you' | 'decra';
   text: string;
 }
 
@@ -98,7 +98,7 @@ export default function SiteBuilder({
     const instruction = chatInput.trim();
     if (!instruction || !page) return;
     if (!selectedSection) {
-      setChat((c) => [...c, { role: 'you', text: instruction }, { role: 'raven', text: 'Select a section in the preview first — click it, then tell me what to change.' }]);
+      setChat((c) => [...c, { role: 'you', text: instruction }, { role: 'decra', text: 'Select a section in the preview first — click it, then tell me what to change.' }]);
       setChatInput('');
       return;
     }
@@ -110,10 +110,10 @@ export default function SiteBuilder({
         const next = page.sections.map((s) => (s.id === res.section!.id ? res.section! : s));
         page.sections = next;
         await savePageSections(page.id, next);
-        setChat((c) => [...c, { role: 'raven', text: res.note ?? 'Done.' }]);
+        setChat((c) => [...c, { role: 'decra', text: res.note ?? 'Done.' }]);
         setRefresh((n) => n + 1);
       } else {
-        setChat((c) => [...c, { role: 'raven', text: res.message }]);
+        setChat((c) => [...c, { role: 'decra', text: res.message }]);
       }
     });
   };

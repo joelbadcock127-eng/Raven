@@ -56,7 +56,7 @@ export async function boostPost(input: {
 
   try {
     const campaign = await graph(`${act}/campaigns`, {
-      name: `Raven · ${input.name}`,
+      name: `Decra · ${input.name}`,
       objective: 'OUTCOME_TRAFFIC',
       status: 'PAUSED',
       special_ad_categories: '[]',
@@ -73,7 +73,7 @@ export async function boostPost(input: {
       : { geo_locations: { countries: ['AU'], regions: [{ key: '1024' }] } }; // Tasmania
 
     const adset = await graph(`${act}/adsets`, {
-      name: `Raven · ${input.name} · adset`,
+      name: `Decra · ${input.name} · adset`,
       campaign_id: String(campaign.id),
       daily_budget: String(Math.round(input.dailyBudgetAud * 100)),
       billing_event: 'IMPRESSIONS',
@@ -85,14 +85,14 @@ export async function boostPost(input: {
     });
 
     const creative = await graph(`${act}/adcreatives`, {
-      name: `Raven · ${input.name} · creative`,
+      name: `Decra · ${input.name} · creative`,
       object_id: process.env.FB_PAGE_ID!,
       instagram_user_id: process.env.IG_USER_ID ?? '',
       source_instagram_media_id: input.igMediaId,
     });
 
     await graph(`${act}/ads`, {
-      name: `Raven · ${input.name} · ad`,
+      name: `Decra · ${input.name} · ad`,
       adset_id: String(adset.id),
       creative: JSON.stringify({ creative_id: creative.id }),
       status: 'PAUSED',

@@ -7,13 +7,13 @@ import { SITES } from '@/lib/sites';
  * Domain → property comes from three layers (first match wins):
  *   1. site_settings.domains in the database (editable from the Sites tab)
  *   2. the built-in domains in lib/sites.ts
- *   3. the RAVEN_SITE_DOMAINS env var ("host=property-id,…")
+ *   3. the DECRA_SITE_DOMAINS env var ("host=property-id,…")
  *
  * What gets served on a mapped domain:
  *   - if the property has a published v2 site (site_settings.live_version_id),
  *     the section-based site renders at clean URLs
  *   - otherwise the WordPress mirror serves as before
- * Raven's own domain keeps /mirror/* editor-only (noindex).
+ * Decra's own domain keeps /mirror/* editor-only (noindex).
  */
 
 interface SettingsRow {
@@ -48,7 +48,7 @@ function staticDomainMap(): Map<string, string> {
     map.set(s.domain, s.propertyId);
     map.set('www.' + s.domain, s.propertyId);
   }
-  for (const pair of (process.env.RAVEN_SITE_DOMAINS ?? '').split(',')) {
+  for (const pair of ((process.env.DECRA_SITE_DOMAINS ?? process.env.RAVEN_SITE_DOMAINS) ?? '').split(',')) {
     const [host, pid] = pair.split('=').map((x) => x?.trim().toLowerCase());
     if (host && pid) map.set(host, pid);
   }
@@ -59,7 +59,7 @@ export async function middleware(req: NextRequest) {
   const host = (req.headers.get('host') ?? '').toLowerCase().split(':')[0];
   const { pathname } = req.nextUrl;
 
-  // Fast path: on Raven's own domain (vercel.app / localhost / the app URL)
+  // Fast path: on Decra's own domain (vercel.app / localhost / the app URL)
   // never touch the database — this must add zero latency to admin usage.
   const appHost = (() => {
     try {

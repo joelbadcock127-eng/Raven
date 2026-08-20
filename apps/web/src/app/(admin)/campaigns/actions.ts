@@ -51,7 +51,7 @@ export async function publishCampaignGbp(campaignId: string): Promise<ActionResu
   const kit = (c?.kit ?? {}) as { gbpPost?: string };
   if (!c || !event || !kit.gbpPost) return { ok: false, message: 'No GBP post in the kit yet.' };
 
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'https://raven.vercel.app';
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'https://decra.vercel.app';
   const res = await publishGbpPost({
     propertyId: c.property_id ?? '',
     summary: kit.gbpPost,
@@ -250,12 +250,12 @@ export async function sendGuestEmail(campaignId: string): Promise<ActionResult> 
     method: 'POST',
     headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({
-      name: `Raven — ${kit.guestEmail.subject}`,
+      name: `Decra — ${kit.guestEmail.subject}`,
       type: 'regular',
       emails: [
         {
           subject: kit.guestEmail.subject,
-          from_name: process.env.MAILERLITE_FROM_NAME ?? 'Raven Properties',
+          from_name: process.env.MAILERLITE_FROM_NAME ?? 'Decra Properties',
           from: process.env.MAILERLITE_FROM ?? 'stay@tenfiftybakers.com.au',
           content: `<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:24px;color:#211d16">${html}</div>`,
         },

@@ -9,7 +9,7 @@
  *  - internal page links rewritten to the local mirror
  *  - LiteSpeed cache artifacts undone (lazy images restored, deferred CSS
  *    re-enabled, runtime removed) so pages render fully without its JS
- *  - the Raven editor bridge injected
+ *  - the Decra editor bridge injected
  */
 import * as cheerio from 'cheerio';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
@@ -149,11 +149,11 @@ for (const site of SITES) {
             `.gb-navigation .gb-menu-container{display:flex!important}}`,
         )
         .join('');
-      $('head').append(`<style id="raven-mirror-fixes">${css}</style>`);
+      $('head').append(`<style id="decra-mirror-fixes">${css}</style>`);
     }
 
     // ── Identify the page + inject the editor bridge ──
-    $('head').prepend(`<meta name="raven-mirror" content="${site.pid}|${slug}">`);
+    $('head').prepend(`<meta name="decra-mirror" content="${site.pid}|${slug}">`);
     $('body').append('<script src="/mirror-editor.js" defer></script>');
 
     writeFileSync(`${OUT}/${site.pid}/${slug}.html`, $.html());

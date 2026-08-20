@@ -1,4 +1,4 @@
-# @raven/event-monitor — Module 1
+# @decra/event-monitor — Module 1
 
 Discovers events and dates likely to generate accommodation demand, then scores each one **separately per property** using the brief's model: demand 25% · location 20% · guest fit 25% · inventory 20% · stay fit 10%.
 

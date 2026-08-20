@@ -50,7 +50,7 @@ async function getPage(
   return data as { content: PageContent; published: boolean; property_id: string | null };
 }
 
-/** On a property's own domain the site nav uses clean URLs; on Raven's app
+/** On a property's own domain the site nav uses clean URLs; on Decra's app
  *  host it links back through /site/annie-may. Same test as middleware.ts. */
 async function isStandaloneHost(): Promise<boolean> {
   const host = ((await headers()).get('host') ?? '').toLowerCase().split(':')[0];

@@ -1,4 +1,4 @@
--- Raven Module 1: Event Monitor schema
+-- Decra Module 1: Event Monitor schema
 -- Applied once the new Supabase account is connected.
 
 create table if not exists properties (

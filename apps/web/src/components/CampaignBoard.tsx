@@ -67,8 +67,8 @@ export default function CampaignBoard({ campaigns }: { campaigns: CampaignRow[] 
       <section className="card" style={{ padding: 32, maxWidth: 620 }}>
         <h2 className="heading-md" style={{ marginBottom: 8 }}>No campaigns yet</h2>
         <p className="caption">
-          Approve an opportunity in the Feed and it opens a campaign here: Raven prepares the event
-          page, reel, posts, email and organiser outreach; you approve; Raven publishes; bookings
+          Approve an opportunity in the Feed and it opens a campaign here: Decra prepares the event
+          page, reel, posts, email and organiser outreach; you approve; Decra publishes; bookings
           come in through Lodgify; the campaign stops and the revenue is recorded.
         </p>
       </section>

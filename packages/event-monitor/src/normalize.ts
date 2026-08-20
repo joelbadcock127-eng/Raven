@@ -54,7 +54,7 @@ export function normalizeEvent(raw: RawEvent, today: string): NormalizedEvent | 
   if (end < start) end = start;
   const daysUntil = daysBetween(today, start);
   const tagSource = `${raw.title} ${raw.description ?? ''} ${raw.venueName ?? ''}`;
-  // Facts only: keep a short factual snippet for classification — Raven never
+  // Facts only: keep a short factual snippet for classification — Decra never
   // republishes a source's article text; AI writes original copy from facts.
   const snippet = raw.description
     ? raw.description.replace(/\s+/g, ' ').trim().slice(0, 280) || undefined

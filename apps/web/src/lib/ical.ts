@@ -52,7 +52,7 @@ export async function fetchBookedRanges(url: string): Promise<BookedRange[]> {
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
   lastIcalFetch = Date.now();
   const res = await fetch(url, {
-    headers: { 'user-agent': 'RavenAvailabilitySync/0.1' },
+    headers: { 'user-agent': 'DecraAvailabilitySync/0.1' },
     signal: AbortSignal.timeout(25_000),
     cache: 'no-store',
   });

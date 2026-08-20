@@ -212,10 +212,10 @@ export default function MediaLibrary({ assets, folders }: { assets: MediaAsset[]
           {progress && <span className="caption">{progress}</span>}
         </div>
         <p className="caption" style={{ marginTop: 10 }}>
-          Photos and videos land in Raven&apos;s media library (Cloudflare R2). Tag the good ones —
+          Photos and videos land in Decra&apos;s media library (Cloudflare R2). Tag the good ones —
           campaign reels and the social regular pull from here, preferring least-used assets. On
-          your phone, use <a href="/u">raven…/u</a> (add it to your home screen) or the &quot;Send to
-          Raven&quot; shortcut.
+          your phone, use <a href="/u">decra…/u</a> (add it to your home screen) or the &quot;Send to
+          Decra&quot; shortcut.
         </p>
       </section>
 

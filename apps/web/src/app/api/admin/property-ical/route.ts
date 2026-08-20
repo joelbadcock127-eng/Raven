@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     icalUrls?: Record<string, string>;
     inventory?: 'whole-property' | 'room-level';
   };
-  if (!process.env.RAVEN_UPLOAD_TOKEN || body.token !== process.env.RAVEN_UPLOAD_TOKEN)
+  if (!(process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN) || body.token !== (process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN))
     return NextResponse.json({ ok: false, message: 'Bad token' }, { status: 401 });
   if (!body.propertyId || !body.icalUrls || Object.keys(body.icalUrls).length === 0)
     return NextResponse.json({ ok: false, message: 'propertyId and icalUrls required' }, { status: 400 });

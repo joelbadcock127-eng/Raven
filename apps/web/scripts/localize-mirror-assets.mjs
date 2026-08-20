@@ -52,7 +52,7 @@ async function fetchAsset(url) {
   }
   try {
     const res = await fetch(url, {
-      headers: { 'user-agent': 'Mozilla/5.0 RavenMirror/1.0' },
+      headers: { 'user-agent': 'Mozilla/5.0 DecraMirror/1.0' },
       signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

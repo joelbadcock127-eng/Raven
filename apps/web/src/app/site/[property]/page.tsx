@@ -138,7 +138,7 @@ export async function generateMetadata({
   const data = await load(property, q.version);
   const page = data?.pages.find((p) => p.slug === (q.page ?? 'home')) ?? data?.pages[0];
   return {
-    title: page?.title || NAMES[property] || 'Raven site',
+    title: page?.title || NAMES[property] || 'Decra site',
     // only the live version on its real domain should ever be indexed
     robots: q.version || q.edit ? { index: false, follow: false } : undefined,
   };

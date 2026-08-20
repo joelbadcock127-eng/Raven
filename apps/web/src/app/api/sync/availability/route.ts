@@ -15,7 +15,7 @@ function authorized(req: NextRequest): boolean {
   if (secret && (header === `Bearer ${secret}` || req.nextUrl.searchParams.get('secret') === secret))
     return true;
   // owner can trigger a run by hand with the upload token
-  const token = process.env.RAVEN_UPLOAD_TOKEN;
+  const token = (process.env.DECRA_UPLOAD_TOKEN ?? process.env.RAVEN_UPLOAD_TOKEN);
   return !!token && req.nextUrl.searchParams.get('token') === token;
 }
 
@@ -45,9 +45,9 @@ export async function GET(req: NextRequest) {
   if (dryRun) {
     try {
       const lodgifyProps = await listProperties();
-      return NextResponse.json({ dryRun: true, lodgifyProperties: lodgifyProps, ravenProperties: properties });
+      return NextResponse.json({ dryRun: true, lodgifyProperties: lodgifyProps, decraProperties: properties });
     } catch (err) {
-      return NextResponse.json({ dryRun: true, lodgifyError: (err as Error).message, ravenProperties: properties });
+      return NextResponse.json({ dryRun: true, lodgifyError: (err as Error).message, decraProperties: properties });
     }
   }
 

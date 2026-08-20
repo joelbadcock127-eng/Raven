@@ -1,6 +1,6 @@
 name: Render reel
 
-# Fired by Raven via repository_dispatch when a reel render job is enqueued.
+# Fired by Decra via repository_dispatch when a reel render job is enqueued.
 # Runs ffmpeg on the free Actions runner: downloads the clips from R2,
 # cuts/scales/grades them into a 9:16 reel with optional captions + music,
 # uploads the MP4 back to R2 via the presigned URL in the payload, then

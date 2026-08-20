@@ -10,9 +10,9 @@ export async function GET(req: NextRequest) {
   const bare = host.replace(/^www\./, '');
   const site =
     SITES.find((s) => s.domain === bare) ??
-    // extra domains from RAVEN_SITE_DOMAINS ("host=pid,...")
+    // extra domains from DECRA_SITE_DOMAINS ("host=pid,...")
     SITES.find((s) =>
-      (process.env.RAVEN_SITE_DOMAINS ?? '')
+      ((process.env.DECRA_SITE_DOMAINS ?? process.env.RAVEN_SITE_DOMAINS) ?? '')
         .split(',')
         .some((pair) => {
           const [h, pid] = pair.split('=').map((x) => x?.trim().toLowerCase());

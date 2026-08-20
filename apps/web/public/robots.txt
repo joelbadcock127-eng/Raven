@@ -1,4 +1,4 @@
-# Raven app host (raven5.vercel.app etc.): internal tool, never indexed.
+# Decra app host (decra5.vercel.app etc.): internal tool, never indexed.
 # Property domains never see this file — the middleware rewrites their
 # /robots.txt to /api/standalone/robots, which allows indexing.
 User-agent: *

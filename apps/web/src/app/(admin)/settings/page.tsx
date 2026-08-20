@@ -8,7 +8,7 @@ export const revalidate = 0;
 /**
  * Settings → usage & estimated costs.
  *
- * Raven doesn't meter provider billing directly (no billing APIs are
+ * Decra doesn't meter provider billing directly (no billing APIs are
  * connected), so figures are computed from activity counts × current list
  * prices and clearly labelled estimates. Following the dataviz method:
  * a single measure (cost) across few categories → stat tiles + a
@@ -103,7 +103,7 @@ export default async function SettingsPage() {
       <header style={{ marginBottom: 32 }}>
         <h1 className="display-lg" style={{ marginBottom: 12 }}>Settings</h1>
         <p className="caption" style={{ maxWidth: 620 }}>
-          Usage and estimated running costs. Figures are computed from Raven&apos;s activity counts
+          Usage and estimated running costs. Figures are computed from Decra&apos;s activity counts
           at list prices — estimates, not provider invoices.
         </p>
       </header>
@@ -111,7 +111,7 @@ export default async function SettingsPage() {
       <section className="card" style={{ padding: '22px 24px', maxWidth: 720, marginBottom: 24 }}>
         <h2 className="heading-md" style={{ marginBottom: 4 }}>Appearance</h2>
         <p className="caption" style={{ marginBottom: 16 }}>
-          Light or dark, saved per device. Applies to the Raven admin only — the property
+          Light or dark, saved per device. Applies to the Decra admin only — the property
           websites keep their own designs.
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -197,7 +197,7 @@ export default async function SettingsPage() {
       )}
 
       <footer className="caption" style={{ paddingTop: 64 }}>
-        Raven · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie May.
+        Decra · booking-generation platform for Ten Fifty Bakers, The Prescription Pad and Annie May.
       </footer>
     </>
   );

@@ -1,4 +1,4 @@
--- Raven Module 3 groundwork: editable clones of each property's website.
+-- Decra Module 3 groundwork: editable clones of each property's website.
 -- Pages live as ordered JSON blocks; rows are created lazily on first edit,
 -- so the app falls back to the bundled scrape seed until then.
 
