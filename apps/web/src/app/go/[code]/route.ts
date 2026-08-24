@@ -34,11 +34,16 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ code: strin
       }),
     ]);
 
-    const target = appendUtm(link.target_url, {
-      source: 'decra',
-      medium: 'link',
-      campaign: link.campaign_id ?? link.property_id ?? 'social',
-    });
+    // Targets that already carry their own UTM tags (e.g. event pages tag the
+    // campaign with the event slug) keep them; only untagged targets get the
+    // generic decra/link attribution.
+    const target = link.target_url.includes('utm_')
+      ? link.target_url
+      : appendUtm(link.target_url, {
+          source: 'decra',
+          medium: 'link',
+          campaign: link.campaign_id ?? link.property_id ?? 'social',
+        });
     return NextResponse.redirect(target, 302);
   } catch {
     return NextResponse.redirect(home, 302);

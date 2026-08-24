@@ -97,10 +97,21 @@ export async function middleware(req: NextRequest) {
   }
 
   // ── Standalone property-site domain ──
+  // One canonical hostname: www permanently redirects to the bare domain.
+  if (host.startsWith('www.')) {
+    const bare = new URL(req.url);
+    bare.host = host.slice(4);
+    return NextResponse.redirect(bare, 308);
+  }
+
   const site = SITES.find((s) => s.propertyId === pid);
   const liveV2 = settings.find((r) => r.property_id === pid)?.live_version_id ?? null;
   // Annie May's bespoke site is her live site — no builder version needed.
   const bespoke = pid === 'annie-may';
+  const bespokePages = ['home', 'accommodation', 'story', 'explore', 'contact'];
+
+  // Event pages and their index are real app routes on the property domain.
+  if (pathname === '/events' || pathname.startsWith('/events/')) return NextResponse.next();
 
   const mirrorMatch = pathname.match(/^\/mirror\/[^/]+\/([^/]+)\.html$/);
   if (mirrorMatch) {
@@ -121,7 +132,9 @@ export async function middleware(req: NextRequest) {
     if (legacy[slug]) return NextResponse.redirect(new URL(`/${legacy[slug]}`, req.url), 301);
   }
 
-  if ((liveV2 || bespoke) && /^[a-z0-9-]*$/.test(slug)) {
+  // Unknown slugs fall through to the app's 404 rather than soft-200ing home.
+  const validSlug = bespoke ? bespokePages.includes(slug || 'home') : /^[a-z0-9-]*$/.test(slug);
+  if ((liveV2 || bespoke) && validSlug) {
     // published v2 site takes over the domain
     const dest = new URL(`/site/${pid}`, req.url);
     dest.searchParams.set('page', slug || 'home');

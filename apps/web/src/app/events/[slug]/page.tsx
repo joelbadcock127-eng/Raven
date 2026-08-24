@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { Cormorant_Garamond, Jost } from 'next/font/google';
 import { supabaseAdmin } from '@/lib/supabase';
+import { appendUtm, getOrCreateTrackedLink } from '@/lib/links';
 import { AnnieMayChromeV2 } from '@/components/anniemay/AnnieMaySiteV2';
 import AnnieMayEventArticle from '@/components/anniemay/AnnieMayEventArticle';
 
@@ -34,6 +35,8 @@ interface PageContent {
   locality: string | null;
   ticketUrl: string | null;
   promoCode?: string;
+  /** ISO date; after it the page stays live but drops to noindex (archive). */
+  expiresAt?: string;
 }
 
 async function getPage(
@@ -68,10 +71,28 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const page = await getPage(slug);
   if (!page) return {};
+  const c = page.content;
+  const canonical = `https://${c.propertyDomain}/events/${slug}`;
+  const expired = !!c.expiresAt && c.expiresAt < new Date().toISOString().slice(0, 10);
+  const heroAbs = c.heroImageUrl
+    ? c.heroImageUrl.startsWith('http')
+      ? c.heroImageUrl
+      : `https://${c.propertyDomain}${c.heroImageUrl}`
+    : undefined;
   return {
-    title: `${page.content.headline} — ${page.content.propertyName}`,
-    description: page.content.metaDescription,
-    robots: page.published ? undefined : { index: false, follow: false },
+    title: `${c.headline} — ${c.propertyName}`,
+    description: c.metaDescription,
+    alternates: { canonical },
+    openGraph: {
+      title: `${c.headline} — ${c.propertyName}`,
+      description: c.metaDescription,
+      url: canonical,
+      siteName: c.propertyName,
+      type: 'article',
+      ...(heroAbs ? { images: [{ url: heroAbs }] } : {}),
+    },
+    // drafts never index; past events archive to noindex but stay reachable
+    robots: page.published && !expired ? undefined : { index: false, follow: false },
   };
 }
 
@@ -83,7 +104,27 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const { slug } = await params;
   const page = await getPage(slug);
   if (!page) notFound();
-  const c = page.content;
+  let c = page.content;
+
+  // Attribution: the booking CTA leaves through a tracked /go link (click
+  // logged in link_clicks), landing on the booking engine with UTMs that
+  // name this event page. Falls back to a plain UTM-tagged URL if the
+  // tracked-links tables are unavailable.
+  const taggedBookUrl = appendUtm(c.bookUrl, {
+    source: c.propertyDomain,
+    medium: 'event-page',
+    campaign: slug,
+  });
+  const supabase = supabaseAdmin();
+  const tracked = supabase
+    ? await getOrCreateTrackedLink(supabase, {
+        propertyId: page.property_id,
+        label: `event:${slug}`,
+        targetUrl: taggedBookUrl,
+        kind: 'event-page',
+      })
+    : null;
+  c = { ...c, bookUrl: tracked?.relUrl ?? taggedBookUrl };
 
   // Annie May pages render in her own design, wrapped in the V2 site chrome —
   // discreet CMS pages: nothing navigates TO them, everything FROM them.

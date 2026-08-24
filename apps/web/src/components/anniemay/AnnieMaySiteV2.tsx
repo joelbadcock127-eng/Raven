@@ -1002,6 +1002,13 @@ function Footer({ standalone }: { standalone: boolean }) {
                 {p.label}
               </a>
             ))}
+            <a
+              href="/events"
+              className="am-link"
+              style={{ fontSize: '0.76rem', letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 500 }}
+            >
+              What&apos;s on
+            </a>
           </nav>
         </Reveal>
         <Reveal delay={0.3}>

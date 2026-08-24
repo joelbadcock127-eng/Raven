@@ -128,10 +128,26 @@ export async function generateMetadata({
       explore: 'Explore Devonport & North West Tasmania · Annie May',
       contact: 'Contact Annie May · Devonport heritage guesthouse',
     };
+    const page = q.page && titles[q.page] ? q.page : 'home';
+    const description =
+      'Annie May is a heritage boutique guesthouse in central Devonport, Tasmania. Seven ensuite king rooms, adults only, breakfast included, lift access, minutes from the Spirit of Tasmania.';
+    const canonical = `https://anniemay.com.au${page === 'home' ? '/' : `/${page}`}`;
     return {
-      title: titles[q.page ?? 'home'] ?? titles.home,
-      description:
-        'Annie May is a heritage boutique guesthouse in central Devonport, Tasmania. Seven ensuite king rooms, adults only, breakfast included, lift access, minutes from the Spirit of Tasmania.',
+      title: titles[page],
+      description,
+      // the canonical home is always the production domain, so preview
+      // copies on the app host never compete with it
+      alternates: { canonical },
+      openGraph: {
+        title: titles[page],
+        description,
+        url: canonical,
+        siteName: 'Annie May',
+        type: 'website',
+        images: [{ url: 'https://anniemay.com.au/mirror-assets/1d534881d3-Annie-May-Boutique-Accomodation.jpg' }],
+      },
+      // only the live domain serves an indexable copy
+      robots: q.standalone === '1' ? undefined : { index: false, follow: false },
     };
   }
 

@@ -24,15 +24,22 @@ export async function GET(req: NextRequest) {
 
   const locs = site.pages.map((slug) => `https://${host}${slug === 'home' ? '/' : '/' + slug}`);
 
-  // published event/campaign content pages for this property are indexable too
+  // published, unexpired event pages for this property are indexable too,
+  // reached through the What's-on index
   const supabase = supabaseAdmin();
   if (supabase) {
     const { data: eventPages } = await supabase
       .from('event_pages')
-      .select('slug')
+      .select('slug, content')
       .eq('property_id', site.propertyId)
       .eq('published', true);
-    for (const p of eventPages ?? []) locs.push(`https://${host}/events/${p.slug}`);
+    const today = new Date().toISOString().slice(0, 10);
+    const live = (eventPages ?? []).filter((p) => {
+      const exp = (p.content as { expiresAt?: string } | null)?.expiresAt;
+      return !exp || exp >= today;
+    });
+    if (live.length > 0) locs.push(`https://${host}/events`);
+    for (const p of live) locs.push(`https://${host}/events/${p.slug}`);
   }
 
   const urls = locs.map((loc) => `  <url><loc>${loc}</loc></url>`).join('\n');
