@@ -23,7 +23,7 @@ const OUT = path.join(ROOT, 'public', 'mirror');
 
 const SITES = [
   { pid: 'ten-fifty-bakers', domain: 'tenfiftybakers.com.au',
-    slugs: ['home', 'our-accommodation', 'our-story', 'explore', 'contact-us', 'book-now'] },
+    slugs: ['home', 'our-accommodation', 'our-story', 'explore', 'contact-us', 'book-now', 'privacy-policy', 'terms-of-service'] },
   { pid: 'prescription-pad', domain: 'theprescriptionpad.com.au',
     slugs: ['home', 'about', 'accommodation', 'explore', 'contact-us', 'bookings'] },
   { pid: 'annie-may', domain: 'anniemay.com.au',

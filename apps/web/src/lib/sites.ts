@@ -12,7 +12,7 @@ export const SITES: SiteDef[] = [
     propertyId: 'ten-fifty-bakers',
     name: 'Ten Fifty Bakers',
     domain: 'tenfiftybakers.com.au',
-    pages: ['home', 'our-accommodation', 'our-story', 'explore', 'contact-us', 'book-now'],
+    pages: ['home', 'our-accommodation', 'our-story', 'explore', 'contact-us', 'book-now', 'privacy-policy', 'terms-of-service'],
   },
   {
     propertyId: 'prescription-pad',
