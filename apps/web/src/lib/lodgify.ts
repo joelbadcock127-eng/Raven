@@ -320,3 +320,40 @@ export async function sendGuestMessage(
     body: payload,
   });
 }
+
+/* ── API surface discovery (read-only) ─────────────────────────── */
+
+export interface ProbeResult {
+  path: string;
+  status: number;
+  ok: boolean;
+  snippet: string;
+}
+
+/**
+ * GET one endpoint and report the raw status without throwing.
+ *
+ * Used by the admin Lodgify diagnostics page to discover which endpoints
+ * this account's API key can actually reach. Strictly read-only: never
+ * issues POST/PUT/DELETE, so it cannot alter anything in the PMS.
+ * A 400 is as informative as a 200 — it means the route exists but wants
+ * different parameters, whereas 404 means no such endpoint.
+ */
+export async function probe(path: string): Promise<ProbeResult> {
+  const key = process.env.LODGIFY_API_KEY;
+  if (!key) return { path, status: 0, ok: false, snippet: 'LODGIFY_API_KEY not set' };
+  const wait = lastRequestAt + MIN_INTERVAL_MS - Date.now();
+  if (wait > 0) await sleep(wait);
+  lastRequestAt = Date.now();
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      headers: { 'X-ApiKey': key, accept: 'application/json' },
+      signal: AbortSignal.timeout(20_000),
+      cache: 'no-store',
+    });
+    const text = (await res.text()).slice(0, 400);
+    return { path, status: res.status, ok: res.ok, snippet: text };
+  } catch (err) {
+    return { path, status: -1, ok: false, snippet: (err as Error).message.slice(0, 200) };
+  }
+}
