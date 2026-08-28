@@ -137,6 +137,40 @@ export default async function LodgifyApiPage({
     }
   }
 
+  // Booking shape: can Decra tell a booking used a promo code? Lists the
+  // KEYS Lodgify returns (values redacted — bookings carry guest PII) and
+  // flags anything promo/discount-ish.
+  if (run === 'booking' && configured) {
+    const res = await probe('/v2/reservations/bookings?page=1&size=1&includeTransactions=true&includeQuoteDetails=true');
+    let keys = '(unparsed)';
+    let promoish = 'none';
+    try {
+      const j = JSON.parse(res.snippet);
+      const b = (j?.items ?? j)?.[0] ?? j?.items?.[0] ?? {};
+      const flat: string[] = [];
+      const walk = (o: unknown, prefix: string, depth: number) => {
+        if (!o || typeof o !== 'object' || depth > 2) return;
+        for (const k of Object.keys(o as Record<string, unknown>)) {
+          flat.push(prefix + k);
+          walk((o as Record<string, unknown>)[k], `${prefix}${k}.`, depth + 1);
+        }
+      };
+      walk(b, '', 0);
+      keys = flat.join(', ') || '(no keys parsed — response truncated)';
+      const hits = flat.filter((k) => /promo|discount|coupon|voucher|saving/i.test(k));
+      promoish = hits.length ? hits.join(', ') : 'NONE — redemption not directly reported';
+    } catch {
+      keys = 'response longer than the captured snippet; rerun with a larger cap';
+    }
+    results.push({
+      group: 'Booking shape — is a promo code visible on a booking?',
+      rows: [
+        { path: 'promo-related keys', status: promoish.startsWith('NONE') ? 404 : 200, ok: !promoish.startsWith('NONE'), snippet: promoish },
+        { path: 'all booking keys (values redacted)', status: res.status, ok: res.ok, snippet: keys },
+      ],
+    });
+  }
+
   return (
     <>
       <header style={{ marginBottom: 22 }}>
@@ -154,7 +188,7 @@ export default async function LodgifyApiPage({
         </div>
       )}
 
-      {run !== '1' && run !== 'quote' ? (
+      {run !== '1' && run !== 'quote' && run !== 'booking' ? (
         <div className="card" style={{ padding: 22 }}>
           <p className="caption" style={{ marginBottom: 14 }}>
             Probing makes ~{CANDIDATES.reduce((n, c) => n + c.paths.length, 0)} throttled API calls.
@@ -165,6 +199,9 @@ export default async function LodgifyApiPage({
             </a>
             <a className="pill-primary" href="?run=quote" style={{ textDecoration: 'none' }}>
               Run quote + promo-code probe
+            </a>
+            <a className="pill-primary" href="?run=booking" style={{ textDecoration: 'none' }}>
+              Inspect booking shape
             </a>
           </div>
         </div>

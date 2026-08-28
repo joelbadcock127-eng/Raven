@@ -351,7 +351,7 @@ export async function probe(path: string): Promise<ProbeResult> {
       signal: AbortSignal.timeout(20_000),
       cache: 'no-store',
     });
-    const text = (await res.text()).slice(0, 1600);
+    const text = (await res.text()).slice(0, 12000);
     return { path, status: res.status, ok: res.ok, snippet: text };
   } catch (err) {
     return { path, status: -1, ok: false, snippet: (err as Error).message.slice(0, 200) };
