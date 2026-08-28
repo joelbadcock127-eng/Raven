@@ -1,0 +1,16 @@
+;; tenfiftybakers.com.au — import into YOUR Cloudflare account (DNS > Records > Import)
+;; Web records already point at Vercel. Email still on Island Creative's server
+;; until the mailbox migration; MX/mail records change then.
+mail.tenfiftybakers.com.au.	1	IN	A	110.232.143.129 ; cf_tags=cf-proxied:false
+webmail.tenfiftybakers.com.au.	1	IN	A	110.232.143.129 ; cf_tags=cf-proxied:false
+em931085.tenfiftybakers.com.au.	1	IN	CNAME	return.smtp2go.net. ; cf_tags=cf-proxied:false
+link.tenfiftybakers.com.au.	1	IN	CNAME	track.smtp2go.net. ; cf_tags=cf-proxied:false
+litesrv._domainkey.tenfiftybakers.com.au.	1	IN	CNAME	litesrv._domainkey.mlsend.com. ; cf_tags=cf-proxied:false
+s931085._domainkey.tenfiftybakers.com.au.	1	IN	CNAME	dkim.smtp2go.net. ; cf_tags=cf-proxied:false
+tenfiftybakers.com.au.	1	IN	CNAME	dae77df2a44cfda1.vercel-dns-017.com. ; cf_tags=cf-proxied:false
+www.tenfiftybakers.com.au.	1	IN	CNAME	dae77df2a44cfda1.vercel-dns-017.com. ; cf_tags=cf-proxied:false
+tenfiftybakers.com.au.	1	IN	MX	0 mail.tenfiftybakers.com.au.
+default._domainkey.tenfiftybakers.com.au.	1	IN	TXT	"v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyS6HjR5II5/5NRqbwf5t5+dA4pdYmhsa/dq4rr/1+nmvv9xg22DYlDtQiMyHZOWFSgsCOLzR5FvVtVZtzPAPHtWYA0+1oJRBbqbTZbTPNG2ya9Na7Wf6QuU1dEyWvYKCTDYAIbEXIQ/2TF8iQQ4b8g/cEq43qgYwUHKxFtSIxPEuAy9YLh7QGzengheRRn37Y" "UJBf3tgI01MEE3ekc61Bmql+9THzkLvGJLlCYz0elf7f5HPujSkYhLMmpejvjmdJ/d0MroUDuRhFuNZSEGLhR79k9qCh6DOrTN/7hSxTKqMiH1/HXL6GXwKtK5rGZFInKz/l1/pQ0hxrPhCSJLfSwIDAQAB;"
+_dmarc.tenfiftybakers.com.au.	1	IN	TXT	"v=DMARC1; p=none;"
+tenfiftybakers.com.au.	1	IN	TXT	"mailerlite-domain-verification=a03098d4706c022785712c309001ffcc29ff965b"
+tenfiftybakers.com.au.	1	IN	TXT	"v=spf1 a mx include:_spf.mlsend.com ?all"

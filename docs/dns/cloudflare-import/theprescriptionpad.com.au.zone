@@ -1,0 +1,15 @@
+;; theprescriptionpad.com.au — import into YOUR Cloudflare account (DNS > Records > Import)
+;; CHANGED from Island Creative export: root + www now CNAME to Vercel (was A 110.232.143.129).
+;; Email still on Island Creative's server until the mailbox migration.
+mail.theprescriptionpad.com.au.	1	IN	A	110.232.143.129 ; cf_tags=cf-proxied:false
+theprescriptionpad.com.au.	1	IN	CNAME	dae77df2a44cfda1.vercel-dns-017.com. ; cf_tags=cf-proxied:false
+www.theprescriptionpad.com.au.	1	IN	CNAME	dae77df2a44cfda1.vercel-dns-017.com. ; cf_tags=cf-proxied:false
+em931085.theprescriptionpad.com.au.	1	IN	CNAME	return.smtp2go.net. ; cf_tags=cf-proxied:false
+link.theprescriptionpad.com.au.	1	IN	CNAME	track.smtp2go.net. ; cf_tags=cf-proxied:false
+litesrv._domainkey.theprescriptionpad.com.au.	1	IN	CNAME	litesrv._domainkey.mlsend.com. ; cf_tags=cf-proxied:false
+s931085._domainkey.theprescriptionpad.com.au.	1	IN	CNAME	dkim.smtp2go.net. ; cf_tags=cf-proxied:false
+theprescriptionpad.com.au.	1	IN	MX	0 mail.theprescriptionpad.com.au.
+default._domainkey.theprescriptionpad.com.au.	1	IN	TXT	"v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7Chp0FNyiPGsapzHuvNpOnqq0oXr4T+Vd+o56bGIlbNEhd0e1O0OLx2oB1qE6N9NzCH7XiBp8Fq4djVj2N12zwmJpCr3c6UBEgLUbEEFqE9HzxAwpfW+1gIM91jja0feOV6jCoAYbO/9MeyU4OxKJqy9tO4/LlkKzW3av0qRPJukAw/Z4ZRq+StQL2oW0sXo5" "qei2ww1U15HcZZ2nDbXKnN7dH4gMXz66Yz4vj3hToUuZhLlZ+OlDy7LjZeSrpGe8JSDSJd+suzEiLP4wLtl9l/FWTXKmSUlQ4ZLw5XW9ch4j6hmxh15hfZPFu8/WbbOglaV58Ga/OUt4Ad7kz4VsQIDAQAB;"
+_dmarc.theprescriptionpad.com.au.	1	IN	TXT	"v=DMARC1; p=none;"
+theprescriptionpad.com.au.	1	IN	TXT	"mailerlite-domain-verification=29cabab3d8cac074632d7153fdf64bbf88862c0b"
+theprescriptionpad.com.au.	1	IN	TXT	"v=spf1 a mx include:_spf.mlsend.com ?all"
