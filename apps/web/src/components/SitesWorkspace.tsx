@@ -27,14 +27,14 @@ export default function SitesWorkspace({
   // Annie May's live site is the bespoke V2 app, not a WordPress mirror.
   // Its edit bridge speaks the same protocol, with 'v2-' prefixed slugs.
   const isBespoke = (pid: string) => pid === 'annie-may';
-  // Properties with a sandbox clone under public/mirror-sandbox/ (edits
-  // there save under 'sandbox--' slugs and never touch the live pages).
-  const hasSandbox = (pid: string) => pid === 'ten-fifty-bakers';
+  // Mirror properties get a sandbox variant served from mirror_pages
+  // (edits save under 'sandbox--' slugs; code changes stage as DB rows).
+  const hasSandbox = (pid: string) => !isBespoke(pid);
   const displaySlug = (slug: string) => slug.replace(/^v2-/, '').replace(/^sandbox--/, '');
   const frameSrc = (pid: string, slug: string, inSandbox = sandbox) => {
     const base = displaySlug(slug);
     if (isBespoke(pid)) return `/site/${pid}?page=${base}`;
-    return inSandbox && hasSandbox(pid) ? `/mirror-sandbox/${pid}/${base}.html` : `/mirror/${pid}/${base}.html`;
+    return `/m/${inSandbox && hasSandbox(pid) ? 'sandbox' : 'live'}/${pid}/${base}.html`;
   };
 
   const postToFrame = (msg: unknown) =>
@@ -144,7 +144,7 @@ export default function SitesWorkspace({
         {sandbox && (
           <>
             <span className="caption" style={{ color: 'var(--ink-mute)' }}>
-              Edits here never touch the live site.
+              Nothing here touches the live site until you publish.
             </span>
             <button
               className="pill-primary"

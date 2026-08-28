@@ -47,6 +47,15 @@ export async function resetSitePage(propertyId: string, slug: string): Promise<S
     .eq('property_id', propertyId)
     .eq('slug', slug);
   if (error) return { ok: false, message: error.message };
+  // reverting a sandbox page also discards its staged page HTML
+  if (slug.startsWith('sandbox--')) {
+    await supabase
+      .from('mirror_pages')
+      .delete()
+      .eq('property_id', propertyId)
+      .eq('slug', slug.slice('sandbox--'.length))
+      .eq('variant', 'sandbox');
+  }
   return { ok: true, message: 'Reverted to the live original' };
 }
 
@@ -85,6 +94,30 @@ export async function publishSandboxPage(propertyId: string, liveSlug: string): 
     updated_at: new Date().toISOString(),
   });
   if (error) return { ok: false, message: error.message };
+
+  // staged page HTML (code-level changes) promotes too, retargeted to the
+  // live variant's URL space and editor slug
+  const { data: staged } = await supabase
+    .from('mirror_pages')
+    .select('html')
+    .eq('property_id', propertyId)
+    .eq('slug', liveSlug)
+    .eq('variant', 'sandbox')
+    .maybeSingle();
+  if (staged?.html) {
+    const liveHtml = (staged.html as string)
+      .replaceAll(`/m/sandbox/${propertyId}/`, `/m/live/${propertyId}/`)
+      .replaceAll(`content="${propertyId}|sandbox--${liveSlug}"`, `content="${propertyId}|${liveSlug}"`);
+    const { error: htmlErr } = await supabase.from('mirror_pages').upsert({
+      property_id: propertyId,
+      slug: liveSlug,
+      variant: 'live',
+      html: liveHtml,
+      updated_at: new Date().toISOString(),
+    });
+    if (htmlErr) return { ok: false, message: `Edits published; page HTML failed: ${htmlErr.message}` };
+    return { ok: true, message: 'Published to live (edits + page changes)' };
+  }
   return { ok: true, message: 'Published to live' };
 }
 

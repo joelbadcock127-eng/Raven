@@ -72,7 +72,7 @@ export async function middleware(req: NextRequest) {
     host === appHost || host.endsWith('.vercel.app') || host === 'localhost' || host === '127.0.0.1';
 
   if (isOwnHost) {
-    if (pathname.startsWith('/mirror')) {
+    if (pathname.startsWith('/mirror') || pathname.startsWith('/m/')) {
       const res = NextResponse.next();
       res.headers.set('X-Robots-Tag', 'noindex, nofollow');
       return res;
@@ -113,8 +113,10 @@ export async function middleware(req: NextRequest) {
   // Event pages and their index are real app routes on the property domain.
   if (pathname === '/events' || pathname.startsWith('/events/')) return NextResponse.next();
 
-  // The admin sandbox clone is never served on a public property domain.
-  if (pathname.startsWith('/mirror-sandbox')) return NextResponse.redirect(new URL('/', req.url), 302);
+  // Admin-only paths never serve on a public property domain (the live
+  // pages are rewritten to /m/live internally; direct hits go home).
+  if (pathname.startsWith('/mirror-sandbox') || pathname.startsWith('/m/'))
+    return NextResponse.redirect(new URL('/', req.url), 302);
 
   const mirrorMatch = pathname.match(/^\/mirror\/[^/]+\/([^/]+)\.html$/);
   if (mirrorMatch) {
@@ -145,9 +147,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.rewrite(dest);
   }
 
-  if (slug === 'home') return NextResponse.rewrite(new URL(`/mirror/${pid}/home.html`, req.url));
+  if (slug === 'home') return NextResponse.rewrite(new URL(`/m/live/${pid}/home.html`, req.url));
   if (site?.pages.includes(slug))
-    return NextResponse.rewrite(new URL(`/mirror/${pid}/${slug}.html`, req.url));
+    return NextResponse.rewrite(new URL(`/m/live/${pid}/${slug}.html`, req.url));
 
   // assets, /events/*, /api/* etc. pass through
   return NextResponse.next();
