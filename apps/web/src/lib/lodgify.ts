@@ -147,6 +147,9 @@ export interface LodgifyBooking {
   currency: string | null;
   threadUid: string | null; // messaging thread guid
   createdAt: string | null;
+  /** subtotals.promotions — non-zero means a promotion was applied to this
+   *  booking. Lodgify does not report WHICH code was used, only the amount. */
+  promotionAmount: number | null;
 }
 
 function normaliseBooking(b: Json): LodgifyBooking {
@@ -178,6 +181,8 @@ function normaliseBooking(b: Json): LodgifyBooking {
     currency: b?.currency_code != null ? String(b.currency_code) : null,
     threadUid: b?.thread_uid != null ? String(b.thread_uid) : null,
     createdAt: b?.created_at != null ? String(b.created_at) : null,
+    promotionAmount:
+      b?.subtotals?.promotions != null ? Math.abs(Number(b.subtotals.promotions)) : null,
   };
 }
 

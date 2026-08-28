@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
+import { lodgifyConfigured, listBookings } from '@/lib/lodgify';
 import PromoCodes, { type PromoProperty } from '@/components/PromoCodes';
 import type { PromoCode } from '@/lib/promo';
 
@@ -48,6 +49,28 @@ export default async function PromoCodesPage() {
     }
   }
 
+  // Redemptions: Lodgify records a promotion's VALUE on a booking
+  // (subtotals.promotions) but never which code produced it, so this counts
+  // discounted bookings per property rather than per code.
+  const redemptions: Record<string, { count: number; amount: number; currency: string }> = {};
+  if (lodgifyConfigured()) {
+    try {
+      const bookings = await listBookings({ max: 200 });
+      for (const b of bookings) {
+        if (!b.promotionAmount || b.promotionAmount === 0) continue;
+        if (b.status && /cancel|declin/i.test(b.status)) continue;
+        const pid = properties.find((p) => Number(p.lodgifyPropertyId) === b.propertyId)?.id;
+        if (!pid) continue;
+        const agg = redemptions[pid] ?? { count: 0, amount: 0, currency: b.currency ?? 'AUD' };
+        agg.count += 1;
+        agg.amount += b.promotionAmount;
+        redemptions[pid] = agg;
+      }
+    } catch {
+      /* PMS unreachable — the page still shows codes and clicks */
+    }
+  }
+
   const today = new Date().toISOString().slice(0, 10);
 
   return (
@@ -68,7 +91,13 @@ export default async function PromoCodesPage() {
         </div>
       )}
 
-      <PromoCodes properties={properties} codes={codes} clicksByLink={clicksByLink} today={today} />
+      <PromoCodes
+        properties={properties}
+        codes={codes}
+        clicksByLink={clicksByLink}
+        redemptions={redemptions}
+        today={today}
+      />
 
       <section className="card" style={{ padding: 22, marginTop: 18 }}>
         <h2 className="heading-md" style={{ marginBottom: 6 }}>Creating a code in Lodgify</h2>

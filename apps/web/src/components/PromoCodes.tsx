@@ -55,11 +55,13 @@ export default function PromoCodes({
   properties,
   codes,
   clicksByLink,
+  redemptions,
   today,
 }: {
   properties: PromoProperty[];
   codes: PromoCode[];
   clicksByLink: Record<string, number>;
+  redemptions: Record<string, { count: number; amount: number; currency: string }>;
   today: string;
 }) {
   const [form, setForm] = useState<PromoInput | null>(null);
@@ -116,6 +118,20 @@ export default function PromoCodes({
                 Add a code
               </button>
             </div>
+
+            {(() => {
+              const r = redemptions[prop.id];
+              if (!r || r.count === 0) return null;
+              return (
+                <p className="caption" style={{ marginBottom: 12, color: 'var(--primary-deep)' }}>
+                  {r.count} booking{r.count === 1 ? '' : 's'} with a promotion applied ·{' '}
+                  {r.currency} {r.amount.toFixed(0)} discounted in the last 200 bookings.{' '}
+                  <span style={{ color: 'var(--ink-mute)' }}>
+                    Lodgify records the discount but not which code produced it.
+                  </span>
+                </p>
+              );
+            })()}
 
             {list.length === 0 && !form && (
               <p className="caption" style={{ color: 'var(--ink-mute)' }}>
