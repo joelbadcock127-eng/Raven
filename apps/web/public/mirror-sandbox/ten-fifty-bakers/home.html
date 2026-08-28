@@ -1152,7 +1152,7 @@ const a=JSON.parse(document.getElementById("wp-emoji-settings").textContent),o=(
 #nwtrs-offer .nw-chip small{font-size:10px;letter-spacing:.18em;font-weight:600;opacity:.75}
 #nwtrs-offer .nw-deadline{color:#fff;font-weight:700;font-size:clamp(13px,3vw,17px);letter-spacing:.3em;text-transform:uppercase;margin-top:30px}
 #nwtrs-offer .nw-cta{display:inline-block;background:#CCB268;color:#0b0a08;font-weight:700;font-size:clamp(12px,2.8vw,15px);letter-spacing:.26em;text-transform:uppercase;text-decoration:none;padding:18px 44px;border-radius:999px;margin-top:32px}
-#nwtrs-offer .nw-close{position:absolute;top:18px;right:22px;background:none;border:none;color:rgba(255,255,255,.7);font-size:15px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;font-family:inherit;font-weight:600;padding:10px}
+#nwtrs-offer .nw-close{position:absolute;top:14px;right:14px;background:none;border:none;color:rgba(255,255,255,.7);font-size:15px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;font-family:inherit;font-weight:600;padding:14px}@media (max-height:760px){#nwtrs-offer .nw-rule{margin:18px auto}#nwtrs-offer .nw-chip{margin-top:20px}#nwtrs-offer .nw-deadline{margin-top:20px}#nwtrs-offer .nw-cta{margin-top:22px;padding:16px 36px}#nwtrs-offer .nw-continue{margin-top:24px}#nwtrs-offer .nw-announce{margin-top:12px}}
 #nwtrs-offer .nw-continue{display:block;color:rgba(255,255,255,.55);font-weight:500;font-size:11px;letter-spacing:.24em;text-transform:uppercase;text-decoration:none;margin-top:34px;background:none;border:none;cursor:pointer;font-family:inherit;width:100%}
 #nwtrs-reopen{position:fixed;right:18px;bottom:18px;z-index:99980;display:none;background:#0b0a08;border:2px solid #CCB268;color:#CCB268;font-family:'Montserrat',sans-serif;font-weight:700;font-size:11px;letter-spacing:.24em;text-transform:uppercase;border-radius:999px;padding:12px 20px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.45)}
 #nwtrs-reopen.nwtrs-show{display:block}
@@ -1167,16 +1167,16 @@ const a=JSON.parse(document.getElementById("wp-emoji-settings").textContent),o=(
     <p class="nw-sub">Stay any time in the next 12 months<br>Valued between $700 and $1,300</p>
     <button type="button" class="nw-chip" onclick="nwtrsCopy(this)">NWTRS <small id="nwtrs-copy-hint">tap to copy</small></button>
     <p class="nw-deadline">Book by midnight Sunday</p>
-    <a class="nw-cta" href="/book-now/">Book now &mdash; use code NWTRS</a>
+    <a class="nw-cta" href="/r/nwtrs-banner">Book now &mdash; code NWTRS applied</a>
     <button type="button" class="nw-continue" onclick="nwtrsDismiss()">Continue to the website</button>
   </div>
 </div>
 <button type="button" id="nwtrs-reopen" onclick="nwtrsOpen()">NWTRS Offer</button>
 <script>
 function nwtrsOpen(){document.getElementById('nwtrs-offer').classList.add('nwtrs-open');document.getElementById('nwtrs-reopen').classList.remove('nwtrs-show');document.documentElement.style.overflow='hidden'}
-function nwtrsDismiss(){document.getElementById('nwtrs-offer').classList.remove('nwtrs-open');document.getElementById('nwtrs-reopen').classList.add('nwtrs-show');document.documentElement.style.overflow='';try{localStorage.setItem('tfb-nwtrs-offer','seen')}catch(e){}}
+function nwtrsDismiss(){document.getElementById('nwtrs-offer').classList.remove('nwtrs-open');document.getElementById('nwtrs-reopen').classList.add('nwtrs-show');document.documentElement.style.overflow='';try{sessionStorage.setItem('tfb-nwtrs-offer','seen')}catch(e){}}
 function nwtrsCopy(btn){try{navigator.clipboard.writeText('NWTRS');document.getElementById('nwtrs-copy-hint').textContent='copied \u2713'}catch(e){}}
-(function(){var seen=false;try{seen=localStorage.getItem('tfb-nwtrs-offer')==='seen'}catch(e){}
+(function(){var seen=false;try{seen=sessionStorage.getItem('tfb-nwtrs-offer')==='seen'}catch(e){}
 if(seen){document.getElementById('nwtrs-reopen').classList.add('nwtrs-show')}else{nwtrsOpen()}})();
 </script>
 <script src="/mirror-editor.js" defer=""></script></body></html>

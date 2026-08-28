@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     'Disallow: /api/',
     'Disallow: /site/',
     'Disallow: /go/',
+    'Disallow: /r/',
     `Sitemap: https://${host}/sitemap.xml`,
     '',
   ].join('\n');
