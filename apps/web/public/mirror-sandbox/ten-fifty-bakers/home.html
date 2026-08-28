@@ -1135,4 +1135,48 @@ const a=JSON.parse(document.getElementById("wp-emoji-settings").textContent),o=(
 
 
 
+
+<!-- ── NWTRS promo takeover (campaign: book by midnight Sunday, code NWTRS) ── -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+#nwtrs-offer{position:fixed;inset:0;z-index:99990;display:none;align-items:center;justify-content:center;background:radial-gradient(ellipse 120% 90% at 50% 40%, #171410 0%, #070605 78%);font-family:'Montserrat',sans-serif;color:#fff;text-align:center;overflow-y:auto;padding:32px 20px}
+#nwtrs-offer.nwtrs-open{display:flex}
+#nwtrs-offer .nw-inner{max-width:680px;margin:auto;padding:24px 0}
+#nwtrs-offer .nw-eyebrow{color:#CCB268;font-weight:600;font-size:clamp(11px,2.6vw,14px);letter-spacing:.34em;text-transform:uppercase}
+#nwtrs-offer .nw-announce{color:rgba(255,255,255,.82);font-weight:500;font-size:clamp(11px,2.4vw,13px);letter-spacing:.22em;text-transform:uppercase;line-height:1.9;margin-top:18px}
+#nwtrs-offer .nw-rule{width:64px;height:1px;background:#CCB268;margin:26px auto;border:none;opacity:.85}
+#nwtrs-offer h2.nw-head{color:#fff;font-weight:800;font-size:clamp(21px,4.6vw,34px);letter-spacing:.12em;text-transform:uppercase;line-height:1.45;margin:0}
+#nwtrs-offer .nw-sub{color:#CCB268;font-weight:600;font-size:clamp(12px,2.6vw,15px);letter-spacing:.26em;text-transform:uppercase;line-height:2.1;margin-top:22px}
+#nwtrs-offer .nw-chip{display:inline-flex;align-items:center;gap:12px;border:3px solid #CCB268;border-radius:14px;color:#CCB268;font-weight:700;font-size:clamp(18px,4vw,26px);letter-spacing:.3em;text-transform:uppercase;padding:14px 30px 14px 36px;margin-top:30px;cursor:pointer;background:transparent;font-family:inherit}
+#nwtrs-offer .nw-chip small{font-size:10px;letter-spacing:.18em;font-weight:600;opacity:.75}
+#nwtrs-offer .nw-deadline{color:#fff;font-weight:700;font-size:clamp(13px,3vw,17px);letter-spacing:.3em;text-transform:uppercase;margin-top:30px}
+#nwtrs-offer .nw-cta{display:inline-block;background:#CCB268;color:#0b0a08;font-weight:700;font-size:clamp(12px,2.8vw,15px);letter-spacing:.26em;text-transform:uppercase;text-decoration:none;padding:18px 44px;border-radius:999px;margin-top:32px}
+#nwtrs-offer .nw-close{position:absolute;top:18px;right:22px;background:none;border:none;color:rgba(255,255,255,.7);font-size:15px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;font-family:inherit;font-weight:600;padding:10px}
+#nwtrs-offer .nw-continue{display:block;color:rgba(255,255,255,.55);font-weight:500;font-size:11px;letter-spacing:.24em;text-transform:uppercase;text-decoration:none;margin-top:34px;background:none;border:none;cursor:pointer;font-family:inherit;width:100%}
+#nwtrs-reopen{position:fixed;right:18px;bottom:18px;z-index:99980;display:none;background:#0b0a08;border:2px solid #CCB268;color:#CCB268;font-family:'Montserrat',sans-serif;font-weight:700;font-size:11px;letter-spacing:.24em;text-transform:uppercase;border-radius:999px;padding:12px 20px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+#nwtrs-reopen.nwtrs-show{display:block}
+</style>
+<div id="nwtrs-offer" role="dialog" aria-modal="true" aria-label="NWTRS runners offer">
+  <button type="button" class="nw-close" onclick="nwtrsDismiss()">Close &#10005;</button>
+  <div class="nw-inner">
+    <p class="nw-eyebrow">For NWTRS runners, friends &amp; family</p>
+    <p class="nw-announce">Ten Fifty Bakers join to host the North West Trail Running Series &mdash; from 2027</p>
+    <hr class="nw-rule">
+    <h2 class="nw-head">Pay for 2 or more nights and receive an additional night free</h2>
+    <p class="nw-sub">Stay any time in the next 12 months<br>Valued between $700 and $1,300</p>
+    <button type="button" class="nw-chip" onclick="nwtrsCopy(this)">NWTRS <small id="nwtrs-copy-hint">tap to copy</small></button>
+    <p class="nw-deadline">Book by midnight Sunday</p>
+    <a class="nw-cta" href="/book-now/">Book now &mdash; use code NWTRS</a>
+    <button type="button" class="nw-continue" onclick="nwtrsDismiss()">Continue to the website</button>
+  </div>
+</div>
+<button type="button" id="nwtrs-reopen" onclick="nwtrsOpen()">NWTRS Offer</button>
+<script>
+function nwtrsOpen(){document.getElementById('nwtrs-offer').classList.add('nwtrs-open');document.getElementById('nwtrs-reopen').classList.remove('nwtrs-show');document.documentElement.style.overflow='hidden'}
+function nwtrsDismiss(){document.getElementById('nwtrs-offer').classList.remove('nwtrs-open');document.getElementById('nwtrs-reopen').classList.add('nwtrs-show');document.documentElement.style.overflow='';try{localStorage.setItem('tfb-nwtrs-offer','seen')}catch(e){}}
+function nwtrsCopy(btn){try{navigator.clipboard.writeText('NWTRS');document.getElementById('nwtrs-copy-hint').textContent='copied \u2713'}catch(e){}}
+(function(){var seen=false;try{seen=localStorage.getItem('tfb-nwtrs-offer')==='seen'}catch(e){}
+if(seen){document.getElementById('nwtrs-reopen').classList.add('nwtrs-show')}else{nwtrsOpen()}})();
+</script>
 <script src="/mirror-editor.js" defer=""></script></body></html>
