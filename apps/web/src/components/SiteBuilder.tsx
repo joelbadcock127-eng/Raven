@@ -60,6 +60,7 @@ export default function SiteBuilder({
   const [pending, startTransition] = useTransition();
   const [refresh, setRefresh] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
 
   const version = versions.find((v) => v.id === versionId) ?? null;
   const pages = versionId ? (pagesByVersion[versionId] ?? []) : [];
@@ -340,12 +341,43 @@ export default function SiteBuilder({
                   + page
                 </button>
               )}
-              <a href={previewSrc ?? '#'} target="_blank" rel="noopener noreferrer" className="caption" style={{ marginLeft: 'auto' }}>
+              <span style={{ marginLeft: 'auto', display: 'inline-flex', border: '1px solid var(--hairline)', borderRadius: 999, overflow: 'hidden' }}>
+                {(['desktop', 'mobile'] as const).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDevice(d)}
+                    style={{
+                      padding: '3px 12px', border: 'none', cursor: 'pointer', font: 'inherit', fontSize: 12,
+                      background: device === d ? 'var(--primary)' : 'transparent',
+                      color: device === d ? '#fff' : 'var(--ink-mute)',
+                    }}
+                  >
+                    {d === 'desktop' ? 'Desktop' : 'Mobile'}
+                  </button>
+                ))}
+              </span>
+              <a href={previewSrc ?? '#'} target="_blank" rel="noopener noreferrer" className="caption">
                 open full ↗
               </a>
             </div>
             {previewSrc && (
-              <iframe ref={iframeRef} key={previewSrc} src={previewSrc} title="Site preview" style={{ width: '100%', height: '70vh', border: 'none', display: 'block', background: '#fff' }} />
+              <div style={device === 'mobile' ? { display: 'flex', justifyContent: 'center', background: 'var(--canvas-soft)', padding: '16px 0' } : undefined}>
+                <iframe
+                  ref={iframeRef}
+                  key={previewSrc}
+                  src={previewSrc}
+                  title="Site preview"
+                  style={{
+                    width: device === 'mobile' ? 393 : '100%',
+                    height: '70vh',
+                    border: device === 'mobile' ? '1px solid var(--hairline)' : 'none',
+                    borderRadius: device === 'mobile' ? 18 : 0,
+                    display: 'block',
+                    background: '#fff',
+                  }}
+                />
+              </div>
             )}
           </div>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import type { SiteDef } from '@/lib/sites';
-import { saveSiteOverrides, resetSitePage, type MirrorOverride } from '@/app/(admin)/sites/actions';
+import { saveSiteOverrides, resetSitePage, publishSandboxPage, type MirrorOverride } from '@/app/(admin)/sites/actions';
 
 export default function SitesWorkspace({
   sites,
@@ -13,6 +13,8 @@ export default function SitesWorkspace({
 }) {
   const [currentSlug, setCurrentSlug] = useState('home');
   const [editMode, setEditMode] = useState(false);
+  const [sandbox, setSandbox] = useState(false);
+  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [dirty, setDirty] = useState<Set<string>>(new Set()); // `${pid}/${slug}`
   const [notice, setNotice] = useState('');
   const [pending, startTransition] = useTransition();
@@ -25,11 +27,15 @@ export default function SitesWorkspace({
   // Annie May's live site is the bespoke V2 app, not a WordPress mirror.
   // Its edit bridge speaks the same protocol, with 'v2-' prefixed slugs.
   const isBespoke = (pid: string) => pid === 'annie-may';
-  const frameSrc = (pid: string, slug: string) =>
-    isBespoke(pid)
-      ? `/site/${pid}?page=${slug.replace(/^v2-/, '')}`
-      : `/mirror/${pid}/${slug}.html`;
-  const displaySlug = (slug: string) => slug.replace(/^v2-/, '');
+  // Properties with a sandbox clone under public/mirror-sandbox/ (edits
+  // there save under 'sandbox--' slugs and never touch the live pages).
+  const hasSandbox = (pid: string) => pid === 'ten-fifty-bakers';
+  const displaySlug = (slug: string) => slug.replace(/^v2-/, '').replace(/^sandbox--/, '');
+  const frameSrc = (pid: string, slug: string, inSandbox = sandbox) => {
+    const base = displaySlug(slug);
+    if (isBespoke(pid)) return `/site/${pid}?page=${base}`;
+    return inSandbox && hasSandbox(pid) ? `/mirror-sandbox/${pid}/${base}.html` : `/mirror/${pid}/${base}.html`;
+  };
 
   const postToFrame = (msg: unknown) =>
     iframeRef.current?.contentWindow?.postMessage(msg, '*');
@@ -103,14 +109,75 @@ export default function SitesWorkspace({
     shownSiteRef.current = activeSiteId;
     setCurrentSlug('home');
     setEditMode(false);
-    if (iframeRef.current) iframeRef.current.src = frameSrc(activeSiteId, 'home');
+    setSandbox(false);
+    if (iframeRef.current) iframeRef.current.src = frameSrc(activeSiteId, 'home', false);
   }, [activeSiteId]);
 
   return (
     <div>
       {/* ── Edit controls ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+        {hasSandbox(site.propertyId) && (
+          <span style={{ display: 'inline-flex', border: '1px solid var(--hairline)', borderRadius: 999, overflow: 'hidden' }}>
+            {([false, true] as const).map((sb) => (
+              <button
+                key={String(sb)}
+                type="button"
+                onClick={() => {
+                  if (sandbox === sb) return;
+                  setSandbox(sb);
+                  setNotice('');
+                  if (iframeRef.current)
+                    iframeRef.current.src = frameSrc(site.propertyId, currentSlug, sb);
+                }}
+                style={{
+                  padding: '5px 14px', border: 'none', cursor: 'pointer', font: 'inherit', fontSize: 12.5,
+                  background: sandbox === sb ? 'var(--primary)' : 'transparent',
+                  color: sandbox === sb ? '#fff' : 'var(--ink-mute)',
+                }}
+              >
+                {sb ? 'Sandbox' : 'Live'}
+              </button>
+            ))}
+          </span>
+        )}
+        {sandbox && (
+          <>
+            <span className="caption" style={{ color: 'var(--ink-mute)' }}>
+              Edits here never touch the live site.
+            </span>
+            <button
+              className="pill-primary"
+              type="button"
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  const res = await publishSandboxPage(site.propertyId, displaySlug(currentSlug));
+                  setNotice(res.message);
+                })
+              }
+            >
+              Publish page to live
+            </button>
+          </>
+        )}
+        <span style={{ marginLeft: 'auto', display: 'inline-flex', border: '1px solid var(--hairline)', borderRadius: 999, overflow: 'hidden' }}>
+          {(['desktop', 'mobile'] as const).map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setDevice(d)}
+              style={{
+                padding: '5px 14px', border: 'none', cursor: 'pointer', font: 'inherit', fontSize: 12.5,
+                background: device === d ? 'var(--primary)' : 'transparent',
+                color: device === d ? '#fff' : 'var(--ink-mute)',
+              }}
+            >
+              {d === 'desktop' ? 'Desktop' : 'Mobile'}
+            </button>
+          ))}
+        </span>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
           <span className="caption">Edit mode</span>
           <span
             role="switch"
@@ -192,6 +259,7 @@ export default function SitesWorkspace({
             ))}
           </span>
           <span className="caption tnum" style={{ marginLeft: 8 }}>
+            {sandbox && <span style={{ color: 'var(--primary)', fontWeight: 600 }}>sandbox · </span>}
             {site.domain}/{displaySlug(currentSlug) === 'home' ? '' : displaySlug(currentSlug) + '/'}
           </span>
           {dirty.has(pageKey) && (
@@ -208,12 +276,21 @@ export default function SitesWorkspace({
           </a>
         </div>
 
-        <iframe
-          ref={iframeRef}
-          src={frameSrc(site.propertyId, 'home')}
-          title={`${site.name} website`}
-          style={{ width: '100%', height: '78vh', border: 'none', display: 'block', background: '#fff' }}
-        />
+        <div style={device === 'mobile' ? { display: 'flex', justifyContent: 'center', background: 'var(--canvas-soft)', padding: '18px 0' } : undefined}>
+          <iframe
+            ref={iframeRef}
+            src={frameSrc(site.propertyId, 'home', false)}
+            title={`${site.name} website`}
+            style={{
+              width: device === 'mobile' ? 393 : '100%',
+              height: '78vh',
+              border: device === 'mobile' ? '1px solid var(--hairline)' : 'none',
+              borderRadius: device === 'mobile' ? 18 : 0,
+              display: 'block',
+              background: '#fff',
+            }}
+          />
+        </div>
       </div>
     </div>
   );

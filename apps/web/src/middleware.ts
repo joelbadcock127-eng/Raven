@@ -113,6 +113,9 @@ export async function middleware(req: NextRequest) {
   // Event pages and their index are real app routes on the property domain.
   if (pathname === '/events' || pathname.startsWith('/events/')) return NextResponse.next();
 
+  // The admin sandbox clone is never served on a public property domain.
+  if (pathname.startsWith('/mirror-sandbox')) return NextResponse.redirect(new URL('/', req.url), 302);
+
   const mirrorMatch = pathname.match(/^\/mirror\/[^/]+\/([^/]+)\.html$/);
   if (mirrorMatch) {
     const slug = mirrorMatch[1];
