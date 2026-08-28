@@ -18,6 +18,20 @@ export const maxDuration = 120;
 const TFB = 726148; // Ten Fifty Bakers
 const RXP = 726149; // The Prescription Pad
 
+/** Quote-endpoint exploration: does a quote accept a promo code, and does
+ *  applying one actually change the total? Fixed future dates keep runs
+ *  comparable. Still read-only — a quote reserves nothing. */
+const Q_ARRIVE = '2026-11-10';
+const Q_DEPART = '2026-11-13';
+const CODE_PARAMS = ['promotionCode', 'promoCode', 'promotion', 'couponCode', 'coupon', 'discountCode', 'voucherCode'];
+
+function quotePath(propertyId: number, roomTypeId: number, extra = ''): string {
+  return (
+    `/v2/quote/${propertyId}?arrival=${Q_ARRIVE}&departure=${Q_DEPART}` +
+    `&roomTypes%5B0%5D.Id=${roomTypeId}&roomTypes%5B0%5D.People=2${extra}`
+  );
+}
+
 const CANDIDATES: Array<{ group: string; paths: string[] }> = [
   {
     group: 'Known-good baseline',
@@ -84,12 +98,40 @@ export default async function LodgifyApiPage({
   const { run } = await searchParams;
   const configured = lodgifyConfigured();
 
-  let results: Array<{ group: string; rows: Awaited<ReturnType<typeof probe>>[] }> = [];
+  const results: Array<{ group: string; rows: Awaited<ReturnType<typeof probe>>[] }> = [];
   if (run === '1' && configured) {
     for (const c of CANDIDATES) {
       const rows = [];
       for (const p of c.paths) rows.push(await probe(p));
       results.push({ group: c.group, rows });
+    }
+  }
+
+  // Quote mode: find a room type, quote it clean, then quote it again with a
+  // promo code under each plausible parameter name — and with a deliberately
+  // fake code as the control. If a real code changes the total (or a fake one
+  // errors) we have a way to VALIDATE codes against Lodgify.
+  if (run === 'quote' && configured) {
+    const targets: Array<{ pid: number; label: string }> = [
+      { pid: TFB, label: 'Ten Fifty Bakers' },
+      { pid: RXP, label: 'The Prescription Pad' },
+    ];
+    for (const { pid, label } of targets) {
+      const propRes = await probe(`/v2/properties/${pid}`);
+      let roomTypeId: number = pid;
+      try {
+        const j = JSON.parse(propRes.snippet.length > 380 ? '{}' : propRes.snippet);
+        const rt = j?.rooms?.[0]?.id ?? j?.room_types?.[0]?.id;
+        if (rt) roomTypeId = Number(rt);
+      } catch {
+        /* snippet truncated — fall back to the property id */
+      }
+      const rows = [propRes, await probe(quotePath(pid, roomTypeId))];
+      for (const param of CODE_PARAMS) {
+        rows.push(await probe(quotePath(pid, roomTypeId, `&${param}=NWTRS`)));
+      }
+      rows.push(await probe(quotePath(pid, roomTypeId, '&promotionCode=ZZZ-DEFINITELY-FAKE')));
+      results.push({ group: `Quote + promo code — ${label} (${Q_ARRIVE} to ${Q_DEPART})`, rows });
     }
   }
 
@@ -110,14 +152,19 @@ export default async function LodgifyApiPage({
         </div>
       )}
 
-      {run !== '1' ? (
+      {run !== '1' && run !== 'quote' ? (
         <div className="card" style={{ padding: 22 }}>
           <p className="caption" style={{ marginBottom: 14 }}>
             Probing makes ~{CANDIDATES.reduce((n, c) => n + c.paths.length, 0)} throttled API calls.
           </p>
-          <a className="pill-primary" href="?run=1" style={{ textDecoration: 'none' }}>
-            Run probe
-          </a>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <a className="pill-primary" href="?run=1" style={{ textDecoration: 'none' }}>
+              Run endpoint probe
+            </a>
+            <a className="pill-primary" href="?run=quote" style={{ textDecoration: 'none' }}>
+              Run quote + promo-code probe
+            </a>
+          </div>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 16 }}>
@@ -142,7 +189,7 @@ export default async function LodgifyApiPage({
                             whiteSpace: 'pre-wrap',
                             wordBreak: 'break-all',
                             margin: '6px 0 0',
-                            maxHeight: 90,
+                            maxHeight: 260,
                             overflow: 'hidden',
                           }}
                         >
