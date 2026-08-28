@@ -37,6 +37,9 @@ interface PageContent {
   promoCode?: string;
   /** ISO date; after it the page stays live but drops to noindex (archive). */
   expiresAt?: string;
+  /** Optional feature video, rendered front and centre above the article. */
+  heroVideoUrl?: string | null;
+  heroPosterUrl?: string | null;
 }
 
 async function getPage(
@@ -162,6 +165,21 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           <p style={{ fontSize: 'clamp(14.5px, 1.9vw, 17px)', lineHeight: 1.7, marginTop: 14, maxWidth: 560, opacity: 0.94 }}>{c.subheadline}</p>
         </div>
       </div>
+
+      {c.heroVideoUrl && (
+        <div style={{ maxWidth: 960, margin: '0 auto', padding: 'clamp(28px, 5vw, 48px) clamp(12px, 3vw, 40px) 0' }}>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            controls
+            playsInline
+            preload="metadata"
+            poster={c.heroPosterUrl ?? undefined}
+            style={{ width: '100%', aspectRatio: '16 / 9', display: 'block', background: '#000', borderRadius: 4 }}
+          >
+            <source src={c.heroVideoUrl} />
+          </video>
+        </div>
+      )}
 
       <div style={{ maxWidth: 720, margin: '0 auto', padding: 'clamp(40px, 7vw, 72px) clamp(20px, 5vw, 40px) 0' }}>
         <p style={{ fontSize: 'clamp(16px, 2vw, 18px)', lineHeight: 1.85 }}>{c.intro}</p>
