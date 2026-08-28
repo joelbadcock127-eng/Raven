@@ -249,13 +249,16 @@ export default function PromoCodes({
               <div style={{ borderTop: '1px solid var(--hairline)', marginTop: 16, paddingTop: 16 }}>
                 <p className="caption" style={{ marginBottom: 12, color: 'var(--ink-mute)' }}>
                   Create the code in Lodgify first (Settings → Promotions), then record it here exactly
-                  as you typed it there — Decra cannot create it in Lodgify for you.
+                  as you typed it there — Decra cannot create it in Lodgify for you. Codes are
+                  case-sensitive and can be reused by any number of guests: Lodgify has no
+                  single-use or per-guest codes, and coded offers apply to direct bookings only,
+                  never to Airbnb, Vrbo or Booking.com.
                 </p>
                 <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
                   <label className="caption">
                     <span style={lbl}>Code (as in Lodgify)</span>
                     <input
-                      style={{ ...field, textTransform: 'uppercase' }}
+                      style={field}
                       value={form.code}
                       onChange={(e) => set('code', e.target.value)}
                       placeholder="NWTRS"

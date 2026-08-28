@@ -45,10 +45,15 @@ export async function savePromoCode(input: PromoInput): Promise<PromoResult> {
   const supabase = supabaseAdmin();
   if (!supabase) return { ok: false, message: 'Supabase is not configured.' };
 
-  const code = input.code.trim().toUpperCase();
+  // Lodgify codes are case-sensitive — store exactly as the host typed it
+  // in Lodgify. Upper-casing here would silently produce a non-applying link.
+  const code = input.code.trim();
   if (!code) return { ok: false, message: 'A code is required.' };
-  if (!/^[A-Z0-9][A-Z0-9._-]{1,31}$/.test(code))
-    return { ok: false, message: 'Use 2–32 characters: letters, numbers, dot, dash or underscore.' };
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{1,14}$/.test(code))
+    return {
+      ok: false,
+      message: 'Use 2–15 characters: letters, numbers, dot, dash or underscore (Lodgify caps code length).',
+    };
 
   const { data: prop } = await supabase
     .from('properties')

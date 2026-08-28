@@ -148,7 +148,8 @@ export interface LodgifyBooking {
   threadUid: string | null; // messaging thread guid
   createdAt: string | null;
   /** subtotals.promotions — non-zero means a promotion was applied to this
-   *  booking. Lodgify does not report WHICH code was used, only the amount. */
+   *  booking. This REST shape reports only the amount; the code itself
+   *  arrives as booking.promotion_code on the booking webhooks. */
   promotionAmount: number | null;
 }
 
