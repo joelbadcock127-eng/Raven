@@ -51,6 +51,12 @@ const Icon = {
       <path d="M3.5 20c.7-3.4 2.8-5 5.5-5s4.8 1.6 5.5 5M16 4.5c1.7.6 2.8 2 2.8 3.9s-1.1 3.3-2.8 3.9M17.5 15.2c2 .7 3.2 2.3 3.6 4.8" />
     </svg>
   ),
+  promo: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.6 12.6 12 21.2l-8.5-8.5V3.5h9.2l7.9 7.9z" />
+      <circle cx="8.2" cy="8.2" r="1.4" />
+    </svg>
+  ),
   dashboard: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="8" height="8" rx="1.5" />
@@ -89,6 +95,7 @@ const PMS_ITEMS = [
 // Feed lives inside Campaigns now; Outreach lives inside Settings.
 const ITEMS = [
   { href: '/campaigns', label: 'Campaigns', icon: Icon.campaigns },
+  { href: '/promo-codes', label: 'Booking codes', icon: Icon.promo },
   { href: '/sites', label: 'Sites', icon: Icon.sites },
   { href: '/media', label: 'Media', icon: Icon.media },
   { href: '/social', label: 'Social', icon: Icon.social },
