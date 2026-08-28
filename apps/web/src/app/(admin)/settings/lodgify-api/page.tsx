@@ -76,8 +76,20 @@ const CANDIDATES: Array<{ group: string; paths: string[] }> = [
     ],
   },
   {
-    group: 'Account / settings / webhooks',
-    paths: ['/v2/settings', '/v1/settings', '/v2/subscriptions', '/v1/webhooks/list', '/v2/webhooks'],
+    group: 'Rate settings — documented to carry promotions[].codes[]',
+    paths: [
+      `/v2/rates/settings?houseId=${TFB}`,
+      `/v2/rates/settings?houseId=${RXP}`,
+      '/v2/rates/settings',
+    ],
+  },
+  {
+    group: 'Webhooks — version segment comes SECOND',
+    paths: ['/webhooks/v1/list', '/webhooks/v1/subscribe', '/v1/webhooks/list', '/v2/webhooks'],
+  },
+  {
+    group: 'Account / settings',
+    paths: ['/v2/settings', '/v1/settings', '/v2/subscriptions'],
   },
 ];
 
