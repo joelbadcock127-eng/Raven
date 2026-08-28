@@ -1,4 +1,4 @@
-import { lodgifyConfigured, probe } from '@/lib/lodgify';
+import { lodgifyConfigured, listProperties, probe } from '@/lib/lodgify';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -116,17 +116,19 @@ export default async function LodgifyApiPage({
       { pid: TFB, label: 'Ten Fifty Bakers' },
       { pid: RXP, label: 'The Prescription Pad' },
     ];
+    // real room-type ids come from the properties list the client already parses
+    const props = await listProperties().catch(() => []);
     for (const { pid, label } of targets) {
-      const propRes = await probe(`/v2/properties/${pid}`);
-      let roomTypeId: number = pid;
-      try {
-        const j = JSON.parse(propRes.snippet.length > 380 ? '{}' : propRes.snippet);
-        const rt = j?.rooms?.[0]?.id ?? j?.room_types?.[0]?.id;
-        if (rt) roomTypeId = Number(rt);
-      } catch {
-        /* snippet truncated — fall back to the property id */
-      }
-      const rows = [propRes, await probe(quotePath(pid, roomTypeId))];
+      const roomTypeId = props.find((p) => p.id === pid)?.rooms?.[0]?.id ?? pid;
+      const rows = [
+        {
+          path: `(room type for ${pid})`,
+          status: roomTypeId === pid ? 0 : 200,
+          ok: roomTypeId !== pid,
+          snippet: `roomTypeId=${roomTypeId}${roomTypeId === pid ? ' (fallback — none found)' : ''}`,
+        },
+        await probe(quotePath(pid, roomTypeId)),
+      ];
       for (const param of CODE_PARAMS) {
         rows.push(await probe(quotePath(pid, roomTypeId, `&${param}=NWTRS`)));
       }
