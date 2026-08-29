@@ -363,3 +363,42 @@ export async function probe(path: string): Promise<ProbeResult> {
     return { path, status: -1, ok: false, snippet: (err as Error).message.slice(0, 200) };
   }
 }
+
+/* ── Promotions (read-only reconciliation) ─────────────────────── */
+
+export interface LodgifyPromotion {
+  name: string;
+  codes: Array<{ code: string; isActive: boolean }>;
+  rateType: string | null;
+  price: number | null;
+  minimumStayDays: number | null;
+}
+
+/**
+ * Read the promotions configured for a property, with their guest-facing
+ * codes, from the rate settings.
+ *
+ * Lodgify has no promotion WRITE API — codes are created in its web app —
+ * but this read lets Decra reconcile what it stores against what actually
+ * exists, catching typos and codes since deleted or deactivated.
+ *
+ * Returns null when the account/endpoint exposes no promotions array at
+ * all, so callers can distinguish "none configured" from "not supported".
+ */
+export async function getRatePromotions(houseId: string | number): Promise<LodgifyPromotion[] | null> {
+  const data = await lodgifyFetch<Json>(`/v2/rates/settings?houseId=${houseId}`, 2, { revalidate: 60 });
+  const raw = data?.promotions ?? data?.Promotions;
+  if (!Array.isArray(raw)) return null;
+  return raw.map((p: Json) => ({
+    name: String(p?.name ?? p?.Name ?? ''),
+    codes: (p?.codes ?? p?.Codes ?? [])
+      .map((c: Json) => ({
+        code: String(typeof c === 'string' ? c : (c?.code ?? c?.Code ?? '')),
+        isActive: typeof c === 'string' ? true : c?.is_active ?? c?.isActive ?? true,
+      }))
+      .filter((c: { code: string }) => c.code !== ''),
+    rateType: p?.rate_type != null ? String(p.rate_type) : null,
+    price: p?.price != null ? Number(p.price) : null,
+    minimumStayDays: p?.minimum_stay_days != null ? Number(p.minimum_stay_days) : null,
+  }));
+}

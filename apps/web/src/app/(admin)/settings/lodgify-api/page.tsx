@@ -1,4 +1,4 @@
-import { lodgifyConfigured, listProperties, probe } from '@/lib/lodgify';
+import { lodgifyConfigured, listProperties, getRatePromotions, probe } from '@/lib/lodgify';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -149,6 +149,40 @@ export default async function LodgifyApiPage({
     }
   }
 
+  // Promotions read-back: are the account's promo codes visible via the
+  // rate settings? This is what makes reconciliation possible.
+  if (run === 'promos' && configured) {
+    for (const [pid, label] of [[TFB, 'Ten Fifty Bakers'], [RXP, 'The Prescription Pad']] as Array<[number, string]>) {
+      let snippet: string;
+      let status = 200;
+      try {
+        const promos = await getRatePromotions(pid);
+        if (promos === null) {
+          snippet = 'No promotions array on this response — read-back unsupported for this account.';
+          status = 404;
+        } else if (promos.length === 0) {
+          snippet = 'promotions: [] — endpoint exposes the array, but no promotions are configured.';
+        } else {
+          snippet = promos
+            .map(
+              (p) =>
+                `${p.name || '(unnamed)'} · ${p.rateType ?? '?'} ${p.price ?? ''} · min ${p.minimumStayDays ?? '-'} nights · codes: ${
+                  p.codes.map((c) => `${c.code}${c.isActive ? '' : ' (inactive)'}`).join(', ') || 'none'
+                }`,
+            )
+            .join('\n');
+        }
+      } catch (err) {
+        snippet = (err as Error).message.slice(0, 300);
+        status = -1;
+      }
+      results.push({
+        group: `Promotions read-back — ${label}`,
+        rows: [{ path: `/v2/rates/settings?houseId=${pid} → promotions[]`, status, ok: status === 200, snippet }],
+      });
+    }
+  }
+
   // Booking shape: can Decra tell a booking used a promo code? Lists the
   // KEYS Lodgify returns (values redacted — bookings carry guest PII) and
   // flags anything promo/discount-ish.
@@ -200,7 +234,7 @@ export default async function LodgifyApiPage({
         </div>
       )}
 
-      {run !== '1' && run !== 'quote' && run !== 'booking' ? (
+      {run !== '1' && run !== 'quote' && run !== 'booking' && run !== 'promos' ? (
         <div className="card" style={{ padding: 22 }}>
           <p className="caption" style={{ marginBottom: 14 }}>
             Probing makes ~{CANDIDATES.reduce((n, c) => n + c.paths.length, 0)} throttled API calls.
@@ -214,6 +248,9 @@ export default async function LodgifyApiPage({
             </a>
             <a className="pill-primary" href="?run=booking" style={{ textDecoration: 'none' }}>
               Inspect booking shape
+            </a>
+            <a className="pill-primary" href="?run=promos" style={{ textDecoration: 'none' }}>
+              Read promotions back
             </a>
           </div>
         </div>
