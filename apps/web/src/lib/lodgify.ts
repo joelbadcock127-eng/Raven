@@ -397,8 +397,16 @@ export async function getRatePromotions(houseId: string | number): Promise<Lodgi
         isActive: typeof c === 'string' ? true : c?.is_active ?? c?.isActive ?? true,
       }))
       .filter((c: { code: string }) => c.code !== ''),
-    rateType: p?.rate_type != null ? String(p.rate_type) : null,
-    price: p?.price != null ? Number(p.price) : null,
+    rateType:
+      p?.rate_type ?? p?.type ?? p?.discount_type ?? p?.rateType ?? null
+        ? String(p?.rate_type ?? p?.type ?? p?.discount_type ?? p?.rateType)
+        : null,
+    price: (() => {
+      const raw = p?.price ?? p?.amount ?? p?.value ?? p?.discount;
+      if (raw == null) return null;
+      const n = Number(typeof raw === 'object' ? (raw?.amount ?? raw?.value) : raw);
+      return Number.isFinite(n) ? n : null;
+    })(),
     minimumStayDays: p?.minimum_stay_days != null ? Number(p.minimum_stay_days) : null,
   }));
 }

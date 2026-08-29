@@ -4,6 +4,14 @@ import { useMemo, useState, useTransition } from 'react';
 import { savePromoCode, setPromoStatus, deletePromoCode, type PromoInput } from '@/app/(admin)/promo-codes/actions';
 import { checkoutUrl, describeValue, effectiveStatus, type PromoCode } from '@/lib/promo';
 
+export interface LodgifyPromotionView {
+  name: string;
+  codes: Array<{ code: string; isActive: boolean }>;
+  rateType: string | null;
+  price: number | null;
+  minimumStayDays: number | null;
+}
+
 export interface PromoProperty {
   id: string;
   name: string;
@@ -56,12 +64,14 @@ export default function PromoCodes({
   codes,
   clicksByLink,
   redemptions,
+  lodgifyPromos,
   today,
 }: {
   properties: PromoProperty[];
   codes: PromoCode[];
   clicksByLink: Record<string, number>;
   redemptions: Record<string, { count: number; amount: number; currency: string }>;
+  lodgifyPromos: Record<string, LodgifyPromotionView[] | null>;
   today: string;
 }) {
   const [form, setForm] = useState<PromoInput | null>(null);
@@ -133,6 +143,34 @@ export default function PromoCodes({
               );
             })()}
 
+            {(() => {
+              const promos = lodgifyPromos[prop.id];
+              if (!promos) return null;
+              const known = new Set(list.map((c) => c.code));
+              const missing = promos
+                .flatMap((p) => p.codes.map((c) => ({ ...c, name: p.name })))
+                .filter((c) => !known.has(c.code));
+              const codeless = promos.filter((p) => p.codes.length === 0);
+              if (missing.length === 0 && codeless.length === 0) return null;
+              return (
+                <div style={{ marginBottom: 12 }}>
+                  {missing.length > 0 && (
+                    <p className="caption" style={{ color: '#b8860b' }}>
+                      In Lodgify but not recorded here:{' '}
+                      {missing.map((c) => `${c.code} (${c.name})`).join(', ')} — add them above to
+                      track their links and clicks.
+                    </p>
+                  )}
+                  {codeless.length > 0 && (
+                    <p className="caption" style={{ color: 'var(--ink-mute)' }}>
+                      Automatic promotions with no code (they apply on their own, and only one
+                      promotion applies per booking): {codeless.map((p) => p.name).join(', ')}.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+
             {list.length === 0 && !form && (
               <p className="caption" style={{ color: 'var(--ink-mute)' }}>
                 No codes recorded yet.
@@ -148,6 +186,21 @@ export default function PromoCodes({
                   adults: c.default_adults,
                 });
                 const clicks = c.tracked_link_id ? clicksByLink[c.tracked_link_id] ?? 0 : 0;
+                const promos = lodgifyPromos[prop.id];
+                const match = promos?.find((lp) => lp.codes.some((x) => x.code === c.code));
+                const codeEntry = match?.codes.find((x) => x.code === c.code);
+                const verify: { label: string; color: string } | null =
+                  promos == null
+                    ? null
+                    : match == null
+                      ? { label: 'not found in Lodgify', color: '#c0392b' }
+                      : codeEntry && !codeEntry.isActive
+                        ? { label: 'inactive in Lodgify', color: '#b8860b' }
+                        : { label: 'verified in Lodgify', color: 'var(--jade, #1a7f5a)' };
+                const nightsMismatch =
+                  match?.minimumStayDays != null &&
+                  c.min_nights != null &&
+                  match.minimumStayDays !== c.min_nights;
                 return (
                   <div key={c.id} style={{ borderTop: '1px solid var(--hairline)', paddingTop: 12 }}>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
@@ -156,7 +209,21 @@ export default function PromoCodes({
                       <span className="micro-cap" style={{ color: 'var(--ink-mute)' }}>{describeValue(c)}</span>
                       <span className="micro-cap" style={{ color: STATUS_TONE[status] }}>{status}</span>
                       <span className="tnum caption" title="clicks on this code's link">{clicks} clicks</span>
+                      {verify && (
+                        <span className="micro-cap" style={{ color: verify.color }}>{verify.label}</span>
+                      )}
                     </div>
+
+                    {nightsMismatch && (
+                      <p
+                        className="caption"
+                        style={{ marginTop: 6, color: '#c0392b', fontWeight: 500 }}
+                      >
+                        Minimum nights disagree: Decra says {c.min_nights}, Lodgify requires{' '}
+                        {match?.minimumStayDays}. Guests promised {c.min_nights} nights will find the
+                        code does not apply — fix it in Lodgify or change the offer wording.
+                      </p>
+                    )}
 
                     {(c.book_by || c.stay_from || c.min_nights) && (
                       <p className="caption" style={{ color: 'var(--ink-mute)', marginTop: 4 }}>

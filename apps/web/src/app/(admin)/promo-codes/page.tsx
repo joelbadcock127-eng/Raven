@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
-import { lodgifyConfigured, listBookings } from '@/lib/lodgify';
+import { lodgifyConfigured, listBookings, getRatePromotions, type LodgifyPromotion } from '@/lib/lodgify';
 import PromoCodes, { type PromoProperty } from '@/components/PromoCodes';
 import type { PromoCode } from '@/lib/promo';
 
@@ -46,6 +46,20 @@ export default async function PromoCodesPage() {
     if (linkIds.length > 0) {
       const { data: links } = await supabase.from('tracked_links').select('id, clicks').in('id', linkIds);
       for (const l of links ?? []) clicksByLink[l.id as string] = Number(l.clicks ?? 0);
+    }
+  }
+
+  // Reconciliation: read the promotions Lodgify actually has, so stored
+  // codes can be verified rather than trusted. Catches typos, codes
+  // deleted or deactivated in Lodgify, and terms that have drifted apart.
+  const lodgifyPromos: Record<string, LodgifyPromotion[] | null> = {};
+  if (lodgifyConfigured()) {
+    for (const p of properties) {
+      try {
+        lodgifyPromos[p.id] = await getRatePromotions(p.lodgifyPropertyId);
+      } catch {
+        lodgifyPromos[p.id] = null;
+      }
     }
   }
 
@@ -96,6 +110,7 @@ export default async function PromoCodesPage() {
         codes={codes}
         clicksByLink={clicksByLink}
         redemptions={redemptions}
+        lodgifyPromos={lodgifyPromos}
         today={today}
       />
 
