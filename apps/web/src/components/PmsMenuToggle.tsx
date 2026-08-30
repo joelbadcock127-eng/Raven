@@ -3,28 +3,51 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Show/hide the PMS section (Dashboard, Reservations, Inbox, Calendar) in the
- * side menu. Stored per device in localStorage; the Sidebar listens for the
- * change event so it updates without a reload. The pages themselves stay
- * reachable by URL either way.
+ * Per-device show/hide switches for optional side-menu sections.
+ *
+ * Stored in localStorage; the Sidebar listens for the change event so the
+ * menu updates without a reload. Hidden pages stay reachable by URL either
+ * way — this only controls what the menu advertises.
  */
+
 export const PMS_MENU_KEY = 'decra-pms-menu';
 export const PMS_MENU_EVENT = 'decra:pms-menu';
+
+/** Booking codes is opt-in: hidden until switched on in Settings. */
+export const PROMO_MENU_KEY = 'decra-promo-menu';
+export const PROMO_MENU_EVENT = 'decra:promo-menu';
 
 export function pmsMenuVisible(): boolean {
   if (typeof window === 'undefined') return true;
   return window.localStorage.getItem(PMS_MENU_KEY) !== 'hidden';
 }
 
-export default function PmsMenuToggle() {
-  const [visible, setVisible] = useState(true);
-  useEffect(() => setVisible(pmsMenuVisible()), []);
+export function promoMenuVisible(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(PROMO_MENU_KEY) === 'shown';
+}
+
+function Switch({
+  storageKey,
+  event,
+  defaultVisible,
+}: {
+  storageKey: string;
+  event: string;
+  defaultVisible: boolean;
+}) {
+  const [visible, setVisible] = useState(defaultVisible);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(storageKey);
+    setVisible(stored == null ? defaultVisible : stored === 'shown');
+  }, [storageKey, defaultVisible]);
 
   const toggle = () => {
     const next = !visible;
     setVisible(next);
-    window.localStorage.setItem(PMS_MENU_KEY, next ? 'shown' : 'hidden');
-    window.dispatchEvent(new Event(PMS_MENU_EVENT));
+    window.localStorage.setItem(storageKey, next ? 'shown' : 'hidden');
+    window.dispatchEvent(new Event(event));
   };
 
   return (
@@ -73,4 +96,14 @@ export default function PmsMenuToggle() {
       <span className="caption">{visible ? 'Shown' : 'Hidden'}</span>
     </button>
   );
+}
+
+/** PMS section (Dashboard, Reservations, Calendar) — shown by default. */
+export default function PmsMenuToggle() {
+  return <Switch storageKey={PMS_MENU_KEY} event={PMS_MENU_EVENT} defaultVisible />;
+}
+
+/** Booking codes tab — hidden by default. */
+export function PromoMenuToggle() {
+  return <Switch storageKey={PROMO_MENU_KEY} event={PROMO_MENU_EVENT} defaultVisible={false} />;
 }

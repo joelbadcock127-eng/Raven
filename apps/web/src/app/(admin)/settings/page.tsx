@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { fetchLiveCosts, liveConfigured } from '@/lib/usage';
-import PmsMenuToggle from '@/components/PmsMenuToggle';
+import PmsMenuToggle, { PromoMenuToggle } from '@/components/PmsMenuToggle';
 import ThemeToggle from '@/components/ThemeToggle';
 
 export const revalidate = 0;
@@ -150,6 +150,25 @@ export default async function SettingsPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <span style={{ fontSize: 14, color: 'var(--ink-secondary)', flex: 1 }}>PMS tabs in the side menu</span>
           <PmsMenuToggle />
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            marginTop: 14,
+            paddingTop: 14,
+            borderTop: '1px solid var(--hairline)',
+          }}
+        >
+          <span style={{ fontSize: 14, color: 'var(--ink-secondary)', flex: 1 }}>
+            Booking codes tab
+            <span className="caption" style={{ display: 'block', color: 'var(--ink-mute)' }}>
+              Lodgify promo codes for Ten Fifty Bakers and The Prescription Pad. Off by default;
+              the page stays at /promo-codes either way.
+            </span>
+          </span>
+          <PromoMenuToggle />
         </div>
       </section>
 

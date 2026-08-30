@@ -3,7 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { PMS_MENU_EVENT, pmsMenuVisible } from '@/components/PmsMenuToggle';
+import {
+  PMS_MENU_EVENT,
+  PROMO_MENU_EVENT,
+  pmsMenuVisible,
+  promoMenuVisible,
+} from '@/components/PmsMenuToggle';
 
 /** Minimal stroke icons (24×24 viewBox, stroke = currentColor). */
 const Icon = {
@@ -109,17 +114,31 @@ function isActive(pathname: string, href: string): boolean {
 export default function Sidebar() {
   const pathname = usePathname();
   const [showPms, setShowPms] = useState(true);
+  // Booking codes is opt-in; render hidden on the server pass so the menu
+  // never flashes an item the owner has switched off.
+  const [showPromo, setShowPromo] = useState(false);
 
   useEffect(() => {
-    const sync = () => setShowPms(pmsMenuVisible());
+    const sync = () => {
+      setShowPms(pmsMenuVisible());
+      setShowPromo(promoMenuVisible());
+    };
     sync();
     window.addEventListener(PMS_MENU_EVENT, sync);
+    window.addEventListener(PROMO_MENU_EVENT, sync);
     window.addEventListener('storage', sync);
     return () => {
       window.removeEventListener(PMS_MENU_EVENT, sync);
+      window.removeEventListener(PROMO_MENU_EVENT, sync);
       window.removeEventListener('storage', sync);
     };
   }, []);
+
+  // Booking codes is optional, so the rail is derived rather than fixed.
+  // The mobile bar keeps its original five: it is index-sliced around the
+  // upload button, and a sixth tab would crowd it.
+  const railItems = ITEMS.filter((i) => i.href !== '/promo-codes' || showPromo);
+  const mobileItems = ITEMS.filter((i) => i.href !== '/promo-codes');
 
   return (
     <>
@@ -171,7 +190,7 @@ export default function Sidebar() {
           );
         })}
         {showPms && <div aria-hidden style={{ height: 1, background: 'var(--hairline)', margin: '10px 12px' }} />}
-        {ITEMS.map((item) => {
+        {railItems.map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link
@@ -246,7 +265,7 @@ export default function Sidebar() {
 
       {/* ── Mobile bottom tab bar (upload front and centre) ── */}
       <nav className="bottomnav" aria-label="Decra">
-        {ITEMS.slice(0, 2).map((item) => (
+        {mobileItems.slice(0, 2).map((item) => (
           <Link key={item.href} href={item.href} className={isActive(pathname, item.href) ? 'active' : ''}>
             <span className="navicon" aria-hidden>{item.icon}</span>
             {item.label}
@@ -256,7 +275,7 @@ export default function Sidebar() {
           <span className="navicon" aria-hidden>{Icon.upload}</span>
           Upload
         </Link>
-        {ITEMS.slice(2).map((item) => (
+        {mobileItems.slice(2).map((item) => (
           <Link key={item.href} href={item.href} className={isActive(pathname, item.href) ? 'active' : ''}>
             <span className="navicon" aria-hidden>{item.icon}</span>
             {item.label}
