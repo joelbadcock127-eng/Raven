@@ -254,18 +254,6 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
                     )}
                   </div>
 
-                  {/* remove stay */}
-                  {stays.length > 1 && (
-                    <button
-                      aria-label="Remove stay"
-                      title="Remove stay"
-                      onClick={() => { setStays((arr) => arr.filter((_, j) => j !== i)); setActive(0); setCalOpen(false); }}
-                      style={{ all: 'unset', cursor: 'pointer', alignSelf: 'center', width: 30, height: 30, lineHeight: '28px', textAlign: 'center', border: '1px solid #d9d6d0', borderRadius: '50%', color: '#8d8a83', fontSize: 13, background: '#fff' }}
-                    >
-                      ✕
-                    </button>
-                  )}
-
                   {/* guests */}
                   <div className="pb-guests" style={{ position: 'relative' }}>
                     <button onClick={() => { setGuestsOpenFor(guestsOpenFor === i ? -1 : i); setCalOpen(false); }} style={{ all: 'unset', cursor: 'pointer', padding: '9px 16px', minWidth: 150, border: '1px solid #d9d6d0', borderRadius: 8, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -284,6 +272,18 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
                       </div>
                     )}
                   </div>
+
+                  {/* remove stay */}
+                  {stays.length > 1 && (
+                    <button
+                      aria-label="Remove stay"
+                      title="Remove stay"
+                      onClick={() => { setStays((arr) => arr.filter((_, j) => j !== i)); setActive(0); setCalOpen(false); }}
+                      style={{ all: 'unset', cursor: 'pointer', alignSelf: 'center', width: 30, height: 30, lineHeight: '28px', textAlign: 'center', border: '1px solid #d9d6d0', borderRadius: '50%', color: '#8d8a83', fontSize: 13, background: '#fff' }}
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
 
                 {/* room setup */}
