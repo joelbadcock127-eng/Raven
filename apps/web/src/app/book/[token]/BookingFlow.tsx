@@ -32,7 +32,7 @@ interface Stay {
   roomConfig: string;
 }
 
-const newStay = (defaultRooms: string): Stay => ({ start: '', end: '', adults: 2, children: 0, infants: 0, customRooms: false, roomConfig: defaultRooms });
+const newStay = (): Stay => ({ start: '', end: '', adults: 2, children: 0, infants: 0, customRooms: false, roomConfig: '' });
 
 interface StayResult { arrival: string; departure: string; ok: boolean; state?: string; bookingId?: number; error?: string }
 
@@ -41,16 +41,15 @@ interface Props {
   propertyName: string;
   imageUrl: string | null;
   requireApproval: boolean;
-  guestLabel: string | null;
   defaultRoomConfig: string;
 }
 
-export default function BookingFlow({ token, propertyName, imageUrl, requireApproval, guestLabel, defaultRoomConfig }: Props) {
+export default function BookingFlow({ token, propertyName, imageUrl, requireApproval, defaultRoomConfig }: Props) {
   const todayIso = useMemo(() => iso(new Date()), []);
   const [blocked, setBlocked] = useState<Set<string> | null>(null);
   const [loadError, setLoadError] = useState('');
 
-  const [stays, setStays] = useState<Stay[]>([newStay(defaultRoomConfig)]);
+  const [stays, setStays] = useState<Stay[]>([newStay()]);
   const [active, setActive] = useState(0); // stay index the calendar edits
   const [hover, setHover] = useState('');
   const [calOpen, setCalOpen] = useState(false);
@@ -75,12 +74,12 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
       .catch(() => setLoadError('Could not load availability'));
   }, [token]);
 
+  // Any click outside a popover (or its own trigger) closes it.
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setCalOpen(false);
-        setGuestsOpenFor(-1);
-      }
+      const t = e.target as HTMLElement;
+      if (!t.closest('.pb-guests')) setGuestsOpenFor(-1);
+      if (!t.closest('.pb-cal') && !t.closest('.pb-datefield')) setCalOpen(false);
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
@@ -200,7 +199,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
     const anyRequested = results.some((r) => r.ok && (pendingMode || r.state === 'requested'));
     const allRequested = results.every((r) => !r.ok || pendingMode || r.state === 'requested');
     return (
-      <Shell propertyName={propertyName} guestLabel={guestLabel}>
+      <Shell propertyName={propertyName}>
         <div style={{ maxWidth: 620, margin: '60px auto', padding: '0 20px' }}>
           <div style={{ textAlign: 'center', marginBottom: 26 }}>
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#111', color: '#fff', fontSize: 30, lineHeight: '64px', margin: '0 auto 20px' }}>✓</div>
@@ -228,7 +227,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
   }
 
   return (
-    <Shell propertyName={propertyName} guestLabel={guestLabel}>
+    <Shell propertyName={propertyName}>
       <div ref={wrapRef} style={{ maxWidth: 1060, margin: '0 auto', padding: '28px 20px 120px' }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 18 }}>Dates</h1>
 
@@ -238,13 +237,10 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
             {stays.map((s, i) => (
               <div key={i} style={{ position: 'relative', marginBottom: 18, animation: 'pbfade 0.25s ease' }}>
                 {stays.length > 1 && (
-                  <div style={{ fontSize: 11.5, color: '#8d8a83', marginBottom: 6, display: 'flex', justifyContent: 'space-between', maxWidth: 460 }}>
-                    <span>Stay {i + 1}</span>
-                    <button onClick={() => { setStays((arr) => arr.filter((_, j) => j !== i)); setActive(0); setCalOpen(false); }} style={{ all: 'unset', cursor: 'pointer', color: '#8d8a83' }}>Remove</button>
-                  </div>
+                  <div style={{ fontSize: 11.5, color: '#8d8a83', marginBottom: 6 }}>Stay {i + 1}</div>
                 )}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                  <div style={{ display: 'flex', border: '1px solid ' + (calOpen && active === i ? '#111' : '#d9d6d0'), borderRadius: 8, overflow: 'hidden', background: '#fff', transition: 'border-color 0.15s' }}>
+                  <div className="pb-datefield" style={{ display: 'flex', border: '1px solid ' + (calOpen && active === i ? '#111' : '#d9d6d0'), borderRadius: 8, overflow: 'hidden', background: '#fff', transition: 'border-color 0.15s' }}>
                     <button onClick={() => { setActive(i); setCalOpen(true); setGuestsOpenFor(-1); }} style={{ all: 'unset', cursor: 'pointer', padding: '9px 16px', minWidth: 112, borderRight: '1px solid #d9d6d0' }}>
                       <div style={{ fontSize: 11.5, color: '#8d8a83' }}>Check-in</div>
                       <div style={{ fontSize: 15, fontWeight: 600 }}>{s.start ? fmtField(s.start) : '––'}</div>
@@ -258,8 +254,20 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
                     )}
                   </div>
 
+                  {/* remove stay */}
+                  {stays.length > 1 && (
+                    <button
+                      aria-label="Remove stay"
+                      title="Remove stay"
+                      onClick={() => { setStays((arr) => arr.filter((_, j) => j !== i)); setActive(0); setCalOpen(false); }}
+                      style={{ all: 'unset', cursor: 'pointer', alignSelf: 'center', width: 30, height: 30, lineHeight: '28px', textAlign: 'center', border: '1px solid #d9d6d0', borderRadius: '50%', color: '#8d8a83', fontSize: 13, background: '#fff' }}
+                    >
+                      ✕
+                    </button>
+                  )}
+
                   {/* guests */}
-                  <div style={{ position: 'relative' }}>
+                  <div className="pb-guests" style={{ position: 'relative' }}>
                     <button onClick={() => { setGuestsOpenFor(guestsOpenFor === i ? -1 : i); setCalOpen(false); }} style={{ all: 'unset', cursor: 'pointer', padding: '9px 16px', minWidth: 150, border: '1px solid #d9d6d0', borderRadius: 8, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                       <span>
                         <span style={{ display: 'block', fontSize: 11.5, color: '#8d8a83' }}>Guests</span>
@@ -281,8 +289,11 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
                 {/* room setup */}
                 <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 12.5, color: '#8d8a83' }}>Room setup</span>
-                  <button onClick={() => patchStay(i, { customRooms: false, roomConfig: defaultRoomConfig })} style={pill(!s.customRooms)}>Default · {defaultRoomConfig}</button>
-                  <button onClick={() => patchStay(i, { customRooms: true, roomConfig: s.customRooms ? s.roomConfig : '' })} style={pill(s.customRooms)}>Different</button>
+                  {/* "Different" toggles: closing it reverts to the default but
+                      keeps any typed text for if they switch back — only an
+                      OPEN custom field is actually sent with the booking. */}
+                  <button onClick={() => patchStay(i, { customRooms: false })} style={pill(!s.customRooms)}>Default · {defaultRoomConfig}</button>
+                  <button onClick={() => patchStay(i, { customRooms: !s.customRooms })} style={pill(s.customRooms)}>Different</button>
                   {s.customRooms && (
                     <input
                       value={s.roomConfig}
@@ -296,7 +307,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
 
                 {/* calendar dropdown for the active stay */}
                 {calOpen && active === i && (
-                  <div style={{ position: 'absolute', top: 64, left: 0, zIndex: 20, background: '#fff', border: '1px solid #eceae6', borderRadius: 14, boxShadow: '0 18px 60px rgba(20,18,14,0.16)', padding: '18px 22px 22px', animation: 'pbslide 0.22s ease', maxWidth: 'min(94vw, 560px)' }}>
+                  <div className="pb-cal" style={{ position: 'absolute', top: 64, left: 0, zIndex: 20, background: '#fff', border: '1px solid #eceae6', borderRadius: 14, boxShadow: '0 18px 60px rgba(20,18,14,0.16)', padding: '18px 22px 22px', animation: 'pbslide 0.22s ease', maxWidth: 'min(94vw, 560px)' }}>
                     {blocked == null && !loadError && <div style={{ padding: 30, color: '#8d8a83', fontSize: 14 }}>Loading live availability…</div>}
                     {loadError && <div style={{ padding: 30, color: '#a33', fontSize: 14 }}>{loadError}</div>}
                     {blocked != null && (
@@ -321,15 +332,11 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
                                       style={cellStyle(d)}
                                       onPointerDown={(e) => { e.preventDefault(); pickDate(d); }}
                                       onPointerUp={() => { const st = stays[active]; if (st?.start && !st.end && hover === d && d > st.start && rangeFree(st.start, d, active)) { patchStay(active, { end: d }); setCalOpen(false); } }}
-                                      onMouseEnter={(e) => {
-                                        setHover(d);
+                                      onMouseEnter={() => setHover(d)}
+                                      onMouseMove={(e) => {
                                         const st = stays[active];
                                         const bad = !isPast(d) && isBlocked(d, active) && !(st?.start && !st.end && d > st.start && rangeFree(st.start, d, active));
-                                        if (bad) {
-                                          const r = (e.target as HTMLElement).getBoundingClientRect();
-                                          const w = wrapRef.current!.getBoundingClientRect();
-                                          setTooltip({ x: r.left - w.left + r.width / 2, y: r.top - w.top - 34 });
-                                        } else setTooltip(null);
+                                        setTooltip(bad ? { x: e.clientX, y: e.clientY - 38 } : null);
                                       }}
                                       onMouseLeave={() => { setHover(''); setTooltip(null); }}
                                     >
@@ -351,7 +358,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
             {/* add another stay */}
             {stays.every((s) => nightsOf(s) > 0) && (
               <button
-                onClick={() => { setStays((arr) => [...arr, newStay(defaultRoomConfig)]); setActive(stays.length); setCalOpen(true); }}
+                onClick={() => { setStays((arr) => [...arr, newStay()]); setActive(stays.length); setCalOpen(true); }}
                 style={{ all: 'unset', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600, color: '#1c1b18', padding: '10px 0', animation: 'pbfade 0.25s ease' }}
               >
                 <span style={{ width: 26, height: 26, lineHeight: '24px', textAlign: 'center', border: '1px solid #c9c6c0', borderRadius: '50%', fontSize: 16 }}>+</span>
@@ -407,7 +414,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
         </div>
 
         {tooltip && (
-          <div style={{ position: 'absolute', left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%)', background: '#111', color: '#fff', fontSize: 12, padding: '6px 10px', borderRadius: 6, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 40, animation: 'pbfade 0.12s ease' }}>
+          <div style={{ position: 'fixed', left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%)', background: '#111', color: '#fff', fontSize: 12, padding: '6px 10px', borderRadius: 6, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 60, animation: 'pbfade 0.12s ease' }}>
             Not available for check-in
           </div>
         )}
@@ -444,7 +451,7 @@ const pill = (on: boolean): React.CSSProperties => ({
   transition: 'all 0.15s',
 });
 
-function Shell({ propertyName, guestLabel, children }: { propertyName: string; guestLabel: string | null; children: React.ReactNode }) {
+function Shell({ propertyName, children }: { propertyName: string; children: React.ReactNode }) {
   return (
     <div style={{ minHeight: '100vh', background: '#fbfaf8', color: '#1c1b18', fontFamily: "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif" }}>
       <style>{`
@@ -458,7 +465,7 @@ function Shell({ propertyName, guestLabel, children }: { propertyName: string; g
         <div style={{ maxWidth: 1060, margin: '0 auto', fontSize: 20, fontWeight: 800, letterSpacing: '-0.01em' }}>Stay with Us</div>
       </header>
       <div style={{ fontSize: 12.5, textAlign: 'center', padding: '10px 16px', background: '#f2f0ec', color: '#57544e' }}>
-        Private booking page for {propertyName}{guestLabel ? ` · bookings go through as ${guestLabel}` : ''} — no payment required.
+        Private booking page for {propertyName}.
       </div>
       {children}
     </div>
