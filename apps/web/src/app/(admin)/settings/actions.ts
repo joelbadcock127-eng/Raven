@@ -57,6 +57,7 @@ export async function approveRequest(requestId: string) {
       guestPhone: reqRow.guest_phone ?? undefined,
       status: 'Booked',
       sourceText: 'Decra private link — invoice directly (approved)',
+      notes: reqRow.notes ?? undefined,
     });
     await supabase.from('booking_requests').update({ status: 'booked', lodgify_booking_id: lodgifyId }).eq('id', requestId);
     revalidatePath('/settings');

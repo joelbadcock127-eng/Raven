@@ -431,6 +431,7 @@ export interface CreateBookingInput {
   /** "Booked" blocks the dates everywhere; "Open" records without blocking. */
   status?: 'Booked' | 'Open' | 'Tentative';
   sourceText?: string;
+  notes?: string;
 }
 
 /**
@@ -451,6 +452,7 @@ export async function createBooking(input: CreateBookingInput): Promise<number> 
     departure: input.departure,
     status: input.status ?? 'Booked',
     source_text: input.sourceText ?? 'Decra private link',
+    ...(input.notes ? { notes: input.notes } : {}),
     rooms: [
       {
         room_type_id: input.roomTypeId,
