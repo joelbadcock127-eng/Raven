@@ -104,6 +104,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, mode: 'booked', bookingId: lodgifyId });
   } catch (e) {
     if (supabase) await supabase.from('booking_requests').insert({ ...base, status: 'failed', error: String(e).slice(0, 500) });
-    return NextResponse.json({ error: 'The booking could not be created — nothing was reserved. Please try again or contact us.' }, { status: 502 });
+    // Surface Lodgify's own validation messages (e.g. minimum-stay rules)
+    // so the guest can fix their selection instead of guessing.
+    const m = String(e).match(/"message":\s*"([^"]{3,140})"/);
+    return NextResponse.json(
+      { error: m ? m[1] : 'The booking could not be created — nothing was reserved. Please try again or contact us.' },
+      { status: 502 },
+    );
   }
 }

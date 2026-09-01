@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   arrival.setFullYear(arrival.getFullYear() + 1);
   arrival.setDate(arrival.getDate() + 3);
   const departure = new Date(arrival);
-  departure.setDate(departure.getDate() + 1);
+  departure.setDate(departure.getDate() + 2);
   const a = arrival.toISOString().slice(0, 10);
   const d = departure.toISOString().slice(0, 10);
   log.dates = { arrival: a, departure: d };
