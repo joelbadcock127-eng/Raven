@@ -28,6 +28,7 @@ export interface RequestRow {
   infants: number;
   guest_name: string;
   guest_email: string;
+  notes: string | null;
   status: string;
   lodgify_booking_id: number | null;
   error: string | null;
@@ -145,11 +146,14 @@ export default function PrivateBookingLinks({ links, requests, origin }: { links
         <div style={{ marginTop: 18 }}>
           <h3 className="heading-sm" style={{ marginBottom: 8 }}>Recent private bookings</h3>
           {recent.map((r) => (
-            <div key={r.id} className="caption" style={{ padding: '8px 0', borderTop: '1px solid var(--hairline)', display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-              <span><strong>{r.guest_name}</strong> · {r.arrival} → {r.departure} · {PROPERTY_NAMES[r.property_id] ?? r.property_id}</span>
-              <span style={{ color: r.status === 'booked' ? 'var(--primary-deep)' : r.status === 'failed' ? '#a33' : 'var(--ink-mute)' }}>
-                {r.status === 'booked' ? `booked${r.lodgify_booking_id ? ` #${r.lodgify_booking_id}` : ''} — invoice directly` : r.status}
-              </span>
+            <div key={r.id} className="caption" style={{ padding: '8px 0', borderTop: '1px solid var(--hairline)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                <span><strong>{r.guest_name}</strong> · {r.arrival} → {r.departure} · {PROPERTY_NAMES[r.property_id] ?? r.property_id}</span>
+                <span style={{ color: r.status === 'booked' ? 'var(--primary-deep)' : r.status === 'failed' ? '#a33' : 'var(--ink-mute)' }}>
+                  {r.status === 'booked' ? `booked${r.lodgify_booking_id ? ` #${r.lodgify_booking_id}` : ''} — invoice directly` : r.status}
+                </span>
+              </div>
+              {r.notes && <div style={{ color: 'var(--ink-mute)', marginTop: 2 }}>{r.notes}</div>}
             </div>
           ))}
         </div>
