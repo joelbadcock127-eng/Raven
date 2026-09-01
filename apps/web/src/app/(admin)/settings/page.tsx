@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { fetchLiveCosts, liveConfigured } from '@/lib/usage';
 import PmsMenuToggle, { PromoMenuToggle } from '@/components/PmsMenuToggle';
 import ThemeToggle from '@/components/ThemeToggle';
+import PrivateBookingLinks, { type LinkRow, type RequestRow } from '@/components/PrivateBookingLinks';
 
 export const revalidate = 0;
 
@@ -96,6 +97,23 @@ export default async function SettingsPage() {
       ]
     : [];
   const total = rows.reduce((n, r) => n + r.value, 0);
+
+  // private booking links + their requests, for the card below
+  let bookingLinks: LinkRow[] = [];
+  let bookingRequests: RequestRow[] = [];
+  {
+    const supabase = supabaseAdmin();
+    if (supabase) {
+      const [{ data: links }, { data: reqs }] = await Promise.all([
+        supabase.from('booking_links').select('*').order('created_at'),
+        supabase.from('booking_requests').select('*').order('created_at', { ascending: false }).limit(30),
+      ]);
+      bookingLinks = (links as LinkRow[]) ?? [];
+      bookingRequests = (reqs as RequestRow[]) ?? [];
+    }
+  }
+  const appOrigin = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://decra-stays.vercel.app').replace(/\/$/, '');
+
   const max = Math.max(...rows.map((r) => r.value), 0.01);
 
   return (
@@ -140,6 +158,8 @@ export default async function SettingsPage() {
           Open Outreach →
         </a>
       </section>
+
+      <PrivateBookingLinks links={bookingLinks} requests={bookingRequests} origin={appOrigin} />
 
       <section className="card" style={{ padding: '22px 24px', maxWidth: 720, marginBottom: 24 }}>
         <h2 className="heading-md" style={{ marginBottom: 4 }}>Side menu</h2>

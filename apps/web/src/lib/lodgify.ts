@@ -410,3 +410,63 @@ export async function getRatePromotions(houseId: string | number): Promise<Lodgi
     minimumStayDays: p?.minimum_stay_days != null ? Number(p.minimum_stay_days) : null,
   }));
 }
+
+/* ── PMS: booking creation (private no-payment links) ──────────── */
+
+export interface CreateBookingInput {
+  propertyId: number;
+  roomTypeId: number;
+  arrival: string; // yyyy-mm-dd
+  departure: string;
+  adults: number;
+  children?: number;
+  infants?: number;
+  guestName: string;
+  guestEmail: string;
+  guestPhone?: string;
+  /** "Booked" blocks the dates everywhere; "Open" records without blocking. */
+  status?: 'Booked' | 'Open' | 'Tentative';
+  sourceText?: string;
+}
+
+/**
+ * Create a booking via the v1 endpoint (v2 bookings are read-only). No
+ * payment is attached — the booking lands unpaid and is invoiced outside
+ * Lodgify. The response is the new booking id (Lodgify returns a bare
+ * number) but shapes vary, so parse tolerantly.
+ */
+export async function createBooking(input: CreateBookingInput): Promise<number> {
+  const body = {
+    guest: {
+      name: input.guestName,
+      email: input.guestEmail,
+      ...(input.guestPhone ? { phone: input.guestPhone } : {}),
+    },
+    property_id: input.propertyId,
+    arrival: input.arrival,
+    departure: input.departure,
+    status: input.status ?? 'Booked',
+    source_text: input.sourceText ?? 'Decra private link',
+    rooms: [
+      {
+        room_type_id: input.roomTypeId,
+        guest_breakdown: {
+          adults: input.adults,
+          children: input.children ?? 0,
+          infants: input.infants ?? 0,
+          pets: 0,
+        },
+        people: input.adults + (input.children ?? 0),
+      },
+    ],
+  };
+  const data = await lodgifyFetch<Json>('/v1/reservation/booking', 1, { method: 'POST', body });
+  const id = typeof data === 'number' ? data : Number(data?.id ?? data?.booking_id ?? NaN);
+  if (!Number.isFinite(id)) throw new Error(`Lodgify created a booking but returned no id: ${JSON.stringify(data).slice(0, 200)}`);
+  return id;
+}
+
+/** Delete a booking (used only by the shape-verification dry run). */
+export async function deleteBooking(id: number): Promise<void> {
+  await lodgifyFetch(`/v1/reservation/booking/${id}`, 1, { method: 'DELETE' });
+}

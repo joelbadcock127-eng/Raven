@@ -113,6 +113,13 @@ export async function middleware(req: NextRequest) {
   // Event pages and their index are real app routes on the property domain.
   if (pathname === '/events' || pathname.startsWith('/events/')) return NextResponse.next();
 
+  // Private no-payment booking pages (tokenized, never indexed or linked).
+  if (pathname.startsWith('/book/') || pathname.startsWith('/api/private-booking/')) {
+    const res = NextResponse.next();
+    res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return res;
+  }
+
   // Admin-only paths never serve on a public property domain (the live
   // pages are rewritten to /m/live internally; direct hits go home).
   if (pathname.startsWith('/mirror-sandbox') || pathname.startsWith('/m/'))
