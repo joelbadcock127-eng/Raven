@@ -42,8 +42,12 @@ async function lodgifyFetch<T>(
       signal: AbortSignal.timeout(25_000),
       ...(cacheable ? { next: { revalidate: init!.revalidate! } } : { cache: 'no-store' as const }),
     });
-    if (res.ok && res.status === 204) return undefined as T;
-    if (res.ok) return (await res.json()) as T;
+    if (res.ok) {
+      // DELETE and some v1 writes return 200 with an empty body.
+      const text = await res.text();
+      if (!text.trim()) return undefined as T;
+      return JSON.parse(text) as T;
+    }
     if ((res.status === 429 || res.status >= 500) && attempt < retries) {
       const retryAfter = Number(res.headers.get('retry-after')) * 1000 || 0;
       await sleep(Math.max(retryAfter, 2 ** attempt * 2000));

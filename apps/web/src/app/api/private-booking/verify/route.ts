@@ -12,9 +12,33 @@ export const dynamic = 'force-dynamic';
  * the confirm parameter.
  */
 export async function GET(req: NextRequest) {
+  if (!lodgifyConfigured()) return NextResponse.json({ error: 'LODGIFY_API_KEY not set' }, { status: 503 });
+
+  // cleanup helpers for a dry run whose delete step failed
+  const checkId = Number(req.nextUrl.searchParams.get('check'));
+  if (Number.isFinite(checkId) && checkId > 0) {
+    try {
+      const b = await getBooking(checkId);
+      return NextResponse.json({ exists: true, status: b.status, guestName: b.guestName });
+    } catch (e) {
+      return NextResponse.json({ exists: false, detail: String(e).slice(0, 200) });
+    }
+  }
+  const delId = Number(req.nextUrl.searchParams.get('delete'));
+  if (Number.isFinite(delId) && delId > 0) {
+    try {
+      const b = await getBooking(delId);
+      if (!/delete me|dry-run/i.test(`${b.guestName} ${b.source ?? ''}`))
+        return NextResponse.json({ refused: 'not a Decra test booking', guestName: b.guestName }, { status: 403 });
+      await deleteBooking(delId);
+      return NextResponse.json({ deleted: delId });
+    } catch (e) {
+      return NextResponse.json({ error: String(e).slice(0, 300) }, { status: 502 });
+    }
+  }
+
   if (req.nextUrl.searchParams.get('confirm') !== 'create-test')
     return NextResponse.json({ hint: 'add ?confirm=create-test to run the dry-run booking test' });
-  if (!lodgifyConfigured()) return NextResponse.json({ error: 'LODGIFY_API_KEY not set' }, { status: 503 });
 
   const log: Record<string, unknown> = {};
   const prop = await resolveLinkedProperty('ten-fifty-bakers');
