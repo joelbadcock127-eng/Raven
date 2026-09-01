@@ -23,9 +23,9 @@ export async function GET(req: NextRequest) {
       const rawB = (await raw(`/v2/reservations/bookings/${checkId}`)) as Record<string, unknown>;
       const noteFields: Record<string, unknown> = {};
       for (const k of Object.keys(rawB)) {
-        if (/note|comment|message|remark/i.test(k)) noteFields[k] = rawB[k];
+        if (/note|comment|message|remark|source/i.test(k)) noteFields[k] = rawB[k];
       }
-      return NextResponse.json({ exists: true, status: b.status, guestName: b.guestName, noteFields, keys: Object.keys(rawB) });
+      return NextResponse.json({ exists: true, status: b.status, guestName: b.guestName, noteFields });
     } catch (e) {
       return NextResponse.json({ exists: false, detail: String(e).slice(0, 200) });
     }
