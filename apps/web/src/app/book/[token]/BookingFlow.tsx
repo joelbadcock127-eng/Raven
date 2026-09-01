@@ -202,7 +202,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
       <Shell propertyName={propertyName}>
         <div style={{ maxWidth: 620, margin: '60px auto', padding: '0 20px' }}>
           <div style={{ textAlign: 'center', marginBottom: 26 }}>
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#111', color: '#fff', fontSize: 30, lineHeight: '64px', margin: '0 auto 20px' }}>✓</div>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#1e7a3c', color: '#fff', fontSize: 30, lineHeight: '64px', margin: '0 auto 20px', animation: 'pbpulse 1.8s ease-out infinite' }}>✓</div>
             <h1 style={{ fontSize: 26, fontWeight: 700 }}>
               {okCount < results.length ? 'Partially booked' : allRequested ? 'Requests received' : anyRequested ? 'Booked — single nights to confirm' : okCount === 1 ? 'Your stay is booked' : 'Your stays are booked'}
             </h1>
@@ -220,7 +220,16 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
           <p style={{ color: '#57544e', lineHeight: 1.6, marginTop: 20, textAlign: 'center', fontSize: 14 }}>
             No payment was taken — stays are invoiced directly.
             {anyRequested ? ' Single-night dates are held as requests and confirmed shortly by the property.' : ' The booked dates are now reserved.'}
+            {' '}If you need to change any of these dates, just contact us.
           </p>
+          <div style={{ textAlign: 'center', marginTop: 24 }}>
+            <button
+              onClick={() => window.location.reload()}
+              style={{ all: 'unset', cursor: 'pointer', background: '#111', color: '#fff', fontSize: 14.5, fontWeight: 600, padding: '12px 32px', borderRadius: 10 }}
+            >
+              Book more dates
+            </button>
+          </div>
         </div>
       </Shell>
     );
@@ -458,6 +467,7 @@ function Shell({ propertyName, children }: { propertyName: string; children: Rea
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         @keyframes pbfade { from { opacity: 0 } to { opacity: 1 } }
         @keyframes pbslide { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
+        @keyframes pbpulse { 0% { box-shadow: 0 0 0 0 rgba(30,122,60,0.45) } 70% { box-shadow: 0 0 0 18px rgba(30,122,60,0) } 100% { box-shadow: 0 0 0 0 rgba(30,122,60,0) } }
         @media (max-width: 640px) { .pb-month2 { display: none } }
         button:focus-visible { outline: 2px solid #111; outline-offset: 2px }
       `}</style>

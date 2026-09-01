@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveLinkedProperty } from '@/lib/privateBooking';
-import { createBooking, deleteBooking, getBooking, lodgifyConfigured, v1Request } from '@/lib/lodgify';
+import { createBooking, deleteBooking, getBooking, lodgifyConfigured, v1Request, raw } from '@/lib/lodgify';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,13 @@ export async function GET(req: NextRequest) {
   if (Number.isFinite(checkId) && checkId > 0) {
     try {
       const b = await getBooking(checkId);
-      return NextResponse.json({ exists: true, status: b.status, guestName: b.guestName });
+      // raw fields too, to see where (or whether) notes landed
+      const rawB = (await raw(`/v2/reservations/bookings/${checkId}`)) as Record<string, unknown>;
+      const noteFields: Record<string, unknown> = {};
+      for (const k of Object.keys(rawB)) {
+        if (/note|comment|message|remark/i.test(k)) noteFields[k] = rawB[k];
+      }
+      return NextResponse.json({ exists: true, status: b.status, guestName: b.guestName, noteFields, keys: Object.keys(rawB) });
     } catch (e) {
       return NextResponse.json({ exists: false, detail: String(e).slice(0, 200) });
     }
