@@ -474,3 +474,8 @@ export async function createBooking(input: CreateBookingInput): Promise<number> 
 export async function deleteBooking(id: number): Promise<void> {
   await lodgifyFetch(`/v1/reservation/booking/${id}`, 1, { method: 'DELETE' });
 }
+
+/** Raw v1 write passthrough — used only by the verify dry-run experiments. */
+export async function v1Request(path: string, method: 'POST' | 'PUT' | 'DELETE', body?: unknown): Promise<unknown> {
+  return lodgifyFetch(path, 1, { method, body });
+}

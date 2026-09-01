@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveLinkedProperty } from '@/lib/privateBooking';
-import { createBooking, deleteBooking, getBooking, lodgifyConfigured } from '@/lib/lodgify';
+import { createBooking, deleteBooking, getBooking, lodgifyConfigured, v1Request } from '@/lib/lodgify';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +35,54 @@ export async function GET(req: NextRequest) {
     } catch (e) {
       return NextResponse.json({ error: String(e).slice(0, 300) }, { status: 502 });
     }
+  }
+
+  // ?single=1 — probe whether a 1-night booking can get past the min-stay
+  // rule for this trusted-link flow (rate settings untouched).
+  if (req.nextUrl.searchParams.get('single') === '1') {
+    const out: Record<string, unknown> = {};
+    const prop2 = await resolveLinkedProperty('ten-fifty-bakers');
+    if (!prop2?.roomTypeId) return NextResponse.json({ error: 'no property' }, { status: 500 });
+    const base = new Date();
+    base.setFullYear(base.getFullYear() + 1);
+    base.setDate(base.getDate() + 10);
+    const day = (off: number) => { const d = new Date(base); d.setDate(d.getDate() + off); return d.toISOString().slice(0, 10); };
+
+    // attempt 1: straight 1-night create
+    try {
+      const id = await createBooking({ propertyId: prop2.lodgifyId, roomTypeId: prop2.roomTypeId, arrival: day(0), departure: day(1), adults: 2, guestName: 'Decra shape test — delete me', guestEmail: 'test@example.com', status: 'Open', sourceText: 'Decra dry-run (auto-deleted)' });
+      out.directSingle = { ok: true, id };
+      try { await deleteBooking(id); out.directSingleDeleted = true; } catch (e) { out.directSingleDeleteError = String(e).slice(0, 200); }
+    } catch (e) {
+      out.directSingle = { ok: false, error: String(e).slice(0, 220) };
+    }
+
+    // attempt 2: create 2 nights, then PUT-shrink departure to 1 night
+    if (!(out.directSingle as { ok?: boolean }).ok) {
+      try {
+        const id = await createBooking({ propertyId: prop2.lodgifyId, roomTypeId: prop2.roomTypeId, arrival: day(0), departure: day(2), adults: 2, guestName: 'Decra shape test — delete me', guestEmail: 'test@example.com', status: 'Open', sourceText: 'Decra dry-run (auto-deleted)' });
+        out.shrinkCreate = id;
+        try {
+          await v1Request(`/v1/reservation/booking/${id}`, 'PUT', {
+            guest: { name: 'Decra shape test — delete me', email: 'test@example.com' },
+            property_id: prop2.lodgifyId,
+            arrival: day(0),
+            departure: day(1),
+            status: 'Open',
+            source_text: 'Decra dry-run (auto-deleted)',
+            rooms: [{ room_type_id: prop2.roomTypeId, guest_breakdown: { adults: 2, children: 0, infants: 0, pets: 0 }, people: 2 }],
+          });
+          const back = await getBooking(id);
+          out.shrinkResult = { arrival: back.arrival, departure: back.departure, nights: back.nights, status: back.status };
+        } catch (e) {
+          out.shrinkError = String(e).slice(0, 300);
+        }
+        try { await deleteBooking(id); out.shrinkDeleted = true; } catch (e) { out.shrinkDeleteError = String(e).slice(0, 200); }
+      } catch (e) {
+        out.shrinkCreateError = String(e).slice(0, 220);
+      }
+    }
+    return NextResponse.json(out);
   }
 
   if (req.nextUrl.searchParams.get('confirm') !== 'create-test')
