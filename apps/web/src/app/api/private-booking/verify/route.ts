@@ -57,31 +57,52 @@ export async function GET(req: NextRequest) {
       out.directSingle = { ok: false, error: String(e).slice(0, 220) };
     }
 
-    // attempt 2: create 2 nights, then PUT-shrink departure to 1 night
+    // attempt 2: guessed override flags on the create payload
     if (!(out.directSingle as { ok?: boolean }).ok) {
-      try {
-        const id = await createBooking({ propertyId: prop2.lodgifyId, roomTypeId: prop2.roomTypeId, arrival: day(0), departure: day(2), adults: 2, guestName: 'Decra shape test — delete me', guestEmail: 'test@example.com', status: 'Open', sourceText: 'Decra dry-run (auto-deleted)' });
-        out.shrinkCreate = id;
+      for (const flag of ['ignore_restrictions', 'ignore_policies', 'override_restrictions']) {
         try {
-          await v1Request(`/v1/reservation/booking/${id}`, 'PUT', {
+          const res = await v1Request('/v1/reservation/booking', 'POST', {
             guest: { name: 'Decra shape test — delete me', email: 'test@example.com' },
             property_id: prop2.lodgifyId,
             arrival: day(0),
             departure: day(1),
             status: 'Open',
             source_text: 'Decra dry-run (auto-deleted)',
+            [flag]: true,
             rooms: [{ room_type_id: prop2.roomTypeId, guest_breakdown: { adults: 2, children: 0, infants: 0, pets: 0 }, people: 2 }],
           });
-          const back = await getBooking(id);
-          out.shrinkResult = { arrival: back.arrival, departure: back.departure, nights: back.nights, status: back.status };
+          const id = typeof res === 'number' ? res : Number((res as { id?: number })?.id);
+          out[`flag_${flag}`] = { ok: true, id };
+          if (Number.isFinite(id)) { try { await deleteBooking(id); } catch { /* noted below */ } }
+          break;
         } catch (e) {
-          out.shrinkError = String(e).slice(0, 300);
+          out[`flag_${flag}`] = String(e).slice(0, 120);
         }
-        try { await deleteBooking(id); out.shrinkDeleted = true; } catch (e) { out.shrinkDeleteError = String(e).slice(0, 200); }
-      } catch (e) {
-        out.shrinkCreateError = String(e).slice(0, 220);
       }
     }
+
+    // attempt 3: owner unavailability ("booked out") — blocks dates without
+    // being a guest booking; min-stay rules shouldn't apply.
+    for (const path of [`/v1/reservation/bookedout`, `/v2/reservations/bookedout`]) {
+      try {
+        const res = await v1Request(path, 'POST', {
+          property_id: prop2.lodgifyId,
+          room_type_id: prop2.roomTypeId,
+          arrival: day(4),
+          departure: day(5),
+          source_text: 'Decra dry-run (auto-deleted)',
+        });
+        out[`bookedout_${path}`] = { ok: true, res };
+        const id = typeof res === 'number' ? res : Number((res as { id?: number })?.id);
+        if (Number.isFinite(id) && id > 0) {
+          try { await v1Request(`${path}/${id}`, 'DELETE'); out[`bookedout_${path}_deleted`] = true; } catch (e) { out[`bookedout_${path}_deleteError`] = String(e).slice(0, 160); }
+        }
+        break;
+      } catch (e) {
+        out[`bookedout_${path}`] = String(e).slice(0, 140);
+      }
+    }
+
     return NextResponse.json(out);
   }
 

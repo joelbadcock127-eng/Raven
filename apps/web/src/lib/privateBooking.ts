@@ -18,6 +18,10 @@ export interface BookingLink {
   label: string;
   require_approval: boolean;
   active: boolean;
+  guest_name: string | null;
+  guest_email: string | null;
+  guest_phone: string | null;
+  default_room_config: string | null;
 }
 
 export async function getBookingLink(token: string): Promise<BookingLink | null> {

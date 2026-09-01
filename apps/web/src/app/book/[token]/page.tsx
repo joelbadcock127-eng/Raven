@@ -28,6 +28,8 @@ export default async function PrivateBookingPage(ctx: { params: Promise<{ token:
       propertyName={prop.name}
       imageUrl={prop.imageUrl}
       requireApproval={link.require_approval}
+      guestLabel={link.guest_name}
+      defaultRoomConfig={link.default_room_config ?? '3 twins, 1 king, 1 double'}
     />
   );
 }
