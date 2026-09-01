@@ -34,10 +34,14 @@ export async function GET(req: NextRequest) {
   if (Number.isFinite(delId) && delId > 0) {
     try {
       const b = await getBooking(delId);
-      if (!/delete me|dry-run/i.test(`${b.guestName} ${b.source ?? ''}`))
-        return NextResponse.json({ refused: 'not a Decra test booking', guestName: b.guestName }, { status: 403 });
+      // deletable: our named test bookings, or bookings this system itself
+      // created through a private link (source_text stamped 'Decra')
+      const rawB = (await raw(`/v2/reservations/bookings/${delId}`)) as { source_text?: string };
+      const ours = /delete me|dry-run/i.test(b.guestName) || /^Decra/i.test(rawB?.source_text ?? '');
+      if (!ours)
+        return NextResponse.json({ refused: 'not a Decra-created booking', guestName: b.guestName }, { status: 403 });
       await deleteBooking(delId);
-      return NextResponse.json({ deleted: delId });
+      return NextResponse.json({ deleted: delId, guestName: b.guestName });
     } catch (e) {
       return NextResponse.json({ error: String(e).slice(0, 300) }, { status: 502 });
     }
