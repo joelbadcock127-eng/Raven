@@ -19,18 +19,46 @@ export const dynamic = 'force-dynamic';
  * A published row SHADOWS the repo file until the row is deleted.
  */
 
-function transform(html: string, pid: string, slug: string, variant: 'live' | 'sandbox'): string {
-  // normalise any historical link style to this variant's URL space
+function transform(
+  html: string,
+  pid: string,
+  slug: string,
+  variant: 'live' | 'sandbox',
+  publicSite: boolean,
+): string {
+  // normalise any historical link style to one base form first
   html = html
-    .replaceAll(`/mirror-sandbox/${pid}/`, `/m/${variant}/${pid}/`)
-    .replaceAll(`/mirror/${pid}/`, `/m/${variant}/${pid}/`)
-    .replaceAll(`/m/live/${pid}/`, `/m/${variant}/${pid}/`)
-    .replaceAll(`/m/sandbox/${pid}/`, `/m/${variant}/${pid}/`);
+    .replaceAll(`/mirror-sandbox/${pid}/`, `/mirror/${pid}/`)
+    .replaceAll(`/m/live/${pid}/`, `/mirror/${pid}/`)
+    .replaceAll(`/m/sandbox/${pid}/`, `/mirror/${pid}/`);
+
+  if (publicSite) {
+    // On the property's own domain, internal links must be the clean public
+    // URLs — /m/* is admin-only there and the middleware bounces it home.
+    html = html.replaceAll(`/mirror/${pid}/home.html`, '/');
+    html = html.replace(new RegExp(`/mirror/${pid}/([a-z0-9-]+)\\.html`, 'g'), '/$1');
+  } else {
+    // Inside the admin workspace, links stay within the served variant so
+    // the sandbox never leaks into live pages mid-browse.
+    html = html.replaceAll(`/mirror/${pid}/`, `/m/${variant}/${pid}/`);
+  }
+
   // editor-bridge slug: sandbox edits must save under sandbox-- keys
   const liveMeta = `content="${pid}|${slug}"`;
   const sandboxMeta = `content="${pid}|sandbox--${slug}"`;
   html = variant === 'sandbox' ? html.replaceAll(liveMeta, sandboxMeta) : html.replaceAll(sandboxMeta, liveMeta);
   return html;
+}
+
+/** Same own-host test as the middleware: anything else is a property domain. */
+function isOwnHost(host: string): boolean {
+  let appHost = '';
+  try {
+    appHost = new URL(process.env.NEXT_PUBLIC_APP_URL ?? '').hostname.toLowerCase();
+  } catch {
+    /* unset */
+  }
+  return host === appHost || host.endsWith('.vercel.app') || host === 'localhost' || host === '127.0.0.1';
 }
 
 export async function GET(
@@ -74,7 +102,9 @@ export async function GET(
   }
   if (html === null) return new NextResponse('Not found', { status: 404 });
 
-  return new NextResponse(transform(html, property, slug, variant as 'live' | 'sandbox'), {
+  const host = (req.headers.get('host') ?? '').toLowerCase().split(':')[0];
+  const publicSite = !isOwnHost(host);
+  return new NextResponse(transform(html, property, slug, variant as 'live' | 'sandbox', publicSite), {
     headers: {
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store',
