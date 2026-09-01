@@ -237,7 +237,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
 
   return (
     <Shell propertyName={propertyName}>
-      <div ref={wrapRef} style={{ maxWidth: 1060, margin: '0 auto', padding: '28px 20px 120px' }}>
+      <div ref={wrapRef} className="pb-wrap" style={{ maxWidth: 1060, margin: '0 auto', padding: '28px 20px 120px' }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 18 }}>Dates</h1>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'flex-start' }}>
@@ -248,7 +248,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
                 {stays.length > 1 && (
                   <div style={{ fontSize: 11.5, color: '#8d8a83', marginBottom: 6 }}>Stay {i + 1}</div>
                 )}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                <div className="pb-fieldsrow" style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                   <div className="pb-datefield" style={{ display: 'flex', border: '1px solid ' + (calOpen && active === i ? '#111' : '#d9d6d0'), borderRadius: 8, overflow: 'hidden', background: '#fff', transition: 'border-color 0.15s' }}>
                     <button onClick={() => { setActive(i); setCalOpen(true); setGuestsOpenFor(-1); }} style={{ all: 'unset', cursor: 'pointer', padding: '9px 16px', minWidth: 112, borderRight: '1px solid #d9d6d0' }}>
                       <div style={{ fontSize: 11.5, color: '#8d8a83' }}>Check-in</div>
@@ -263,9 +263,10 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
                     )}
                   </div>
 
-                  {/* guests */}
+                  {/* guests + remove, one unit so mobile keeps them together */}
+                  <div className="pb-guestrow" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div className="pb-guests" style={{ position: 'relative' }}>
-                    <button onClick={() => { setGuestsOpenFor(guestsOpenFor === i ? -1 : i); setCalOpen(false); }} style={{ all: 'unset', cursor: 'pointer', padding: '9px 16px', minWidth: 150, border: '1px solid #d9d6d0', borderRadius: 8, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                    <button className="pb-guestbtn" onClick={() => { setGuestsOpenFor(guestsOpenFor === i ? -1 : i); setCalOpen(false); }} style={{ all: 'unset', cursor: 'pointer', padding: '9px 16px', minWidth: 150, border: '1px solid #d9d6d0', borderRadius: 8, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, boxSizing: 'border-box' }}>
                       <span>
                         <span style={{ display: 'block', fontSize: 11.5, color: '#8d8a83' }}>Guests</span>
                         <span style={{ fontSize: 15, fontWeight: 600 }}>{guestsLabelOf(s)}</span>
@@ -293,10 +294,11 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
                       ✕
                     </button>
                   )}
+                  </div>
                 </div>
 
                 {/* room setup */}
-                <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div className="pb-rooms" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 12.5, color: '#8d8a83' }}>Room setup</span>
                   {/* "Different" toggles: closing it reverts to the default but
                       keeps any typed text for if they switch back — only an
@@ -384,7 +386,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
           </div>
 
           {/* ── reservation summary ── */}
-          <aside style={{ flex: '0 1 320px', minWidth: 280, border: '1px solid #eceae6', borderRadius: 14, padding: '22px 24px', background: '#fff', boxShadow: '0 4px 24px rgba(20,18,14,0.05)' }}>
+          <aside className="pb-aside" style={{ flex: '0 1 320px', minWidth: 280, border: '1px solid #eceae6', borderRadius: 14, padding: '22px 24px', background: '#fff', boxShadow: '0 4px 24px rgba(20,18,14,0.05)' }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Reservation summary</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 16, borderBottom: '1px solid #eceae6' }}>
               {imageUrl ? (
@@ -430,16 +432,17 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
       </div>
 
       {/* footer action bar */}
-      <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, background: '#fff', borderTop: '1px solid #eceae6', padding: '14px 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 16, zIndex: 50 }}>
+      <div className="pb-footer" style={{ position: 'fixed', left: 0, right: 0, bottom: 0, background: '#fff', borderTop: '1px solid #eceae6', padding: '14px 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 16, zIndex: 50 }}>
         {canBook && (
-          <span style={{ fontSize: 13, color: '#8d8a83' }}>
+          <span className="pb-footnote" style={{ fontSize: 13, color: '#8d8a83' }}>
             {completeStays.length === 1 ? '' : `${completeStays.length} stays · `}{totalNights} night{totalNights === 1 ? '' : 's'} · no payment
           </span>
         )}
         <button
+          className="pb-book"
           onClick={submit}
           disabled={!canBook || submitting}
-          style={{ all: 'unset', cursor: canBook && !submitting ? 'pointer' : 'default', background: canBook && !submitting ? '#111' : '#e3e1dc', color: canBook && !submitting ? '#fff' : '#9b978f', fontSize: 15, fontWeight: 600, padding: '13px 38px', borderRadius: 10, transition: 'background 0.15s' }}
+          style={{ all: 'unset', cursor: canBook && !submitting ? 'pointer' : 'default', background: canBook && !submitting ? '#111' : '#e3e1dc', color: canBook && !submitting ? '#fff' : '#9b978f', fontSize: 15, fontWeight: 600, padding: '13px 38px', borderRadius: 10, transition: 'background 0.15s', boxSizing: 'border-box' }}
         >
           {submitting ? 'Booking…' : requireApproval ? 'Send request' : 'Book Now'}
         </button>
@@ -468,7 +471,29 @@ function Shell({ propertyName, children }: { propertyName: string; children: Rea
         @keyframes pbfade { from { opacity: 0 } to { opacity: 1 } }
         @keyframes pbslide { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
         @keyframes pbpulse { 0% { box-shadow: 0 0 0 0 rgba(30,122,60,0.45) } 70% { box-shadow: 0 0 0 18px rgba(30,122,60,0) } 100% { box-shadow: 0 0 0 0 rgba(30,122,60,0) } }
-        @media (max-width: 640px) { .pb-month2 { display: none } }
+        @media (max-width: 640px) {
+          .pb-month2 { display: none }
+          /* stack the field rows: dates full width, then guests + remove */
+          .pb-fieldsrow { flex-direction: column; align-items: stretch }
+          .pb-datefield { width: 100% }
+          .pb-datefield > button { flex: 1 1 0; min-width: 0 !important }
+          .pb-guestrow { width: 100% }
+          .pb-guests { flex: 1; min-width: 0 }
+          .pb-guestbtn { width: 100% }
+          /* room setup: pills wrap cleanly, custom field gets its own line */
+          .pb-rooms { row-gap: 8px }
+          .pb-rooms input { flex: 1 1 100% }
+          /* single centred month, sized to the screen */
+          .pb-cal { left: 0; right: 0; max-width: none !important; padding: 16px 12px 18px !important }
+          .pb-cal > div { justify-content: center }
+          /* summary card sits full width under the form */
+          .pb-aside { flex: 1 1 100%; min-width: 0 }
+          /* footer: full-width button, note above it */
+          .pb-footer { flex-wrap: wrap; justify-content: center; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) }
+          .pb-footnote { flex: 1 1 100%; text-align: center }
+          .pb-book { flex: 1; text-align: center }
+          .pb-wrap { padding: 20px 16px 150px !important }
+        }
         button:focus-visible { outline: 2px solid #111; outline-offset: 2px }
       `}</style>
       <header style={{ background: '#000', color: '#fff', padding: '20px 28px' }}>
