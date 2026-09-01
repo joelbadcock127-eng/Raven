@@ -34,7 +34,7 @@ interface Stay {
 
 const newStay = (defaultRooms: string): Stay => ({ start: '', end: '', adults: 2, children: 0, infants: 0, customRooms: false, roomConfig: defaultRooms });
 
-interface StayResult { arrival: string; departure: string; ok: boolean; bookingId?: number; error?: string }
+interface StayResult { arrival: string; departure: string; ok: boolean; state?: string; bookingId?: number; error?: string }
 
 interface Props {
   token: string;
@@ -197,13 +197,15 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
   /* ── done screen ── */
   if (results) {
     const okCount = results.filter((r) => r.ok).length;
+    const anyRequested = results.some((r) => r.ok && (pendingMode || r.state === 'requested'));
+    const allRequested = results.every((r) => !r.ok || pendingMode || r.state === 'requested');
     return (
       <Shell propertyName={propertyName} guestLabel={guestLabel}>
         <div style={{ maxWidth: 620, margin: '60px auto', padding: '0 20px' }}>
           <div style={{ textAlign: 'center', marginBottom: 26 }}>
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#111', color: '#fff', fontSize: 30, lineHeight: '64px', margin: '0 auto 20px' }}>✓</div>
             <h1 style={{ fontSize: 26, fontWeight: 700 }}>
-              {pendingMode ? 'Requests received' : okCount === results.length ? (okCount === 1 ? 'Your stay is booked' : 'Your stays are booked') : 'Partially booked'}
+              {okCount < results.length ? 'Partially booked' : allRequested ? 'Requests received' : anyRequested ? 'Booked — single nights to confirm' : okCount === 1 ? 'Your stay is booked' : 'Your stays are booked'}
             </h1>
           </div>
           <div style={{ background: '#fff', border: '1px solid #eceae6', borderRadius: 14, padding: '8px 22px' }}>
@@ -211,15 +213,14 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '13px 0', borderTop: i ? '1px solid #eceae6' : 'none', fontSize: 14 }}>
                 <span>{fmtShort(r.arrival)} → {fmtShort(r.departure)}</span>
                 <span style={{ color: r.ok ? '#1c1b18' : '#a33', fontWeight: 600, textAlign: 'right' }}>
-                  {r.ok ? (pendingMode ? 'Requested' : 'Booked ✓') : r.error ?? 'Failed'}
+                  {r.ok ? (pendingMode || r.state === 'requested' ? 'Requested — we’ll confirm' : 'Booked ✓') : r.error ?? 'Failed'}
                 </span>
               </div>
             ))}
           </div>
           <p style={{ color: '#57544e', lineHeight: 1.6, marginTop: 20, textAlign: 'center', fontSize: 14 }}>
-            {pendingMode
-              ? 'No payment is needed. We will confirm the dates shortly.'
-              : 'No payment was taken — these stays are invoiced directly, and the booked dates are now reserved.'}
+            No payment was taken — stays are invoiced directly.
+            {anyRequested ? ' Single-night dates are held as requests and confirmed shortly by the property.' : ' The booked dates are now reserved.'}
           </p>
         </div>
       </Shell>
@@ -359,8 +360,9 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
             )}
 
             <p style={{ marginTop: 22, fontSize: 13.5, color: '#8d8a83', maxWidth: 460, lineHeight: 1.6 }}>
-              Crossed-out dates are unavailable. Single-night stays are fine on this page. You can
-              check out on the morning of the first crossed-out day.
+              Crossed-out dates are unavailable. You can check out on the morning of the first
+              crossed-out day. Stays of 2+ nights book instantly; single nights are sent as a
+              request and confirmed shortly.
             </p>
             {submitError && <p style={{ fontSize: 13.5, color: '#a33', marginTop: 10 }}>{submitError}</p>}
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { setLinkApproval, setLinkActive, createLink, approveRequest, declineRequest } from '@/app/(admin)/settings/actions';
+import { setLinkApproval, setLinkActive, createLink, approveRequest, declineRequest, markRequestBooked } from '@/app/(admin)/settings/actions';
 
 /**
  * Settings card for private no-payment booking links: the tokenized pages
@@ -108,20 +108,36 @@ export default function PrivateBookingLinks({ links, requests, origin }: { links
 
       {pendingReqs.length > 0 && (
         <div style={{ marginTop: 18 }}>
-          <h3 className="heading-sm" style={{ marginBottom: 8 }}>Awaiting approval</h3>
-          {pendingReqs.map((r) => (
-            <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', alignItems: 'center', padding: '10px 0', borderTop: '1px solid var(--hairline)' }}>
-              <div className="caption">
-                <strong>{r.guest_name}</strong> · {r.arrival} → {r.departure} · {r.adults + r.children} guest{r.adults + r.children === 1 ? '' : 's'} · {r.guest_email}
+          <h3 className="heading-sm" style={{ marginBottom: 8 }}>Needs your action</h3>
+          {pendingReqs.map((r) => {
+            const nights = Math.round((Date.parse(r.departure) - Date.parse(r.arrival)) / 86_400_000);
+            const singleNight = nights === 1;
+            return (
+              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', alignItems: 'center', padding: '10px 0', borderTop: '1px solid var(--hairline)' }}>
+                <div className="caption">
+                  <strong>{r.guest_name}</strong> · {r.arrival} → {r.departure} · {nights} night{nights === 1 ? '' : 's'} · {r.adults + r.children} guest{r.adults + r.children === 1 ? '' : 's'}
+                  {singleNight && (
+                    <div style={{ color: 'var(--ink-mute)', marginTop: 2 }}>
+                      Single night — Lodgify&apos;s API refuses these (2-night minimum). Add it manually in the
+                      Lodgify calendar, then mark it booked here.
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {singleNight ? (
+                    <button className="caption" disabled={pending} onClick={() => act(() => markRequestBooked(r.id))} style={{ ...btnStyle, background: 'var(--primary-deep)', color: '#fff', borderColor: 'transparent' }}>
+                      Added in Lodgify ✓
+                    </button>
+                  ) : (
+                    <button className="caption" disabled={pending} onClick={() => act(() => approveRequest(r.id))} style={{ ...btnStyle, background: 'var(--primary-deep)', color: '#fff', borderColor: 'transparent' }}>
+                      Approve → book
+                    </button>
+                  )}
+                  <button className="caption" disabled={pending} onClick={() => act(() => declineRequest(r.id))} style={btnStyle}>Decline</button>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="caption" disabled={pending} onClick={() => act(() => approveRequest(r.id))} style={{ ...btnStyle, background: 'var(--primary-deep)', color: '#fff', borderColor: 'transparent' }}>
-                  Approve → book
-                </button>
-                <button className="caption" disabled={pending} onClick={() => act(() => declineRequest(r.id))} style={btnStyle}>Decline</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

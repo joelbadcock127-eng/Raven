@@ -69,6 +69,23 @@ export async function approveRequest(requestId: string) {
   }
 }
 
+/**
+ * Mark a pending request as handled outside the API — used for single-night
+ * stays, which Lodgify's API refuses (min 2 nights) and the owner instead
+ * adds manually in the Lodgify calendar.
+ */
+export async function markRequestBooked(requestId: string) {
+  const supabase = supabaseAdmin();
+  if (!supabase) return { error: 'Supabase not connected' };
+  const { error } = await supabase
+    .from('booking_requests')
+    .update({ status: 'booked', error: 'added manually in Lodgify' })
+    .eq('id', requestId)
+    .eq('status', 'pending');
+  revalidatePath('/settings');
+  return error ? { error: error.message } : { ok: true };
+}
+
 export async function declineRequest(requestId: string) {
   const supabase = supabaseAdmin();
   if (!supabase) return { error: 'Supabase not connected' };

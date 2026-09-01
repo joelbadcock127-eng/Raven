@@ -119,11 +119,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ mode: 'pending', results: stays.map((s) => ({ arrival: s.arrival, departure: s.departure, ok: true })) });
   }
 
-  const results: Array<{ arrival: string; departure: string; ok: boolean; bookingId?: number; error?: string }> = [];
+  const results: Array<{ arrival: string; departure: string; ok: boolean; state?: string; bookingId?: number; error?: string }> = [];
   for (const s of sorted) {
     if (!stayFree(s)) {
       results.push({ arrival: s.arrival, departure: s.departure, ok: false, error: 'Dates just taken — pick again' });
       if (supabase) await supabase.from('booking_requests').insert(rowFor(s, 'failed', { error: 'availability conflict at submit' }));
+      continue;
+    }
+    // Lodgify's API refuses stays under the property minimum (2 nights), so
+    // single nights queue for the owner to add manually in Lodgify.
+    const nights = Math.round((Date.parse(s.departure) - Date.parse(s.arrival)) / 86_400_000);
+    if (nights === 1) {
+      if (supabase) await supabase.from('booking_requests').insert(rowFor(s, 'pending'));
+      results.push({ arrival: s.arrival, departure: s.departure, ok: true, state: 'requested' });
       continue;
     }
     const notes = s.roomConfig
@@ -145,7 +153,7 @@ export async function POST(req: NextRequest) {
         sourceText: `Decra private link — ${link.label}`,
         notes,
       });
-      results.push({ arrival: s.arrival, departure: s.departure, ok: true, bookingId });
+      results.push({ arrival: s.arrival, departure: s.departure, ok: true, state: 'booked', bookingId });
       if (supabase) await supabase.from('booking_requests').insert(rowFor(s, 'booked', { lodgify_booking_id: bookingId }));
     } catch (e) {
       const m = String(e).match(/"message":\s*"([^"]{3,140})"/);
