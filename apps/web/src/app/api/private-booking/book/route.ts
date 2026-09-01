@@ -137,6 +137,12 @@ export async function POST(req: NextRequest) {
     const notes = s.roomConfig
       ? `Room setup (DIFFERS from default ${defaultConfig}): ${s.roomConfig}. Booked via Decra private link — no payment, invoice directly.`
       : `Room setup: default (${defaultConfig}). Booked via Decra private link — no payment, invoice directly.`;
+    // Lodgify's API silently drops `notes` on create AND update (verified),
+    // but source_text persists and shows on the booking — so the room setup
+    // rides there, and Decra Settings keeps the full record.
+    const sourceText = s.roomConfig
+      ? `Decra link · invoice directly · Rooms DIFFER: ${s.roomConfig.slice(0, 120)}`
+      : `Decra link · invoice directly · Rooms: default (${defaultConfig})`;
     try {
       const bookingId = await createBooking({
         propertyId: prop.lodgifyId,
@@ -150,7 +156,7 @@ export async function POST(req: NextRequest) {
         guestEmail,
         guestPhone,
         status: 'Booked',
-        sourceText: `Decra private link — ${link.label}`,
+        sourceText,
         notes,
       });
       results.push({ arrival: s.arrival, departure: s.departure, ok: true, state: 'booked', bookingId });

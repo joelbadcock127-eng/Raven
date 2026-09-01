@@ -56,7 +56,8 @@ export async function approveRequest(requestId: string) {
       guestEmail: reqRow.guest_email,
       guestPhone: reqRow.guest_phone ?? undefined,
       status: 'Booked',
-      sourceText: 'Decra private link — invoice directly (approved)',
+      // notes are dropped by Lodgify's API; source_text persists and shows
+      sourceText: `Decra link · invoice directly · ${String(reqRow.notes ?? '').slice(0, 140)}`,
       notes: reqRow.notes ?? undefined,
     });
     await supabase.from('booking_requests').update({ status: 'booked', lodgify_booking_id: lodgifyId }).eq('id', requestId);
