@@ -154,20 +154,25 @@ export async function GET(req: NextRequest) {
     log.readBackError = String(e).slice(0, 300);
   }
 
-  // The create endpoint ignores `notes` — find the update shape that sticks.
+  // The create endpoint ignores `notes`, and so does a bare {notes} PUT —
+  // try the full booking model with notes included.
   const noteText = 'Decra notes test';
-  for (const attempt of [
-    { label: 'putBookingNotes', path: `/v1/reservation/booking/${id}`, body: { notes: noteText } },
-    { label: 'putNotesSubpath', path: `/v1/reservation/booking/${id}/notes`, body: { notes: noteText } },
-  ]) {
-    try {
-      await v1Request(attempt.path, 'PUT', attempt.body);
-      const rawB = (await raw(`/v2/reservations/bookings/${id}`)) as { notes?: string };
-      log[attempt.label] = { ok: true, notesNow: rawB?.notes ?? null };
-      if (rawB?.notes) break;
-    } catch (e) {
-      log[attempt.label] = String(e).slice(0, 200);
-    }
+  const fullModel = {
+    guest: { name: 'Decra shape test — delete me', email: 'test@example.com' },
+    property_id: prop.lodgifyId,
+    arrival: a,
+    departure: d,
+    status: 'Open',
+    source_text: 'Decra dry-run (auto-deleted)',
+    notes: noteText,
+    rooms: [{ room_type_id: prop.roomTypeId, guest_breakdown: { adults: 2, children: 0, infants: 0, pets: 0 }, people: 2 }],
+  };
+  try {
+    await v1Request(`/v1/reservation/booking/${id}`, 'PUT', fullModel);
+    const rawB = (await raw(`/v2/reservations/bookings/${id}`)) as { notes?: string };
+    log.putFullModel = { ok: true, notesNow: rawB?.notes ?? null };
+  } catch (e) {
+    log.putFullModel = String(e).slice(0, 250);
   }
 
   try {
