@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getBookingLink, resolveLinkedProperty, blockedDates } from '@/lib/privateBooking';
-import { lodgifyConfigured } from '@/lib/lodgify';
+import { lodgifyConfigured, raw } from '@/lib/lodgify';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,14 +23,32 @@ export async function GET(req: NextRequest) {
   let history: Array<{ arrival: string; departure: string; adults: number; children: number; status: string; roomConfig: string | null }> = [];
   const supabase = supabaseAdmin();
   if (supabase) {
-    const { data } = await supabase
+    const { data: rows } = await supabase
       .from('booking_requests')
-      .select('arrival, departure, adults, children, status, notes')
+      .select('id, arrival, departure, adults, children, status, notes, lodgify_booking_id')
       .eq('link_id', link.id)
       .in('status', ['booked', 'pending'])
       .order('arrival', { ascending: true })
       .limit(100);
-    history = (data ?? []).map((r) => ({
+    let data = rows ?? [];
+
+    // Reconcile upcoming 'booked' rows against Lodgify so stays cancelled
+    // there drop out of the history instead of showing as still booked.
+    const today = new Date().toISOString().slice(0, 10);
+    const toCheck = data.filter((r) => r.status === 'booked' && r.lodgify_booking_id && r.departure >= today).slice(0, 15);
+    for (const r of toCheck) {
+      try {
+        const b = (await raw(`/v2/reservations/bookings/${r.lodgify_booking_id}`)) as { is_deleted?: boolean; status?: string };
+        if (b?.is_deleted || /declin|cancel/i.test(String(b?.status ?? ''))) {
+          await supabase.from('booking_requests').update({ status: 'declined', error: 'cancelled in Lodgify' }).eq('id', r.id);
+          data = data.filter((x) => x.id !== r.id);
+        }
+      } catch {
+        /* unreachable booking — leave the row as-is */
+      }
+    }
+
+    history = data.map((r) => ({
       arrival: r.arrival as string,
       departure: r.departure as string,
       adults: Number(r.adults ?? 0),
