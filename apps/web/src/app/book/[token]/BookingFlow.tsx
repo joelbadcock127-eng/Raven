@@ -36,6 +36,8 @@ const newStay = (): Stay => ({ start: '', end: '', adults: 2, children: 0, infan
 
 interface StayResult { arrival: string; departure: string; ok: boolean; state?: string; bookingId?: number; error?: string }
 
+interface HistoryRow { arrival: string; departure: string; adults: number; children: number; status: string; roomConfig: string | null }
+
 interface Props {
   token: string;
   propertyName: string;
@@ -47,6 +49,7 @@ interface Props {
 export default function BookingFlow({ token, propertyName, imageUrl, requireApproval, defaultRoomConfig }: Props) {
   const todayIso = useMemo(() => iso(new Date()), []);
   const [blocked, setBlocked] = useState<Set<string> | null>(null);
+  const [history, setHistory] = useState<HistoryRow[]>([]);
   const [loadError, setLoadError] = useState('');
 
   const [stays, setStays] = useState<Stay[]>([newStay()]);
@@ -70,6 +73,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
       .then((d) => {
         if (d.blocked) setBlocked(new Set<string>(d.blocked));
         else setLoadError(d.error ?? 'Could not load availability');
+        if (Array.isArray(d.history)) setHistory(d.history as HistoryRow[]);
       })
       .catch(() => setLoadError('Could not load availability'));
   }, [token]);
@@ -386,7 +390,8 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
           </div>
 
           {/* ── reservation summary ── */}
-          <aside className="pb-aside" style={{ flex: '0 1 320px', minWidth: 280, border: '1px solid #eceae6', borderRadius: 14, padding: '22px 24px', background: '#fff', boxShadow: '0 4px 24px rgba(20,18,14,0.05)' }}>
+          <div className="pb-aside" style={{ flex: '0 1 320px', minWidth: 280, display: 'grid', gap: 16, alignContent: 'start' }}>
+          <aside style={{ border: '1px solid #eceae6', borderRadius: 14, padding: '22px 24px', background: '#fff', boxShadow: '0 4px 24px rgba(20,18,14,0.05)' }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Reservation summary</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 16, borderBottom: '1px solid #eceae6' }}>
               {imageUrl ? (
@@ -422,6 +427,33 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
               <p style={{ fontSize: 13.5, color: '#8d8a83', lineHeight: 1.6, paddingTop: 14 }}>Select your dates to see your stay summary.</p>
             )}
           </aside>
+
+          {/* every stay already secured through this link */}
+          {history.length > 0 && (
+            <section style={{ border: '1px solid #eceae6', borderRadius: 14, padding: '20px 24px', background: '#fff', boxShadow: '0 4px 24px rgba(20,18,14,0.05)', animation: 'pbfade 0.25s ease' }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Booked through this link</h2>
+              <p style={{ fontSize: 12, color: '#8d8a83', marginBottom: 8 }}>{history.length} booking{history.length === 1 ? '' : 's'} so far</p>
+              {history.map((h, i) => {
+                const n = Math.round((parse(h.departure).getTime() - parse(h.arrival).getTime()) / DAY_MS);
+                const past = h.departure <= todayIso;
+                return (
+                  <div key={i} style={{ padding: '9px 0', borderTop: '1px solid #f2f0ec', opacity: past ? 0.5 : 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13 }}>
+                      <span style={{ fontWeight: 600 }}>{fmtShort(h.arrival)} → {fmtShort(h.departure)}</span>
+                      <span style={{ color: h.status === 'booked' ? '#1e7a3c' : '#8d8a83', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        {h.status === 'booked' ? 'Booked ✓' : 'Awaiting confirmation'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#8d8a83', marginTop: 2 }}>
+                      {n} night{n === 1 ? '' : 's'} · {h.adults + h.children} guest{h.adults + h.children === 1 ? '' : 's'}
+                      {h.roomConfig ? ` · ${h.roomConfig}` : ''}
+                    </div>
+                  </div>
+                );
+              })}
+            </section>
+          )}
+          </div>
         </div>
 
         {tooltip && (
