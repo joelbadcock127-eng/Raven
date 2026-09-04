@@ -50,6 +50,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
   const todayIso = useMemo(() => iso(new Date()), []);
   const [blocked, setBlocked] = useState<Set<string> | null>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [loadError, setLoadError] = useState('');
 
   const [stays, setStays] = useState<Stay[]>([newStay()]);
@@ -428,11 +429,21 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
             )}
           </aside>
 
-          {/* every stay already secured through this link */}
+          {/* every stay already secured through this link — collapsed by default */}
           {history.length > 0 && (
-            <section style={{ border: '1px solid #eceae6', borderRadius: 14, padding: '20px 24px', background: '#fff', boxShadow: '0 4px 24px rgba(20,18,14,0.05)', animation: 'pbfade 0.25s ease' }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Booked through this link</h2>
-              <p style={{ fontSize: 12, color: '#8d8a83', marginBottom: 8 }}>{history.length} booking{history.length === 1 ? '' : 's'} so far</p>
+            <section style={{ border: '1px solid #eceae6', borderRadius: 14, padding: historyOpen ? '18px 24px 14px' : '18px 24px', background: '#fff', boxShadow: '0 4px 24px rgba(20,18,14,0.05)', animation: 'pbfade 0.25s ease' }}>
+              <button
+                onClick={() => setHistoryOpen((v) => !v)}
+                aria-expanded={historyOpen}
+                style={{ all: 'unset', cursor: 'pointer', display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}
+              >
+                <span>
+                  <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>Booked through this link</span>
+                  <span style={{ display: 'block', fontSize: 12, color: '#8d8a83', marginTop: 2 }}>{history.length} booking{history.length === 1 ? '' : 's'} so far</span>
+                </span>
+                <span style={{ color: '#8d8a83', fontSize: 11, transform: historyOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}>▼</span>
+              </button>
+              {historyOpen && <div style={{ marginTop: 8, animation: 'pbslide 0.2s ease' }}>
               {history.map((h, i) => {
                 const n = Math.round((parse(h.departure).getTime() - parse(h.arrival).getTime()) / DAY_MS);
                 const past = h.departure <= todayIso;
@@ -451,6 +462,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
                   </div>
                 );
               })}
+              </div>}
             </section>
           )}
           </div>
