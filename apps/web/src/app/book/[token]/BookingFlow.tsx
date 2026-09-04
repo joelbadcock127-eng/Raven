@@ -449,7 +449,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
                 const past = h.departure <= todayIso;
                 return (
                   <div key={i} style={{ padding: '9px 0', borderTop: '1px solid #f2f0ec', opacity: past ? 0.5 : 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13 }}>
+                    <div className="pb-histrow" style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13 }}>
                       <span style={{ fontWeight: 600 }}>{fmtShort(h.arrival)} → {fmtShort(h.departure)}</span>
                       <span style={{ color: h.status === 'booked' ? '#1e7a3c' : '#8d8a83', fontWeight: 600, whiteSpace: 'nowrap' }}>
                         {h.status === 'booked' ? 'Booked ✓' : 'Awaiting confirmation'}
@@ -537,6 +537,8 @@ function Shell({ propertyName, children }: { propertyName: string; children: Rea
           .pb-footnote { flex: 1 1 100%; text-align: center }
           .pb-book { flex: 1; text-align: center }
           .pb-wrap { padding: 20px 16px 150px !important }
+          /* history rows: let the status drop under the dates when tight */
+          .pb-histrow { flex-wrap: wrap }
         }
         button:focus-visible { outline: 2px solid #111; outline-offset: 2px }
       `}</style>
