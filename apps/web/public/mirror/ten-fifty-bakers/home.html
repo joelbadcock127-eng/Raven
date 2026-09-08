@@ -1138,55 +1138,141 @@ const a=JSON.parse(document.getElementById("wp-emoji-settings").textContent),o=(
 <style id="decra-quickbook-css">
 #decra-quickbook{display:none}
 @media (max-width:768px){
-  body{padding-bottom:calc(108px + env(safe-area-inset-bottom))}
-  #decra-quickbook{display:block;position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#ffffff;border-top:1px solid rgba(58,74,76,.14);box-shadow:0 -10px 30px rgba(29,37,38,.12);padding:10px 14px calc(10px + env(safe-area-inset-bottom));font-family:"Didact Gothic",sans-serif}
-  .decra-qb-price{font-size:13px;color:#3a4a4c;margin:0 2px 8px}
-  .decra-qb-price strong{font-size:15px}
-  .decra-qb-price span{color:#7d8788}
+  body{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+  /* animate `bottom`, not transform — a transform here would become the
+     calendar's backdrop root and its glass blur could no longer sample
+     the page behind it */
+  #decra-quickbook{display:block;position:fixed;left:10px;right:10px;bottom:-260px;z-index:1000001;background:rgba(23,29,30,.7);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);border:1px solid rgba(255,255,255,.16);border-radius:22px;box-shadow:0 18px 50px rgba(8,12,13,.45),inset 0 1px 0 rgba(255,255,255,.12);padding:12px 14px calc(12px + env(safe-area-inset-bottom) / 2);font-family:"Didact Gothic",sans-serif;color:#fff;transition:bottom .85s cubic-bezier(.22,1,.36,1)}
+  #decra-quickbook.decra-qb-on{bottom:10px}
+  .decra-qb-price{font-size:13px;color:rgba(255,255,255,.85);margin:0 4px 8px;letter-spacing:.02em}
+  .decra-qb-price strong{font-size:15px;color:#fff}
   .decra-qb-row{display:flex;align-items:stretch;gap:10px;margin:0}
-  .decra-qb-dates{flex:1;display:flex;align-items:center;border:1px solid rgba(58,74,76,.28);border-radius:16px;background:#fff;overflow:hidden}
-  .decra-qb-field{flex:1;display:flex;flex-direction:column;gap:1px;padding:7px 12px;min-width:0}
-  .decra-qb-field > span{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7d8788}
-  .decra-qb-field input[type=date]{border:0;padding:0;margin:0;background:transparent;font:inherit;font-size:14px;color:#1d2526;width:100%;min-height:20px;-webkit-appearance:none;appearance:none}
-  .decra-qb-field input[type=date]:focus{outline:none}
-  .decra-qb-divider{width:1px;align-self:stretch;background:rgba(58,74,76,.18)}
-  .decra-qb-book{border:0;border-radius:999px;background:#d2b54f;color:#1d2526;font:inherit;font-size:15px;font-weight:700;padding:0 24px;cursor:pointer}
+  .decra-qb-dates{flex:1;display:flex;align-items:center;border:1px solid rgba(255,255,255,.28);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.06)}
+  .decra-qb-field{flex:1;display:flex;flex-direction:column;gap:1px;padding:7px 12px;min-width:0;background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+  .decra-qb-field > span:first-child{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+  .decra-qb-val{font-size:14px;color:#fff;min-height:19px;white-space:nowrap}
+  .decra-qb-val.decra-qb-set{color:#e5cf83}
+  .decra-qb-divider{width:1px;align-self:stretch;background:rgba(255,255,255,.22)}
+  .decra-qb-book{border:0;border-radius:999px;background:#d2b54f;color:#1d2526;font:inherit;font-size:15px;font-weight:700;padding:0 24px;cursor:pointer;box-shadow:0 6px 18px rgba(210,181,79,.35)}
   .decra-qb-book:active{background:#c2a53f}
+  #decra-qb-cal{position:absolute;left:0;right:0;bottom:calc(100% + 10px);background:rgba(17,22,23,.85);-webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%);border:1px solid rgba(255,255,255,.16);border-radius:20px;box-shadow:0 18px 50px rgba(8,12,13,.5),inset 0 1px 0 rgba(255,255,255,.12);padding:14px 14px 16px;opacity:0;pointer-events:none;transform:translateY(14px);transition:opacity .3s ease,transform .35s cubic-bezier(.22,1,.36,1)}
+  #decra-qb-cal.decra-qb-open{opacity:1;pointer-events:auto;transform:translateY(0)}
+  .decra-qb-calhead{display:flex;align-items:center;justify-content:space-between;margin:0 2px 10px}
+  .decra-qb-month{font-size:15px;color:#fff;letter-spacing:.03em}
+  .decra-qb-nav{background:none;border:1px solid rgba(255,255,255,.28);border-radius:50%;width:30px;height:30px;color:#fff;font-size:15px;line-height:1;cursor:pointer}
+  .decra-qb-nav:disabled{opacity:.3}
+  .decra-qb-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+  .decra-qb-wd{font-size:10px;letter-spacing:.06em;color:rgba(255,255,255,.5);text-transform:uppercase;padding-bottom:4px}
+  .decra-qb-day{font-size:13px;color:#fff;padding:8px 0;border-radius:10px;cursor:pointer;background:none;border:0;font-family:inherit}
+  .decra-qb-day.decra-qb-past{color:rgba(255,255,255,.28);cursor:default}
+  .decra-qb-day.decra-qb-blocked{color:rgba(255,255,255,.32);text-decoration:line-through;cursor:default}
+  .decra-qb-day.decra-qb-mid{background:rgba(210,181,79,.24)}
+  .decra-qb-day.decra-qb-sel{background:#d2b54f;color:#1d2526;font-weight:700}
+  .decra-qb-calnote{font-size:11px;color:rgba(255,255,255,.55);text-align:center;margin:10px 0 0}
+  /* no backdrop blur available — go nearly solid so page text can't ghost through */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    #decra-quickbook{background:rgba(20,25,26,.97)}
+    #decra-qb-cal{background:rgba(16,21,22,.97)}
+  }
 }
 </style>
 <div id="decra-quickbook" aria-label="Book your stay">
-  <p class="decra-qb-price"><strong>From $700</strong> / night <span>&middot; 2 night minimum &middot; sleeps up to 10</span></p>
-  <form class="decra-qb-row" id="decra-qb-form">
-    <div class="decra-qb-dates">
-      <label class="decra-qb-field"><span>Check-in</span><input type="date" id="decra-qb-in" required aria-label="Check-in date"></label>
-      <span class="decra-qb-divider" aria-hidden="true"></span>
-      <label class="decra-qb-field"><span>Check-out</span><input type="date" id="decra-qb-out" required aria-label="Check-out date"></label>
+  <div id="decra-qb-cal" aria-label="Availability calendar">
+    <div class="decra-qb-calhead">
+      <button type="button" class="decra-qb-nav" id="decra-qb-prev" aria-label="Earlier">&lsaquo;</button>
+      <span class="decra-qb-month" id="decra-qb-month"></span>
+      <button type="button" class="decra-qb-nav" id="decra-qb-next" aria-label="Later">&rsaquo;</button>
     </div>
-    <button type="submit" class="decra-qb-book">Book</button>
-  </form>
+    <div class="decra-qb-grid" id="decra-qb-grid"></div>
+    <p class="decra-qb-calnote" id="decra-qb-note">Live availability &middot; crossed-out nights are taken</p>
+  </div>
+  <p class="decra-qb-price"><strong>From $700</strong> / night</p>
+  <div class="decra-qb-row">
+    <div class="decra-qb-dates">
+      <button type="button" class="decra-qb-field" id="decra-qb-inbtn"><span>Check-in</span><span class="decra-qb-val" id="decra-qb-inval">Add date</span></button>
+      <span class="decra-qb-divider" aria-hidden="true"></span>
+      <button type="button" class="decra-qb-field" id="decra-qb-outbtn"><span>Check-out</span><span class="decra-qb-val" id="decra-qb-outval">Add date</span></button>
+    </div>
+    <button type="button" class="decra-qb-book" id="decra-qb-book">Book</button>
+  </div>
 </div>
 <script id="decra-quickbook-js">
 (function(){
-  var form=document.getElementById('decra-qb-form');
-  if(!form)return;
-  var inEl=document.getElementById('decra-qb-in'),outEl=document.getElementById('decra-qb-out');
-  var DAY=86400000;
-  function iso(d){return new Date(d-(new Date(d).getTimezoneOffset()*60000)).toISOString().slice(0,10)}
-  var today=iso(Date.now());
-  inEl.min=today;
-  outEl.min=iso(Date.now()+2*DAY);
-  inEl.addEventListener('change',function(){
-    if(!inEl.value)return;
-    var minOut=iso(Date.parse(inEl.value)+2*DAY);
-    outEl.min=minOut;
-    if(!outEl.value||outEl.value<minOut)outEl.value=minOut;
+  var bar=document.getElementById('decra-quickbook');
+  if(!bar)return;
+  var DAY=86400000,MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var cal=document.getElementById('decra-qb-cal'),grid=document.getElementById('decra-qb-grid'),
+      monthEl=document.getElementById('decra-qb-month'),noteEl=document.getElementById('decra-qb-note'),
+      inVal=document.getElementById('decra-qb-inval'),outVal=document.getElementById('decra-qb-outval');
+  var blocked=null,start='',end='',offset=0;
+  function iso(d){return new Date(d).toISOString().slice(0,10)}
+  var today=iso(Date.now()-new Date().getTimezoneOffset()*60000);
+  function fmt(s){var d=new Date(s+'T00:00:00Z');return d.getUTCDate()+' '+MONTHS[d.getUTCMonth()]}
+  function isBlocked(s){return !!(blocked&&blocked[s])}
+  function rangeFree(a,b){for(var t=Date.parse(a+'T00:00:00Z');t<Date.parse(b+'T00:00:00Z');t+=DAY){if(isBlocked(iso(t)))return false}return true}
+  function fields(){
+    inVal.textContent=start?fmt(start):'Add date';
+    inVal.className='decra-qb-val'+(start?' decra-qb-set':'');
+    outVal.textContent=end?fmt(end):'Add date';
+    outVal.className='decra-qb-val'+(end?' decra-qb-set':'');
+  }
+  function render(){
+    var base=new Date(),y=base.getFullYear(),m=base.getMonth()+offset;
+    var first=new Date(Date.UTC(y,m,1));
+    monthEl.textContent=first.toLocaleString('en-AU',{month:'long',year:'numeric',timeZone:'UTC'});
+    document.getElementById('decra-qb-prev').disabled=offset===0;
+    document.getElementById('decra-qb-next').disabled=offset>=13;
+    var lead=(first.getUTCDay()+6)%7,daysIn=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+    var html='';
+    'MTWTFSS'.split('').forEach(function(_,i){html+='<span class="decra-qb-wd">'+['Mo','Tu','We','Th','Fr','Sa','Su'][i]+'</span>'});
+    for(var i=0;i<lead;i++)html+='<span></span>';
+    for(var d=1;d<=daysIn;d++){
+      var s=iso(Date.UTC(y,m,d)),cls='decra-qb-day';
+      if(s<today)cls+=' decra-qb-past';
+      else if(isBlocked(s)&&!(start&&!end&&s>start))cls+=' decra-qb-blocked';
+      if(s===start||s===end)cls+=' decra-qb-sel';
+      else if(start&&end&&s>start&&s<end)cls+=' decra-qb-mid';
+      html+='<button type="button" class="'+cls+'" data-d="'+s+'">'+d+'</button>';
+    }
+    grid.innerHTML=html;
+  }
+  function pick(s){
+    if(s<today)return;
+    if(start&&!end&&s>start){
+      if(Math.round((Date.parse(s)-Date.parse(start))/DAY)<2||!rangeFree(start,s)){if(!isBlocked(s)){start=s;end=''}}
+      else{end=s;setTimeout(function(){cal.classList.remove('decra-qb-open')},350)}
+    }else{
+      if(isBlocked(s))return;
+      start=s;end='';
+    }
+    fields();render();
+  }
+  function load(){
+    if(blocked)return;
+    blocked={};
+    fetch('/api/availability/ten-fifty-bakers').then(function(r){return r.json()}).then(function(d){
+      if(d&&d.blocked){d.blocked.forEach(function(s){blocked[s]=1});render()}
+      else noteEl.textContent='Pick your dates';
+    }).catch(function(){noteEl.textContent='Pick your dates'});
+  }
+  function openCal(){load();render();cal.classList.add('decra-qb-open')}
+  document.getElementById('decra-qb-inbtn').addEventListener('click',openCal);
+  document.getElementById('decra-qb-outbtn').addEventListener('click',openCal);
+  document.getElementById('decra-qb-prev').addEventListener('click',function(){if(offset>0){offset--;render()}});
+  document.getElementById('decra-qb-next').addEventListener('click',function(){if(offset<13){offset++;render()}});
+  grid.addEventListener('click',function(e){var t=e.target.closest('[data-d]');if(t)pick(t.getAttribute('data-d'))});
+  document.addEventListener('click',function(e){
+    // picking a day re-renders the grid, so the bubbled target can be a
+    // detached node — closest() still resolves on detached trees
+    var t=e.target;
+    if(t&&t.closest&&t.closest('#decra-quickbook, .decra-qb-day'))return;
+    cal.classList.remove('decra-qb-open');
   });
-  form.addEventListener('submit',function(e){
-    e.preventDefault();
-    if(!inEl.value||!outEl.value){window.location.href='/mirror/ten-fifty-bakers/book-now.html';return}
-    var url='https://checkout.lodgify.com/deb-badcock/726148/reservation?currency=AUD&adults=2&arrival='+inEl.value+'&departure='+outEl.value;
-    window.open(url,'_blank','noopener');
+  document.getElementById('decra-qb-book').addEventListener('click',function(){
+    if(!start||!end){openCal();return}
+    window.open('https://checkout.lodgify.com/deb-badcock/726148/reservation?currency=AUD&adults=2&arrival='+start+'&departure='+end,'_blank','noopener');
   });
+  setTimeout(function(){bar.classList.add('decra-qb-on');load()},1500);
 })();
 </script>
 <script src="/mirror-editor.js" defer=""></script></body></html>
