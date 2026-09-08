@@ -1135,4 +1135,58 @@ const a=JSON.parse(document.getElementById("wp-emoji-settings").textContent),o=(
 
 
 
+<style id="decra-quickbook-css">
+#decra-quickbook{display:none}
+@media (max-width:768px){
+  body{padding-bottom:calc(108px + env(safe-area-inset-bottom))}
+  #decra-quickbook{display:block;position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#ffffff;border-top:1px solid rgba(58,74,76,.14);box-shadow:0 -10px 30px rgba(29,37,38,.12);padding:10px 14px calc(10px + env(safe-area-inset-bottom));font-family:"Didact Gothic",sans-serif}
+  .decra-qb-price{font-size:13px;color:#3a4a4c;margin:0 2px 8px}
+  .decra-qb-price strong{font-size:15px}
+  .decra-qb-price span{color:#7d8788}
+  .decra-qb-row{display:flex;align-items:stretch;gap:10px;margin:0}
+  .decra-qb-dates{flex:1;display:flex;align-items:center;border:1px solid rgba(58,74,76,.28);border-radius:16px;background:#fff;overflow:hidden}
+  .decra-qb-field{flex:1;display:flex;flex-direction:column;gap:1px;padding:7px 12px;min-width:0}
+  .decra-qb-field > span{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7d8788}
+  .decra-qb-field input[type=date]{border:0;padding:0;margin:0;background:transparent;font:inherit;font-size:14px;color:#1d2526;width:100%;min-height:20px;-webkit-appearance:none;appearance:none}
+  .decra-qb-field input[type=date]:focus{outline:none}
+  .decra-qb-divider{width:1px;align-self:stretch;background:rgba(58,74,76,.18)}
+  .decra-qb-book{border:0;border-radius:999px;background:#d2b54f;color:#1d2526;font:inherit;font-size:15px;font-weight:700;padding:0 24px;cursor:pointer}
+  .decra-qb-book:active{background:#c2a53f}
+}
+</style>
+<div id="decra-quickbook" aria-label="Book your stay">
+  <p class="decra-qb-price"><strong>From $700</strong> / night <span>&middot; 2 night minimum &middot; sleeps up to 10</span></p>
+  <form class="decra-qb-row" id="decra-qb-form">
+    <div class="decra-qb-dates">
+      <label class="decra-qb-field"><span>Check-in</span><input type="date" id="decra-qb-in" required aria-label="Check-in date"></label>
+      <span class="decra-qb-divider" aria-hidden="true"></span>
+      <label class="decra-qb-field"><span>Check-out</span><input type="date" id="decra-qb-out" required aria-label="Check-out date"></label>
+    </div>
+    <button type="submit" class="decra-qb-book">Book</button>
+  </form>
+</div>
+<script id="decra-quickbook-js">
+(function(){
+  var form=document.getElementById('decra-qb-form');
+  if(!form)return;
+  var inEl=document.getElementById('decra-qb-in'),outEl=document.getElementById('decra-qb-out');
+  var DAY=86400000;
+  function iso(d){return new Date(d-(new Date(d).getTimezoneOffset()*60000)).toISOString().slice(0,10)}
+  var today=iso(Date.now());
+  inEl.min=today;
+  outEl.min=iso(Date.now()+2*DAY);
+  inEl.addEventListener('change',function(){
+    if(!inEl.value)return;
+    var minOut=iso(Date.parse(inEl.value)+2*DAY);
+    outEl.min=minOut;
+    if(!outEl.value||outEl.value<minOut)outEl.value=minOut;
+  });
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    if(!inEl.value||!outEl.value){window.location.href='/mirror/ten-fifty-bakers/book-now.html';return}
+    var url='https://checkout.lodgify.com/deb-badcock/726148/reservation?currency=AUD&adults=2&arrival='+inEl.value+'&departure='+outEl.value;
+    window.open(url,'_blank','noopener');
+  });
+})();
+</script>
 <script src="/mirror-editor.js" defer=""></script></body></html>

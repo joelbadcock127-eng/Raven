@@ -214,11 +214,11 @@ gtag("config", "GT-5NRXS9C5");
 <style>
   :root {
     --ldg-bnb-background: #ffffff;
-    --ldg-bnb-border-radius: 0.42em;
-    --ldg-bnb-box-shadow: 0px 24px 54px 0px rgba(0, 0, 0, 0.1);
-    --ldg-bnb-padding: 14px;
-    --ldg-bnb-input-background: #ffffff;
-    --ldg-bnb-button-border-radius: 3.58em;
+    --ldg-bnb-border-radius: 18px;
+    --ldg-bnb-box-shadow: none;
+    --ldg-bnb-padding: 20px;
+    --ldg-bnb-input-background: #f6f4ee;
+    --ldg-bnb-button-border-radius: 999px;
 
     --ldg-bnb-color-primary: #3a4a4c;
     --ldg-bnb-color-primary-lighter:#9da5a6;
@@ -230,13 +230,62 @@ gtag("config", "GT-5NRXS9C5");
     --ldg-component-calendar-cell-selected-color: #ffffff;
     --ldg-bnb-font-family: inherit;
   }
-  #lodgify-book-now-box {    
+  /* Frame the widget as one branded card instead of the bare default box */
+  .decra-availability-card {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid rgba(58, 74, 76, 0.14);
+    border-radius: 22px;
+    box-shadow: 0 18px 44px rgba(29, 37, 38, 0.14);
+    padding: 22px 18px 18px;
+  }
+  .decra-availability-card h2 {
+    margin: 0 0 2px;
+    font-size: 1.35em;
+    color: #1d2526;
+  }
+  .decra-availability-card .decra-availability-sub {
+    margin: 0 0 14px;
+    font-size: 0.9em;
+    color: #7d8788;
+  }
+  .decra-availability-card .decra-availability-trust {
+    margin: 12px 2px 0;
+    font-size: 0.8em;
+    letter-spacing: 0.02em;
+    color: #7d8788;
+    text-align: center;
+  }
+  #lodgify-book-now-box {
     width: 100%;
   }
+  /* Gold booking button (submit only, so calendar and stepper buttons keep the slate theme) */
+  #lodgify-book-now-box button[type="submit"] {
+    background: #d2b54f !important;
+    border-color: #d2b54f !important;
+    color: #1d2526 !important;
+    font-weight: 700 !important;
+  }
+  #lodgify-book-now-box button[type="submit"]:hover {
+    background: #c2a53f !important;
+    border-color: #c2a53f !important;
+  }
+  /* On mobile, show the booking card before the rates copy so guests can
+     pick dates without scrolling through the text first */
+  @media (max-width: 768px) {
+    .gb-element-d5baefe9 { order: -1; }
+    .decra-availability-card { padding: 18px 14px 14px; }
+  }
 </style>
+<div class="decra-availability-card">
+<h2>Check availability</h2>
+<p class="decra-availability-sub">Pick your dates to see the total for your stay.</p>
 <div id="lodgify-book-now-box" data-rental-id="726148" data-website-id="616671" data-slug="deb-badcock" data-language-code="en" data-new-tab="true" data-version="stable" data-has-guests-breakdown="" data-check-in-label="Check-in" data-check-out-label="Check-out" data-guests-label="Guests" data-guests-singular-label="{{NumberOfGuests}} guest" data-guests-plural-label="{{NumberOfGuests}} guests" data-location-input-label="Location" data-total-price-label="Total price:" data-select-dates-to-see-price-label="Select dates to see total price" data-minimum-price-per-night-first-label="From" data-minimum-price-per-night-second-label="per night" data-book-button-label="Book Now" data-guests-breakdown-label="Guests" data-adults-label="{&quot;one&quot;:&quot;adult&quot;,&quot;other&quot;:&quot;adults&quot;}" data-adults-description="Ages {minAge} or above" data-children-label="{&quot;one&quot;:&quot;child&quot;,&quot;other&quot;:&quot;children&quot;}" data-children-description="Ages {minAge}-{maxAge}" data-children-not-allowed-label="Not suitable for children" data-infants-label="{&quot;one&quot;:&quot;infant&quot;,&quot;other&quot;:&quot;infants&quot;}" data-infants-description="Under {maxAge}" data-infants-not-allowed-label="Not suitable for infants" data-pets-label="{&quot;one&quot;:&quot;pet&quot;,&quot;other&quot;:&quot;pets&quot;}" data-pets-not-allowed-label="Not allowed" data-done-label="Done"></div>
 
 
+
+<p class="decra-availability-trust">Secure checkout &middot; Instant confirmation &middot; Best rate booking direct</p>
+</div>
 
 <script src="https://app.lodgify.com/book-now-box/stable/renderBookNowBox.js" defer=""></script>
 </div>
