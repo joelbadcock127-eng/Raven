@@ -6,7 +6,7 @@ import { lodgifyConfigured, raw } from '@/lib/lodgify';
 export const dynamic = 'force-dynamic';
 
 /**
- * Live availability for a private booking link (blocked nights over ~15
+ * Live availability for a private booking link (blocked nights over ~25
  * months), plus the link's own booking history so the guest can see every
  * stay they've already secured through this page.
  */
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
 
   const from = new Date();
   const to = new Date();
-  to.setMonth(to.getMonth() + 15);
+  to.setMonth(to.getMonth() + 25);
   const fromS = from.toISOString().slice(0, 10);
   const toS = to.toISOString().slice(0, 10);
   try {

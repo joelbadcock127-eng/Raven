@@ -14,6 +14,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
  */
 
 const DAY_MS = 86_400_000;
+// Two months are shown at once, so the furthest visible month is offset + 1.
+// 23 reaches 24 months out, covering Lodgify's 720 day booking window.
+const MAX_MONTH_OFFSET = 23;
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -329,7 +332,7 @@ export default function BookingFlow({ token, propertyName, imageUrl, requireAppr
                     {blocked != null && (
                       <div style={{ display: 'flex', gap: 34, position: 'relative' }}>
                         <button aria-label="Earlier" disabled={monthOffset === 0} onClick={() => setMonthOffset((v) => Math.max(0, v - 1))} style={{ all: 'unset', cursor: monthOffset === 0 ? 'default' : 'pointer', position: 'absolute', left: -6, top: 0, color: monthOffset === 0 ? '#d9d6d0' : '#57544e', fontSize: 16, padding: 4 }}>‹</button>
-                        <button aria-label="Later" disabled={monthOffset >= 13} onClick={() => setMonthOffset((v) => Math.min(13, v + 1))} style={{ all: 'unset', cursor: 'pointer', position: 'absolute', right: -6, top: 0, color: '#57544e', fontSize: 16, padding: 4 }}>›</button>
+                        <button aria-label="Later" disabled={monthOffset >= MAX_MONTH_OFFSET} onClick={() => setMonthOffset((v) => Math.min(MAX_MONTH_OFFSET, v + 1))} style={{ all: 'unset', cursor: 'pointer', position: 'absolute', right: -6, top: 0, color: '#57544e', fontSize: 16, padding: 4 }}>›</button>
                         {[monthOffset, monthOffset + 1].map((off, idx) => {
                           const { label, cells } = monthGrid(off);
                           return (
