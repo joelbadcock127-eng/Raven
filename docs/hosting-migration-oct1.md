@@ -6,13 +6,23 @@ her Cloudflare account must move before then. Her cPanel details are in
 the Website Owners Manuals (keep those PDFs private — they contain
 passwords; do not commit them).
 
-## Current state
+## Current state (checked live 20 Oct 2026)
+
+Erica extended the cutoff: she turns the server off at the **end of the
+week of 19 Oct (Fri 23 Oct)**. Nothing below has moved since 28 Aug
+except Ten Fifty's website.
 
 | | Website | Email | DNS |
 | --- | --- | --- | --- |
-| Ten Fifty Bakers | ✅ LIVE on Vercel (28 Aug) | ⚠️ hello@ mailbox on her cPanel | ⚠️ her Cloudflare |
-| The Prescription Pad | ⚠️ still her server | ⚠️ mailbox(es) on her cPanel | ⚠️ her Cloudflare |
-| Annie May | ⚠️ still her server (WP) | ✅ Microsoft 365 — safe, nothing to do | ⚠️ her Cloudflare |
+| Ten Fifty Bakers | ✅ LIVE on Vercel (28 Aug) | ⚠️ hello@ mailbox on her cPanel (MX → 110.232.143.129) | ⚠️ her Cloudflare (greg/sneh) |
+| The Prescription Pad | ⚠️ still her server (clone ready in Decra) | ⚠️ mailbox(es) on her cPanel (MX → 110.232.143.129) | ⚠️ her Cloudflare (greg/sneh) |
+| Annie May | ⚠️ still her server (V2 site ready in Decra) | ✅ Microsoft 365, safe, nothing to do | ⚠️ her Cloudflare (greg/sneh) |
+
+Clone readiness: the Prescription Pad mirror serves every page and asset
+from Decra. Its contact form now posts to `/api/site-enquiry`
+(`property_id = prescription-pad`) and its map embed loads directly.
+Enquiries land in the `site_enquiries` table only: there is no email
+notification or admin view yet, so check Supabase until one exists.
 
 ## Step 1 — Backups NOW (while cPanel access works)
 

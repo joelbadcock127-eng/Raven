@@ -19,7 +19,7 @@ const PROPERTIES = [
     blurb:
       'A hand-built timber sanctuary beside Narawntapu National Park. Silence, space, clean air — an outdoor bath under the stars and not another soul for miles. Sleeps 10.',
     href: 'https://tenfiftybakers.com.au/',
-    image: 'https://tenfiftybakers.com.au/wp-content/uploads/2025/07/1050-Bakers-16-1.jpg',
+    image: '/mirror-assets/d501be7768-1050-Bakers-16-1.jpg',
     fits: ['couples', 'wellness escapes', 'walkers', 'milestones'],
   },
   {
@@ -29,7 +29,7 @@ const PROPERTIES = [
     blurb:
       'Spacious, easy group accommodation minutes from the beach at Shearwater. Built for families, sports weekends and get-togethers — where every stay is a remedy. Sleeps 10.',
     href: 'https://theprescriptionpad.com.au/',
-    image: 'https://theprescriptionpad.com.au/wp-content/uploads/2025/08/Prescription-Pad-Beach.png',
+    image: '/mirror-assets/0bfde11580-Prescription-Pad-Beach.png',
     fits: ['families', 'groups', 'sports weekends', 'reunions'],
   },
   {
@@ -39,7 +39,7 @@ const PROPERTIES = [
     blurb:
       'Seven ensuite rooms in a lovingly restored Devonport home. Adults-only, unhurried and memorable — perfect for business stays, cruise stopovers and quiet weekends.',
     href: 'https://anniemay.com.au/',
-    image: 'https://anniemay.com.au/wp-content/uploads/2025/08/Annie-May-Bedroom.jpg',
+    image: '/mirror-assets/80a2abce87-Annie-May-Bedroom.jpg',
     fits: ['couples', 'business', 'cruise stopovers', 'adults only'],
   },
 ];
