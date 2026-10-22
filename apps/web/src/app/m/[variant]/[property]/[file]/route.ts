@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { appUrl } from '@/lib/links';
 import { SITES } from '@/lib/sites';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,27 @@ function formKey(pid: string): string | null {
   return null;
 }
 
+/**
+ * The static file baked into the deploy. On Cloudflare it comes straight
+ * from the ASSETS binding (a Worker can't fetch its own URL); elsewhere
+ * (Vercel, next dev) over HTTP from the app.
+ */
+async function staticMirror(req: NextRequest, property: string, slug: string): Promise<string | null> {
+  const path = `/mirror/${property}/${slug}.html`;
+  let assets: { fetch(input: Request | URL): Promise<Response> } | undefined;
+  try {
+    assets = (getCloudflareContext().env as { ASSETS?: typeof assets }).ASSETS;
+  } catch {
+    /* not running on Cloudflare */
+  }
+  try {
+    const res = assets ? await assets.fetch(new URL(path, req.url)) : await fetch(`${appUrl()}${path}`, { cache: 'no-store' });
+    return res.ok ? await res.text() : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Same own-host test as the middleware: anything else is a property domain. */
 function isOwnHost(host: string): boolean {
   let appHost = '';
@@ -84,7 +106,7 @@ function isOwnHost(host: string): boolean {
   } catch {
     /* unset */
   }
-  return host === appHost || host.endsWith('.vercel.app') || host === 'localhost' || host === '127.0.0.1';
+  return host === appHost || host.endsWith('.vercel.app') || host.endsWith('.workers.dev') || host === 'localhost' || host === '127.0.0.1';
 }
 
 export async function GET(
@@ -117,15 +139,7 @@ export async function GET(
     }
   }
 
-  if (html === null) {
-    // fall back to the static file baked into the deploy
-    try {
-      const res = await fetch(`${appUrl()}/mirror/${property}/${slug}.html`, { cache: 'no-store' });
-      if (res.ok) html = await res.text();
-    } catch {
-      /* fall through */
-    }
-  }
+  if (html === null) html = await staticMirror(req, property, slug);
   if (html === null) return new NextResponse('Not found', { status: 404 });
 
   const host = (req.headers.get('host') ?? '').toLowerCase().split(':')[0];
