@@ -2,9 +2,13 @@
  * Decra mirror contact forms.
  * The mirrored WordPress pages carry Forminator forms that used to post to
  * wp-admin/admin-ajax.php, which no longer exists once the domain serves
- * from Decra. The mirror script marks those forms with data-decra-enquiry
- * and this script sends them to /api/site-enquiry instead, keeping the
- * original markup and styling.
+ * from Decra. Forms marked data-decra-enquiry are sent from the browser to
+ * two places, keeping the original markup and styling:
+ *  - Web3Forms (free form service), which emails the owner. Its public
+ *    access key arrives in <meta name="decra-form-key">, set per property
+ *    by the WEB3FORMS_KEYS env var.
+ *  - /api/site-enquiry, which keeps a copy in the admin (Reservations).
+ * Either one succeeding counts as sent.
  */
 (function () {
   function field(form, name) {
@@ -58,22 +62,59 @@
           return;
         }
         if (button) button.disabled = true;
-        fetch('/api/site-enquiry', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            property_id: form.getAttribute('data-decra-enquiry'),
-            name: name,
-            email: email,
-            phone: field(form, 'phone-1'),
-            message: field(form, 'textarea-1') || '(No message, contact details only)',
-            website: field(form, 'website'),
-          }),
-        })
-          .then(function (res) {
-            return res.json().catch(function () {
+        var payload = {
+          name: name,
+          email: email,
+          phone: field(form, 'phone-1'),
+          message: field(form, 'textarea-1') || '(No message, contact details only)',
+        };
+        var post = function (url, body) {
+          return fetch(url, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', accept: 'application/json' },
+            body: JSON.stringify(body),
+          })
+            .then(function (res) {
+              return res.json().catch(function () {
+                return { ok: res.ok };
+              });
+            })
+            .catch(function () {
               return { ok: false };
             });
+        };
+        var sends = [
+          post(
+            '/api/site-enquiry',
+            Object.assign({ property_id: form.getAttribute('data-decra-enquiry'), website: field(form, 'website') }, payload),
+          ),
+        ];
+        var keyMeta = document.querySelector('meta[name="decra-form-key"]');
+        if (keyMeta && !field(form, 'website')) {
+          sends.push(
+            post(
+              'https://api.web3forms.com/submit',
+              Object.assign(
+                {
+                  access_key: keyMeta.getAttribute('content'),
+                  subject: 'New website enquiry from ' + location.hostname,
+                  from_name: location.hostname,
+                  replyto: email,
+                  page: location.href,
+                },
+                payload,
+              ),
+            ).then(function (d) {
+              return { ok: !!(d && d.success) };
+            }),
+          );
+        }
+        Promise.all(sends)
+          .then(function (results) {
+            var sent = results.some(function (r) {
+              return r && r.ok;
+            });
+            return sent ? { ok: true } : results[0];
           })
           .then(function (data) {
             if (data && data.ok) {

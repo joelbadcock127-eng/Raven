@@ -1,9 +1,12 @@
 ;; anniemay.com.au — import into YOUR Cloudflare account (DNS > Records > Import)
-;; CHANGED from Island Creative export: root now CNAME to Vercel (was A 110.232.143.129),
+;; CHANGED from Island Creative export: root now A to Vercel (was A 110.232.143.129),
 ;; www now CNAME direct to Vercel (was proxied CNAME to root).
+;; ADDED: _dmarc (monitoring only; Gmail/Yahoo expect one from MailerLite senders).
 ;; Email is Microsoft 365 — MX/SPF/autodiscover preserved exactly; no email migration needed.
-anniemay.com.au.	1	IN	CNAME	dae77df2a44cfda1.vercel-dns-017.com. ; cf_tags=cf-proxied:false
-www.anniemay.com.au.	1	IN	CNAME	dae77df2a44cfda1.vercel-dns-017.com. ; cf_tags=cf-proxied:false
+anniemay.com.au.	1	IN	A	216.198.79.1 ; cf_tags=cf-proxied:false
+anniemay.com.au.	1	IN	A	64.29.17.1 ; cf_tags=cf-proxied:false
+www.anniemay.com.au.	1	IN	A	216.198.79.1 ; cf_tags=cf-proxied:false
+anniemay.com.au.	1	IN	A	64.29.17.1 ; cf_tags=cf-proxied:false
 autodiscover.anniemay.com.au.	1	IN	CNAME	autodiscover.outlook.com. ; cf_tags=cf-proxied:false
 em944325.anniemay.com.au.	1	IN	CNAME	return.smtp2go.net. ; cf_tags=cf-proxied:false
 link.anniemay.com.au.	1	IN	CNAME	track.smtp2go.net. ; cf_tags=cf-proxied:false
@@ -13,3 +16,4 @@ anniemay.com.au.	1	IN	MX	0 anniemay-com-au.mail.protection.outlook.com.
 anniemay.com.au.	1	IN	TXT	"mailerlite-domain-verification=d2f207c538a1e4ad88745de4dc20f2909d44a862"
 anniemay.com.au.	1	IN	TXT	"v=spf1 include:_spf.mlsend.com include:spf.protection.outlook.com -all"
 anniemay.com.au.	1	IN	TXT	"mscid=Su9g3Kw3MwbA/DPq68OpD49HiMOcQqcHGWCkyIMhdpxMYMBvkQHMrs27i2a4Ci778LtL7hiKCcChOQqjeWNqjA=="
+_dmarc.anniemay.com.au.	1	IN	TXT	"v=DMARC1; p=none;"

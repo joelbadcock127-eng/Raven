@@ -21,7 +21,13 @@ const MIRROR = path.join(ROOT, 'public', 'mirror');
 const ASSETS = path.join(ROOT, 'public', 'mirror-assets');
 const MAX_BYTES = 20 * 1024 * 1024; // skip anything bigger
 
-const DOMAINS = ['tenfiftybakers.com.au', 'theprescriptionpad.com.au', 'anniemay.com.au'];
+const DOMAINS = [
+  'tenfiftybakers.com.au',
+  'theprescriptionpad.com.au',
+  'anniemay.com.au',
+  // GeneratePress's demo site: Prescription Pad's header hotlinks a logo from it
+  'patterns.generatepress.com',
+];
 const HOST_RE = DOMAINS.map((d) => d.replace(/\./g, '\\.')).join('|');
 // same-domain asset URLs (wp-content / wp-includes / wp-json etc. — anything file-ish)
 const ASSET_RE = new RegExp(
@@ -119,6 +125,70 @@ for (const file of htmlFiles) {
   writeFileSync(file, html);
   totalRefs += replaced;
   console.log(`${path.relative(MIRROR, file)} — ${replaced}/${urls.length} assets localized`);
+}
+
+// ── Pass 2: references pass 1 can't see ──
+const SITE_DOMAIN = {
+  'ten-fifty-bakers': 'tenfiftybakers.com.au',
+  'prescription-pad': 'theprescriptionpad.com.au',
+  'annie-may': 'anniemay.com.au',
+};
+// JSON-escaped URLs (Yoast structured data): https:\/\/domain\/wp-content\/...
+const ESCAPED_RE = new RegExp(
+  `https:\\\\/\\\\/(?:www\\.)?(?:${HOST_RE})\\\\/wp-(?:content|includes)\\\\/[^"'\\s<>]+`,
+  'g',
+);
+// Files on hosts that are already gone, served from a copy in the repo.
+// The Ginger font lived on the old agency's staging site.
+const FALLBACKS = {
+  'https://anniemay.theislandcreative.com.au/wp-content/uploads/generatepress/fonts/ginger/Ginger.woff': {
+    from: path.join(ROOT, 'src', 'fonts', 'Ginger.woff'),
+    name: 'ginger-Ginger.woff',
+  },
+};
+for (const fb of Object.values(FALLBACKS)) writeFileSync(path.join(ASSETS, fb.name), readFileSync(fb.from));
+
+// Forminator's nonce fetch, which LiteSpeed folded into a combined script
+// bundle; it would POST to WordPress on every page view. `0&&` keeps the
+// statement valid but never runs it (the form posts via mirror-enquiry.js).
+const NONCE_RE = new RegExp(
+  `jQuery\\.ajax\\(\\{url:\\s*'https://(?:www\\.)?(?:${HOST_RE})/wp-admin/admin-ajax\\.php'`,
+  'g',
+);
+
+async function localizeText(text, domain) {
+  text = text.replace(NONCE_RE, "0&&jQuery.ajax({url:''");
+  for (const [url, fb] of Object.entries(FALLBACKS)) text = text.split(url).join(`/mirror-assets/${fb.name}`);
+  for (const escaped of new Set(text.match(ESCAPED_RE) ?? [])) {
+    const name = await fetchAsset(escaped.replaceAll('\\/', '/'));
+    // absolute: structured data is read off-site, where a path means nothing
+    if (name && domain) text = text.split(escaped).join(`https:\\/\\/${domain}\\/mirror-assets\\/${name}`);
+    else if (name) text = text.split(escaped).join(`\\/mirror-assets\\/${name}`);
+  }
+  for (const url of new Set(text.match(ASSET_RE) ?? [])) {
+    const name = await fetchAsset(url);
+    if (name) text = text.split(url).join(`/mirror-assets/${name}`);
+  }
+  return text;
+}
+
+for (const file of htmlFiles) {
+  const domain = SITE_DOMAIN[path.basename(path.dirname(file))];
+  let html = await localizeText(readFileSync(file, 'utf8'), domain);
+  // share images (og:image, twitter:image) must be absolute for Facebook & co
+  if (domain) html = html.replace(/(<meta\b[^>]*\bcontent=")\/mirror-assets\//g, `$1https://${domain}/mirror-assets/`);
+  writeFileSync(file, html);
+}
+// scripts and stylesheets that load further files at runtime
+for (const f of readdirSync(ASSETS)) {
+  if (!/\.(css|js)$/.test(f)) continue;
+  const file = path.join(ASSETS, f);
+  const before = readFileSync(file, 'utf8');
+  const after = await localizeText(before, null);
+  if (after !== before) {
+    writeFileSync(file, after);
+    console.log(`mirror-assets/${f} — runtime references localized`);
+  }
 }
 
 const count = readdirSync(ASSETS).length;

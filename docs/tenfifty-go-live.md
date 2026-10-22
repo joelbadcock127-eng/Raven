@@ -27,8 +27,10 @@ admin, plus the events system underneath.
   the domain, `/robots.txt` allows crawling and `/sitemap.xml` lists all
   eight pages plus any published event pages; `/events` is the What's-on
   index. The Decra app host itself stays noindexed.
-- **No forms to break**: the site has no server-posted forms (contact is
-  by phone/email links), so nothing depended on WordPress PHP.
+- **Contact form**: the contact page's WordPress (Forminator) form was
+  hidden and dead after the August cutover. It now shows and sends via
+  Web3Forms and Decra, like the other two sites (see
+  `anniemay-prescriptionpad-go-live.md`).
 - **Editable in place**: admin → Sites → Current sites → Ten Fifty
   Bakers → Edit mode — click text/images, Save page. Already live for
   this site today; keeps working identically on the domain.

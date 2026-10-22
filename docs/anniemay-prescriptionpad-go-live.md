@@ -24,8 +24,13 @@ system underneath. WordPress and the old host are then no longer needed.
   | `/competition/` | `/competition/` |
   | `/competition-terms-conditions/` | `/competition-terms-conditions/` |
 
-- **Self contained**: every image, stylesheet, script and font is served
-  from Decra (`/mirror-assets/`). Nothing depends on the old server.
+- **Self contained**: every image, stylesheet, script and font is copied
+  into Decra (`/mirror-assets/`), including the images in structured data
+  and those that scripts load later. A browser crawl of every page made
+  zero requests to WordPress, the old agency's servers or GeneratePress.
+  Annie May's Ginger heading font, which the WordPress site loaded from
+  the agency's (now dead) staging server, is served from Decra's copy,
+  so it displays again. Share images (`og:image`) use full URLs.
 - **Same URLs as WordPress**, trailing slash included. `/page` redirects
   to `/page/`, `www.` redirects to the bare domain, unknown URLs return
   a real 404. Old image URLs (`/wp-content/uploads/...`, as indexed by
@@ -36,10 +41,12 @@ system underneath. WordPress and the old host are then no longer needed.
   normally, so analytics keeps recording (Annie May `GT-TXH3WHGQ`,
   Prescription Pad `GT-W6JTGV76`), and the competition sign up forms
   (MailerLite) work.
-- **Contact forms rewired**: the Forminator forms on both `/contact-us/`
-  pages used to post to WordPress. They now send to Decra and appear in
-  the admin under **Reservations → Website enquiries**. The Google Maps
-  embeds on those pages load too.
+- **Contact forms rewired**: the Forminator forms on the `/contact-us/`
+  pages (Ten Fifty's too) used to post to WordPress. The visitor's
+  browser now sends each message to **Web3Forms** (free, emails it to
+  you; keys set in the `WEB3FORMS_KEYS` env var, see `dns-cutover.md`
+  Step 0) and to Decra, which keeps a copy under **Reservations →
+  Website enquiries**. The Google Maps embeds on those pages load too.
 - **Booking**: Annie May's `/book-now/` uses Preno's Swiftbook widget
   (and her room buttons link to Preno's book direct page); Prescription
   Pad's `/bookings/` uses the Lodgify widget. Both load from the
@@ -69,6 +76,8 @@ system underneath. WordPress and the old host are then no longer needed.
    unreachable at these names.
 
 ## Cutover [you]
+
+**Exact values for every record are in `dns-cutover.md`.** In short:
 
 Same flow as Ten Fifty. Do one domain at a time; Prescription Pad first
 is a good warm up.

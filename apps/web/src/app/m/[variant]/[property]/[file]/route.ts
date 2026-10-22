@@ -44,11 +44,36 @@ function transform(
     html = html.replaceAll(`/mirror/${pid}/`, `/m/${variant}/${pid}/`);
   }
 
+  // WordPress contact forms post through /mirror-enquiry.js (done here as
+  // well as in the mirror script so published DB copies get it too)
+  if (html.includes('forminator-custom-form')) {
+    if (!html.includes('data-decra-enquiry='))
+      html = html.replace(/<form\b(?=[^>]*\bforminator-custom-form\b)/g, `<form data-decra-enquiry="${pid}"`);
+    if (!html.includes('/mirror-enquiry.js'))
+      html = html.replace('</body>', '<script src="/mirror-enquiry.js" defer></script></body>');
+    const key = formKey(pid);
+    if (key) html = html.replace('<head>', `<head><meta name="decra-form-key" content="${key}">`);
+  }
+
   // editor-bridge slug: sandbox edits must save under sandbox-- keys
   const liveMeta = `content="${pid}|${slug}"`;
   const sandboxMeta = `content="${pid}|sandbox--${slug}"`;
   html = variant === 'sandbox' ? html.replaceAll(liveMeta, sandboxMeta) : html.replaceAll(sandboxMeta, liveMeta);
   return html;
+}
+
+/**
+ * Web3Forms public access key for a property, from WEB3FORMS_KEYS
+ * ("annie-may=<key>,prescription-pad=<key>,ten-fifty-bakers=<key>").
+ * Each key is created at web3forms.com for the inbox that should get
+ * that property's enquiries. Public by design: it only allows sending.
+ */
+function formKey(pid: string): string | null {
+  for (const pair of (process.env.WEB3FORMS_KEYS ?? '').split(',')) {
+    const [id, key] = pair.split('=').map((x) => x?.trim());
+    if (id === pid && key && /^[a-zA-Z0-9-]+$/.test(key)) return key;
+  }
+  return null;
 }
 
 /** Same own-host test as the middleware: anything else is a property domain. */
