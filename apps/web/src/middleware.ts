@@ -14,6 +14,11 @@ import { SITES } from '@/lib/sites';
  *     the section-based site renders at clean URLs
  *   - otherwise the WordPress mirror serves as before
  * Decra's own domain keeps /mirror/* editor-only (noindex).
+ *
+ * Trailing slashes: next.config sets skipTrailingSlashRedirect, so this
+ * file owns them. Mirror pages keep WordPress's `/page/` form (what their
+ * canonical tags, backlinks and Google's index use); every other path
+ * gets Next's default of stripping the slash.
  */
 
 interface SettingsRow {
@@ -71,7 +76,16 @@ export async function middleware(req: NextRequest) {
   const isOwnHost =
     host === appHost || host.endsWith('.vercel.app') || host === 'localhost' || host === '127.0.0.1';
 
+  const hasSlash = pathname.length > 1 && pathname.endsWith('/');
+  const stripSlash = () => {
+    // a plain URL: NextURL would re-apply its own trailing-slash rule
+    const dest = new URL(req.url);
+    dest.pathname = pathname.replace(/\/+$/, '') || '/';
+    return NextResponse.redirect(dest, 308);
+  };
+
   if (isOwnHost) {
+    if (hasSlash) return stripSlash();
     if (pathname.startsWith('/mirror') || pathname.startsWith('/m/')) {
       const res = NextResponse.next();
       res.headers.set('X-Robots-Tag', 'noindex, nofollow');
@@ -81,13 +95,15 @@ export async function middleware(req: NextRequest) {
   }
 
   // Tracked-link redirects and bio pages are real app routes on every host.
-  if (pathname.startsWith('/go/') || pathname.startsWith('/l/')) return NextResponse.next();
+  if (pathname.startsWith('/go/') || pathname.startsWith('/l/'))
+    return hasSlash ? stripSlash() : NextResponse.next();
 
   const settings = await loadSettings();
   let pid = settings.find((r) => r.domains?.some((d) => d.toLowerCase() === host))?.property_id;
   if (!pid) pid = staticDomainMap().get(host);
 
   if (!pid) {
+    if (hasSlash) return stripSlash();
     if (pathname.startsWith('/mirror')) {
       const res = NextResponse.next();
       res.headers.set('X-Robots-Tag', 'noindex, nofollow');
@@ -106,15 +122,28 @@ export async function middleware(req: NextRequest) {
 
   const site = SITES.find((s) => s.propertyId === pid);
   const liveV2 = settings.find((r) => r.property_id === pid)?.live_version_id ?? null;
-  // Annie May's bespoke site is her live site — no builder version needed.
-  const bespoke = pid === 'annie-may';
+  // A bespoke site (Annie May's V2) needs no builder version to go live.
+  const bespoke = site?.bespoke === true;
   const bespokePages = ['home', 'accommodation', 'story', 'explore', 'contact'];
 
+  // Old WordPress media URLs (Google Images, backlinks, emails): serve the
+  // localized copy. Its name is the hash the localize script gave the URL;
+  // a file we never localized 404s.
+  if (pathname.startsWith('/wp-content/')) {
+    const url = `https://${host}${pathname}${req.nextUrl.search}`;
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(url));
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 10);
+    const base = (pathname.split('/').pop() || 'asset').replace(/[^a-zA-Z0-9._-]+/g, '-').slice(-80);
+    return NextResponse.rewrite(new URL(`/mirror-assets/${hash}-${base}`, req.url));
+  }
+
   // Event pages and their index are real app routes on the property domain.
-  if (pathname === '/events' || pathname.startsWith('/events/')) return NextResponse.next();
+  if (pathname === '/events' || pathname.startsWith('/events/'))
+    return hasSlash ? stripSlash() : NextResponse.next();
 
   // Private no-payment booking pages (tokenized, never indexed or linked).
   if (pathname.startsWith('/book/') || pathname.startsWith('/api/private-booking/')) {
+    if (hasSlash) return stripSlash();
     const res = NextResponse.next();
     res.headers.set('X-Robots-Tag', 'noindex, nofollow');
     return res;
@@ -128,7 +157,8 @@ export async function middleware(req: NextRequest) {
   const mirrorMatch = pathname.match(/^\/mirror\/[^/]+\/([^/]+)\.html$/);
   if (mirrorMatch) {
     const slug = mirrorMatch[1];
-    return NextResponse.redirect(new URL(slug === 'home' ? '/' : `/${slug}`, req.url), 301);
+    const clean = slug === 'home' ? '/' : bespoke || liveV2 ? `/${slug}` : `/${slug}/`;
+    return NextResponse.redirect(new URL(clean, req.url), 301);
   }
 
   if (pathname === '/robots.txt')
@@ -144,6 +174,9 @@ export async function middleware(req: NextRequest) {
     if (legacy[slug]) return NextResponse.redirect(new URL(`/${legacy[slug]}`, req.url), 301);
   }
 
+  // The V2 and bespoke sites use clean, slash-free URLs.
+  if (hasSlash && (liveV2 || bespoke)) return stripSlash();
+
   // Unknown slugs fall through to the app's 404 rather than soft-200ing home.
   const validSlug = bespoke ? bespokePages.includes(slug || 'home') : /^[a-z0-9-]*$/.test(slug);
   if ((liveV2 || bespoke) && validSlug) {
@@ -155,11 +188,18 @@ export async function middleware(req: NextRequest) {
   }
 
   if (slug === 'home') return NextResponse.rewrite(new URL(`/m/live/${pid}/home.html`, req.url));
-  if (site?.pages.includes(slug))
+  if (site?.pages.includes(slug)) {
+    // WordPress permalinks end in a slash; keep exactly those URLs.
+    if (!hasSlash) {
+      const dest = new URL(req.url);
+      dest.pathname = `/${slug}/`;
+      return NextResponse.redirect(dest, 308);
+    }
     return NextResponse.rewrite(new URL(`/m/live/${pid}/${slug}.html`, req.url));
+  }
 
-  // assets, /events/*, /api/* etc. pass through
-  return NextResponse.next();
+  // assets, /api/* etc. pass through
+  return hasSlash ? stripSlash() : NextResponse.next();
 }
 
 export const config = {

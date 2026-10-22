@@ -14,9 +14,10 @@ admin, plus the events system underneath.
   Every image, stylesheet, script and font is served locally from
   `/mirror-assets/` — nothing depends on the old WordPress host
   surviving the DNS change.
-- **Clean URLs**: the middleware serves `/{page}/` exactly like the
-  current WordPress permalinks, so every existing Google result keeps
-  working. `www.` 308-redirects to the bare domain.
+- **Same URLs as WordPress**: the middleware serves `/{page}/` exactly
+  like the WordPress permalinks (and the pages' canonical tags);
+  `/{page}` without the slash 308 redirects to it. Every existing Google
+  result keeps working. `www.` 308 redirects to the bare domain.
 - **Booking works anywhere**: the Book Now page uses Lodgify's official
   embed (`data-website-id 616671`), loaded from Lodgify's own CDN — it
   is host-independent.
@@ -65,7 +66,8 @@ widget load.
 - `/book-now/` — Lodgify booking widget loads and takes dates
 - `/privacy-policy/`, `/terms-of-service/` — 200 (new)
 - `/robots.txt` — allows crawling, names the sitemap
-- `/sitemap.xml` — lists the pages at the production domain
+- `/sitemap.xml` — lists the pages at the production domain, each
+  with its trailing slash
 - `/events` — renders (empty until an event page is published for TFB)
 - a nonsense URL — returns 404
 

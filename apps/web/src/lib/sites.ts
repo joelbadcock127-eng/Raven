@@ -4,6 +4,12 @@ export interface SiteDef {
   domain: string;
   /** Page slugs available under /mirror/<propertyId>/ */
   pages: string[];
+  /**
+   * Serve the bespoke app site (/site/<id>) on the domain instead of the
+   * WordPress mirror. Off while the domains serve exact clones of the
+   * current sites; flip it on to launch Annie May's new site.
+   */
+  bespoke?: boolean;
 }
 
 /** The three property websites mirrored under apps/web/public/mirror. */
@@ -18,13 +24,17 @@ export const SITES: SiteDef[] = [
     propertyId: 'prescription-pad',
     name: 'The Prescription Pad',
     domain: 'theprescriptionpad.com.au',
-    pages: ['home', 'about', 'accommodation', 'explore', 'contact-us', 'bookings'],
+    pages: ['home', 'about', 'accommodation', 'explore', 'contact-us', 'bookings', 'privacy-policy',
+      'terms-of-service', 'disclaimer', 'competition', 'competition-terms-conditions'],
   },
   {
     propertyId: 'annie-may',
     name: 'Annie May',
     domain: 'anniemay.com.au',
-    // V2 bespoke-site slugs (the old WordPress slugs 301 to these)
-    pages: ['home', 'accommodation', 'story', 'explore', 'contact'],
+    // WordPress slugs, served from the mirror. With bespoke on, the V2 site
+    // uses its own slugs (story, contact) and these 301 to them.
+    pages: ['home', 'accommodation', 'annie-mays-story', 'explore', 'contact-us', 'book-now', 'privacy-policy',
+      'terms-of-service', 'disclaimer', 'competition', 'competition-terms-conditions'],
+    bespoke: false,
   },
 ];

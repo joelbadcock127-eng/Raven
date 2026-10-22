@@ -1,5 +1,12 @@
 # Annie May — go-live checklist
 
+> **Parked (22 Oct 2026).** `anniemay.com.au` will first serve an exact
+> clone of the current WordPress site; see
+> `anniemay-prescriptionpad-go-live.md`. This doc applies when the V2
+> site launches: set `bespoke: true` for Annie May in
+> `apps/web/src/lib/sites.ts` and swap her `pages` back to the V2 slugs
+> (`home`, `accommodation`, `story`, `explore`, `contact`).
+
 How to point anniemay.com.au at the new (V2) site and get it indexed by
 Google and the AI engines — without exposing the rest of the Decra app.
 

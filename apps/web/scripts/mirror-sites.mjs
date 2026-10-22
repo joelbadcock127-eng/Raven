@@ -1,8 +1,10 @@
 /**
  * Mirror the three live property websites into public/mirror.
  *
- * Usage: node scripts/mirror-sites.mjs [--fetch]
+ * Usage: node scripts/mirror-sites.mjs [--fetch] [--only=pid,pid]
  *   --fetch  re-download the live pages first (otherwise reuses .mirror-src)
+ *   --only   limit to these property ids. Ten Fifty Bakers is already served
+ *            from Decra, so re-fetching it would download the mirror itself.
  *
  * The pages are stored verbatim (original markup/CSS/JS) with:
  *  - relative asset URLs absolutized to the live domain
@@ -25,15 +27,20 @@ const SITES = [
   { pid: 'ten-fifty-bakers', domain: 'tenfiftybakers.com.au',
     slugs: ['home', 'our-accommodation', 'our-story', 'explore', 'contact-us', 'book-now', 'privacy-policy', 'terms-of-service'] },
   { pid: 'prescription-pad', domain: 'theprescriptionpad.com.au',
-    slugs: ['home', 'about', 'accommodation', 'explore', 'contact-us', 'bookings'] },
+    slugs: ['home', 'about', 'accommodation', 'explore', 'contact-us', 'bookings', 'privacy-policy',
+      'terms-of-service', 'disclaimer', 'competition', 'competition-terms-conditions'] },
   { pid: 'annie-may', domain: 'anniemay.com.au',
-    slugs: ['home', 'accommodation', 'annie-mays-story', 'explore', 'contact-us'] },
-];
+    slugs: ['home', 'accommodation', 'annie-mays-story', 'explore', 'contact-us', 'book-now', 'privacy-policy',
+      'terms-of-service', 'disclaimer', 'competition', 'competition-terms-conditions'] },
+].filter((s) => {
+  const only = process.argv.find((a) => a.startsWith('--only='));
+  return !only || only.slice(7).split(',').includes(s.pid);
+});
 
 function absolutize(url, origin) {
   if (!url) return url;
   const t = url.trim();
-  if (/^(https?:|data:|mailto:|tel:|#|javascript:)/i.test(t)) return t;
+  if (/^(https?:|data:|mailto:|tel:|#|javascript:|about:)/i.test(t)) return t;
   if (t.startsWith('//')) return 'https:' + t;
   if (t.startsWith('/')) return origin + t;
   return origin + '/' + t;
@@ -87,6 +94,11 @@ for (const site of SITES) {
       if (realSet) $el.attr('srcset', realSet);
       $el.removeAttr('data-lazyloaded data-src data-srcset');
     });
+    // lazy iframes (the Google Maps embeds on the contact pages)
+    $('iframe[data-litespeed-src]').each((_, el) => {
+      const $el = $(el);
+      $el.attr('src', $el.attr('data-litespeed-src')).removeAttr('data-litespeed-src data-lazyloaded');
+    });
     // lazy background images
     $('[data-lazy-bg]').each((_, el) => {
       const $el = $(el);
@@ -110,6 +122,36 @@ for (const site of SITES) {
       if (/litespeed/i.test(srcAttr) || /litespeed|lazyload/i.test(body.slice(0, 400))) $el.remove();
     });
     $('noscript').remove(); // duplicate imgs for no-JS browsers; not needed
+    // 4. "delay JS": LiteSpeed parks scripts as type="litespeed/javascript"
+    //    (src in data-src) for its runtime to start; without the runtime they
+    //    never run (analytics, jQuery, menus, MailerLite). Make them normal.
+    $('script[type="litespeed/javascript"]').each((_, el) => {
+      const $el = $(el);
+      $el.removeAttr('type');
+      const real = $el.attr('data-src');
+      if (real) $el.attr('src', real).removeAttr('data-src');
+    });
+
+    // ── Contact forms: Forminator posted to wp-admin, which is gone after
+    //    the cutover. Drop its init/nonce scripts and let /mirror-enquiry.js
+    //    send the form to /api/site-enquiry instead.
+    const forms = $('form.forminator-custom-form');
+    if (forms.length > 0) {
+      forms.attr('data-decra-enquiry', site.pid).removeAttr('action');
+      $('script').each((_, el) => {
+        const body = $(el).html() || '';
+        if (/admin-ajax\.php|Forminator_Cform_Paginations|forminatorFront\(/.test(body) && !/var ForminatorFront=/.test(body))
+          $(el).remove();
+      });
+    }
+
+    // ── WordPress-only head links (feeds, REST API, XML-RPC, oEmbed,
+    //    shortlinks) would send crawlers to 404s once WordPress is gone.
+    $('link[rel="EditURI"], link[rel="https://api.w.org/"], link[rel="shortlink"]').remove();
+    $('link[rel="alternate"]').each((_, el) => {
+      const type = $(el).attr('type') || '';
+      if (/rss|atom|json|oembed|xml/i.test(type)) $(el).remove();
+    });
 
     // ── Absolutize every asset reference ──
     $('[src]').each((_, el) => $(el).attr('src', absolutize($(el).attr('src'), origin)));
@@ -155,6 +197,7 @@ for (const site of SITES) {
     // ── Identify the page + inject the editor bridge ──
     $('head').prepend(`<meta name="decra-mirror" content="${site.pid}|${slug}">`);
     $('body').append('<script src="/mirror-editor.js" defer></script>');
+    if (forms.length > 0) $('body').append('<script src="/mirror-enquiry.js" defer></script>');
 
     writeFileSync(`${OUT}/${site.pid}/${slug}.html`, $.html());
     console.log(site.pid, slug, 'ok');

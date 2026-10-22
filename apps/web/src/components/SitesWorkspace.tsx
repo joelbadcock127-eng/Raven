@@ -24,9 +24,10 @@ export default function SitesWorkspace({
 
   const site = sites.find((s) => s.propertyId === activeSiteId) ?? sites[0];
 
-  // Annie May's live site is the bespoke V2 app, not a WordPress mirror.
-  // Its edit bridge speaks the same protocol, with 'v2-' prefixed slugs.
-  const isBespoke = (pid: string) => pid === 'annie-may';
+  // A bespoke site (Annie May's V2, once switched on) is the app, not a
+  // WordPress mirror. Its edit bridge speaks the same protocol, with 'v2-'
+  // prefixed slugs.
+  const isBespoke = (pid: string) => sites.find((s) => s.propertyId === pid)?.bespoke === true;
   // Mirror properties get a sandbox variant served from mirror_pages
   // (edits save under 'sandbox--' slugs; code changes stage as DB rows).
   const hasSandbox = (pid: string) => !isBespoke(pid);

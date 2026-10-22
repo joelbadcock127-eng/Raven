@@ -21,12 +21,18 @@ export async function GET(req: NextRequest) {
     );
 
   if (!site) return new NextResponse('Not found', { status: 404 });
+  const supabase = supabaseAdmin();
 
-  const locs = site.pages.map((slug) => `https://${host}${slug === 'home' ? '/' : '/' + slug}`);
+  // Mirror pages keep their WordPress permalinks (trailing slash), matching
+  // their canonical tags; bespoke and builder sites use clean URLs.
+  const { data: settings } = supabase
+    ? await supabase.from('site_settings').select('live_version_id').eq('property_id', site.propertyId).maybeSingle()
+    : { data: null };
+  const trailing = !site.bespoke && !settings?.live_version_id ? '/' : '';
+  const locs = site.pages.map((slug) => `https://${host}${slug === 'home' ? '/' : `/${slug}${trailing}`}`);
 
   // published, unexpired event pages for this property are indexable too,
   // reached through the What's-on index
-  const supabase = supabaseAdmin();
   if (supabase) {
     const { data: eventPages } = await supabase
       .from('event_pages')

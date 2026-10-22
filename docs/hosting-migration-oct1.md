@@ -11,8 +11,8 @@ passwords; do not commit them).
 | | Website | Email | DNS |
 | --- | --- | --- | --- |
 | Ten Fifty Bakers | ✅ LIVE on Vercel (28 Aug) | ⚠️ hello@ mailbox on her cPanel | ⚠️ her Cloudflare |
-| The Prescription Pad | ⚠️ still her server | ⚠️ mailbox(es) on her cPanel | ⚠️ her Cloudflare |
-| Annie May | ⚠️ still her server (WP) | ✅ Microsoft 365 — safe, nothing to do | ⚠️ her Cloudflare |
+| The Prescription Pad | ⚠️ still her server; clone ready in Decra, see `anniemay-prescriptionpad-go-live.md` | ⚠️ mailbox(es) on her cPanel | ⚠️ her Cloudflare |
+| Annie May | ⚠️ still her server (WP); clone ready in Decra, see `anniemay-prescriptionpad-go-live.md` | ✅ Microsoft 365 — safe, nothing to do | ⚠️ her Cloudflare |
 
 ## Step 1 — Backups NOW (while cPanel access works)
 
@@ -52,7 +52,7 @@ exports are saved in `docs/dns/` — so we can move DNS ourselves:
 
 Note: switching Annie May's and Prescription Pad's DNS to the imported
 zones is ALSO their website cutover — the new sites go live at that
-moment. Do the pre-cutover checks in their go-live docs first.
+moment. Do the pre-cutover checks in `anniemay-prescriptionpad-go-live.md` first.
 
 ## Step 3 — Email migration (TFB + Prescription Pad only)
 

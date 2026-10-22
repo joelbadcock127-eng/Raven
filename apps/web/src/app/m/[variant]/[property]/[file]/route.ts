@@ -36,7 +36,8 @@ function transform(
     // On the property's own domain, internal links must be the clean public
     // URLs — /m/* is admin-only there and the middleware bounces it home.
     html = html.replaceAll(`/mirror/${pid}/home.html`, '/');
-    html = html.replace(new RegExp(`/mirror/${pid}/([a-z0-9-]+)\\.html`, 'g'), '/$1');
+    // WordPress permalink form, matching the canonical tags.
+    html = html.replace(new RegExp(`/mirror/${pid}/([a-z0-9-]+)\\.html`, 'g'), '/$1/');
   } else {
     // Inside the admin workspace, links stay within the served variant so
     // the sandbox never leaks into live pages mid-browse.

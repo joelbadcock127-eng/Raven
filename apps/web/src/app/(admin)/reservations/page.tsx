@@ -11,6 +11,8 @@ import {
 import { fmtMoney, fmtShort, statusStyle } from '@/lib/pms';
 import { PropertyThumb, SourceLogo } from '@/components/PmsBits';
 import { replyToGuest } from './actions';
+import { supabaseAdmin } from '@/lib/supabase';
+import { SITES } from '@/lib/sites';
 
 export const revalidate = 0;
 
@@ -40,6 +42,18 @@ export default async function ReservationsPage({
       loadError = (err as Error).message;
     }
   }
+  // contact-form messages from the property websites (they used to arrive
+  // by WordPress email; now they land here)
+  const supabase = supabaseAdmin();
+  const { data: enquiries } = supabase
+    ? await supabase
+        .from('site_enquiries')
+        .select('id, property_id, name, email, phone, message, created_at')
+        .order('created_at', { ascending: false })
+        .limit(20)
+    : { data: null };
+  const siteName = (pid: string) => SITES.find((x) => x.propertyId === pid)?.name ?? pid;
+
   const propById = new Map(properties.map((p) => [p.id, p]));
   const shown = bookings
     .filter((b) => status === 'All' || b.status.toLowerCase() === status.toLowerCase())
@@ -318,6 +332,30 @@ export default async function ReservationsPage({
           )}
         </section>
       </div>
+
+      {enquiries && enquiries.length > 0 && (
+        <section className="card" style={{ padding: 22, marginTop: 18 }}>
+          <h2 className="caption" style={{ marginBottom: 12, color: 'var(--ink-mute)' }}>
+            Website enquiries
+          </h2>
+          {enquiries.map((q) => (
+            <div key={q.id} style={{ padding: '12px 0', borderTop: '1px solid var(--hairline)' }}>
+              <div className="caption" style={{ color: 'var(--ink-mute)' }}>
+                {siteName(q.property_id)} · {fmtShort(q.created_at.slice(0, 10))}
+              </div>
+              <div style={{ fontSize: 14, margin: '4px 0' }}>
+                <strong>{q.name}</strong> · <a href={`mailto:${q.email}`}>{q.email}</a>
+                {q.phone && (
+                  <>
+                    {' '}· <a href={`tel:${q.phone}`}>{q.phone}</a>
+                  </>
+                )}
+              </div>
+              <div style={{ fontSize: 14, whiteSpace: 'pre-wrap' }}>{q.message}</div>
+            </div>
+          ))}
+        </section>
+      )}
 
       <footer className="caption" style={{ paddingTop: 32, color: 'var(--ink-mute)' }}>
         Showing {shown.length} of {bookings.length} reservations synced from Lodgify.
