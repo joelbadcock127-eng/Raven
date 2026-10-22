@@ -10,9 +10,9 @@ passwords; do not commit them).
 
 | | Website | Email | DNS |
 | --- | --- | --- | --- |
-| Ten Fifty Bakers | ✅ LIVE on Vercel (28 Aug) | ⚠️ hello@ mailbox on her cPanel | ⚠️ her Cloudflare |
-| The Prescription Pad | ⚠️ still her server; clone ready in Decra, see `anniemay-prescriptionpad-go-live.md` | ⚠️ mailbox(es) on her cPanel | ⚠️ her Cloudflare |
-| Annie May | ⚠️ still her server (WP); clone ready in Decra, see `anniemay-prescriptionpad-go-live.md` | ✅ Microsoft 365 — safe, nothing to do | ⚠️ her Cloudflare |
+| Ten Fifty Bakers | ✅ LIVE on Vercel (28 Aug) | ⚠️ hello@ mailbox on her cPanel | ⚠️ her Cloudflare → moving to Vercel DNS |
+| The Prescription Pad | ⚠️ still her server; clone ready in Decra, see `anniemay-prescriptionpad-go-live.md` | ⚠️ mailbox(es) on her cPanel | ⚠️ her Cloudflare → moving to Vercel DNS |
+| Annie May | ⚠️ still her server (WP); clone ready in Decra, see `anniemay-prescriptionpad-go-live.md` | ✅ Microsoft 365 — safe, nothing to do | ⚠️ her Cloudflare → moving to Vercel DNS |
 
 ## Step 1 — Backups NOW (while cPanel access works)
 
@@ -26,32 +26,18 @@ server `https://syn02ce.syd7.hostyourservices.net:2083`):
   manuals/logins for Annie May and Prescription Pad (Erica re-attached
   them — file all three).
 
-## Step 2 — DNS into our own Cloudflare (no dependency on Erica)
+## Step 2 — DNS into Vercel DNS (no dependency on Erica)
 
-We hold the domain registrations at Crazy Domains, and Erica's zone
-exports are saved in `docs/dns/` — so we can move DNS ourselves:
+Decision (22 Oct): no Cloudflare for DNS. We hold the domain
+registrations at Crazy Domains; DNS moves to **Vercel DNS**, alongside
+the hosting. Exact steps and every record: **`dns-cutover.md`**. In
+short: add the domains to the Decra project, add the email records in
+Vercel DNS (`docs/dns/zones/` holds them), then at Crazy Domains change
+the nameservers from `greg.ns.cloudflare.com` / `sneh.ns.cloudflare.com`
+to `ns1.vercel-dns.com` / `ns2.vercel-dns.com`.
 
-1. Create/log into the Cloudflare account (joel.badcock127@gmail.com).
-   **Add site** → enter the domain → Free plan.
-2. When Cloudflare offers to scan records, instead use
-   **DNS → Records → Import** and upload the matching file from
-   `docs/dns/cloudflare-import/` (web records already point at Vercel;
-   all email records preserved).
-3. Check every imported record shows **DNS only** (grey cloud).
-4. Cloudflare shows two nameservers for your account. At
-   **Crazy Domains → the domain → Name Servers**, replace
-   `greg.ns.cloudflare.com` / `sneh.ns.cloudflare.com` with yours.
-5. Repeat for all three domains. Order: Prescription Pad and Annie May
-   any time; Ten Fifty last (it's live — pick a quiet hour; the zone
-   data is identical so the cutover is seamless).
-6. First add `theprescriptionpad.com.au` + `www`, and `anniemay.com.au`
-   + `www`, to Vercel → decra-stays → Settings → Domains (root primary,
-   www redirect) — same flow as Ten Fifty. If Vercel shows a different
-   CNAME target than `dae77df2a44cfda1.vercel-dns-017.com`, use the one
-   it shows and fix the imported record.
-
-Note: switching Annie May's and Prescription Pad's DNS to the imported
-zones is ALSO their website cutover — the new sites go live at that
+Note: switching Annie May's and Prescription Pad's nameservers to Vercel
+is ALSO their website cutover — the new sites go live at that
 moment. Do the pre-cutover checks in `anniemay-prescriptionpad-go-live.md` first.
 
 ## Step 3 — Email migration (TFB + Prescription Pad only)
@@ -62,7 +48,7 @@ The `hello@` mailboxes live on Erica's cPanel and die 1 Oct.
    (matches Annie May's setup) or Google Workspace, one licence per
    mailbox.
 2. Create the mailboxes; the provider gives MX/SPF/DKIM records — add
-   them in OUR Cloudflare (replacing `MX 0 mail.<domain>` and updating
+   them in Vercel DNS (replacing `MX 0 mail.<domain>` and updating
    the SPF include; remove the `mail.`/`webmail.` A records once done).
 3. Migrate old mail via the provider's IMAP migration tool
    (server `syn02ce.syd7.hostyourservices.net`, port 993; mailbox
@@ -84,8 +70,8 @@ The `hello@` mailboxes live on Erica's cPanel and die 1 Oct.
 
 ## Step 5 — Confirm completion to Erica
 
-Once all three sites serve from Vercel, DNS resolves from OUR
-Cloudflare nameservers, and the two mailboxes work at the new provider:
+Once all three sites serve from Vercel, DNS resolves from Vercel's
+nameservers, and the two mailboxes work at the new provider:
 email Erica confirming the server and DNS are migrated, and ask her to
 confirm the hosting/maintenance plan is cancelled with nothing further
 billed.

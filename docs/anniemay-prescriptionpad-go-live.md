@@ -77,29 +77,16 @@ system underneath. WordPress and the old host are then no longer needed.
 
 ## Cutover [you]
 
-**Exact values for every record are in `dns-cutover.md`.** In short:
+**Follow `dns-cutover.md`**: every step with exact values. In short:
 
-Same flow as Ten Fifty. Do one domain at a time; Prescription Pad first
-is a good warm up.
-
-1. **Vercel → decra project → Settings → Domains**: add
-   `theprescriptionpad.com.au` and `www.theprescriptionpad.com.au`
-   (root primary, www redirects to it). Repeat for `anniemay.com.au` and
-   `www.anniemay.com.au`. Vercel shows the exact records it wants; note
-   them. If it asks for a TXT verification record, add that first.
-2. **Point the web records at Vercel.** Two ways, pick one:
-   - **Moving DNS to your own Cloudflare** (the plan in
-     `hosting-migration-oct1.md`): import
-     `docs/dns/cloudflare-import/<domain>.zone`, check the root and
-     `www` records match what Vercel showed in step 1 (fix them if not),
-     make sure every record is **DNS only** (grey cloud), then change
-     the nameservers at Crazy Domains. The nameserver switch is the
-     cutover moment.
-   - **Staying on the current Cloudflare for now**: in that account,
-     change only the root (`@`) and `www` records to the values Vercel
-     showed, set to **DNS only** (grey cloud).
-3. **Don't touch** MX, SPF, DKIM, DMARC, autodiscover or MailerLite
-   records. Email keeps flowing exactly as before.
+1. Add both domains (and their `www`) to the Decra project in Vercel,
+   choosing Vercel nameservers.
+2. Add the email and verification records in Vercel DNS **before**
+   switching, so email keeps flowing.
+3. At Crazy Domains, change the nameservers from `greg` / `sneh`
+   (`.ns.cloudflare.com`, the old agency's account) to
+   `ns1.vercel-dns.com` and `ns2.vercel-dns.com`. That's the moment each
+   site goes live. Prescription Pad first is a good warm up.
 4. Wait for Vercel to show each domain as configured with SSL issued
    (minutes, occasionally a few hours).
 
