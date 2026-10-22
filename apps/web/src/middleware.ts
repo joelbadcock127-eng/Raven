@@ -74,7 +74,7 @@ export async function middleware(req: NextRequest) {
     }
   })();
   const isOwnHost =
-    host === appHost || host.endsWith('.vercel.app') || host.endsWith('.workers.dev') || host === 'localhost' || host === '127.0.0.1';
+    host === appHost || host.endsWith('.vercel.app') || host === 'localhost' || host === '127.0.0.1';
 
   const hasSlash = pathname.length > 1 && pathname.endsWith('/');
   const stripSlash = () => {

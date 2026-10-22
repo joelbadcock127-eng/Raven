@@ -67,7 +67,7 @@ async function isStandaloneHost(): Promise<boolean> {
       return '';
     }
   })();
-  return !(host === appHost || host.endsWith('.vercel.app') || host.endsWith('.workers.dev') || host === 'localhost' || host === '127.0.0.1');
+  return !(host === appHost || host.endsWith('.vercel.app') || host === 'localhost' || host === '127.0.0.1');
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
