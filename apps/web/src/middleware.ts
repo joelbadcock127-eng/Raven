@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SITES } from '@/lib/sites';
+import { SITES, publicHost } from '@/lib/sites';
 
 /**
  * Custom-domain serving for the property websites.
@@ -14,6 +14,11 @@ import { SITES } from '@/lib/sites';
  *     the section-based site renders at clean URLs
  *   - otherwise the WordPress mirror serves as before
  * Decra's own domain keeps /mirror/* editor-only (noindex).
+ *
+ * Admin login: Decra's own host (the Vercel URL) asks for a password
+ * (HTTP Basic, ADMIN_PASSWORD) on everything except PUBLIC_PATHS. A
+ * property domain never serves the admin: anything that isn't website
+ * content is a 404 there.
  *
  * Trailing slashes: next.config sets skipTrailingSlashRedirect, so this
  * file owns them. Mirror pages keep WordPress's `/page/` form (what their
@@ -60,8 +65,68 @@ function staticDomainMap(): Map<string, string> {
   return map;
 }
 
+/**
+ * Paths anyone may open on Decra's own host: guest-facing pages, website
+ * APIs, links shared publicly, static files, and routes that check their
+ * own secret (scheduled jobs, uploads, render callback).
+ */
+const PUBLIC_PATHS = [
+  '/book/', '/api/private-booking/', '/go/', '/l/', '/r/', '/stay', '/u', '/events',
+  '/mirror/', '/m/',
+  '/api/site-enquiry', '/api/site-overrides', '/api/site/weather', '/api/media-proxy', '/api/standalone/',
+  '/api/ingest', '/api/render/complete', '/api/admin/property-ical', '/api/admin/annotate-media',
+  '/api/admin/relocate-media', '/api/sync/availability', '/api/signals', '/api/enrich',
+  '/api/social/draft', '/api/social/insights',
+];
+const isPublicPath = (p: string) =>
+  PUBLIC_PATHS.some((x) => p === x.replace(/\/$/, '') || p.startsWith(x.endsWith('/') ? x : x + '/') || p === x) ||
+  (!p.startsWith('/api/') && /\.[a-z0-9]+$/i.test(p)); // static files: /icon.png, /logo/*.svg, ...
+
+/** Paths a property domain serves besides its pages (which come from SITES). */
+const SITE_APP_PATHS = [
+  '/events', '/book/', '/api/private-booking/', '/api/site-enquiry', '/api/site-overrides',
+  '/api/site/weather', '/go/', '/l/', '/r/',
+];
+const isSiteAppPath = (p: string) =>
+  SITE_APP_PATHS.some((x) => p === x.replace(/\/$/, '') || p.startsWith(x.endsWith('/') ? x : x + '/')) ||
+  (!p.startsWith('/api/') && /\.[a-z0-9]+$/i.test(p));
+
+function adminAuthorized(req: NextRequest): boolean {
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password) return false;
+  const header = req.headers.get('authorization') ?? '';
+  if (!header.startsWith('Basic ')) return false;
+  let decoded = '';
+  try {
+    decoded = atob(header.slice(6));
+  } catch {
+    return false;
+  }
+  const given = decoded.slice(decoded.indexOf(':') + 1);
+  // constant-time compare
+  let diff = given.length ^ password.length;
+  for (let i = 0; i < Math.max(given.length, password.length); i++)
+    diff |= (given.charCodeAt(i) || 0) ^ (password.charCodeAt(i) || 0);
+  return diff === 0;
+}
+
+function adminChallenge(): NextResponse {
+  if (!process.env.ADMIN_PASSWORD && process.env.NODE_ENV !== 'development')
+    return new NextResponse('Decra admin is locked: set ADMIN_PASSWORD in Vercel → Settings → Environment Variables, then redeploy.', {
+      status: 503,
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+    });
+  return new NextResponse('Password required', {
+    status: 401,
+    headers: { 'www-authenticate': 'Basic realm="Decra admin", charset="UTF-8"' },
+  });
+}
+
+/** The app's 404 page with a real 404 status. */
+const notFound = (req: NextRequest) => NextResponse.rewrite(new URL('/__not-found', req.url));
+
 export async function middleware(req: NextRequest) {
-  const host = (req.headers.get('host') ?? '').toLowerCase().split(':')[0];
+  const host = publicHost(req.headers);
   const { pathname } = req.nextUrl;
 
   // Fast path: on Decra's own domain (vercel.app / localhost / the app URL)
@@ -85,6 +150,8 @@ export async function middleware(req: NextRequest) {
   };
 
   if (isOwnHost) {
+    const devOpen = process.env.NODE_ENV === 'development' && !process.env.ADMIN_PASSWORD;
+    if (!devOpen && !isPublicPath(pathname) && !adminAuthorized(req)) return adminChallenge();
     if (hasSlash) return stripSlash();
     if (pathname.startsWith('/mirror') || pathname.startsWith('/m/')) {
       const res = NextResponse.next();
@@ -103,6 +170,8 @@ export async function middleware(req: NextRequest) {
   if (!pid) pid = staticDomainMap().get(host);
 
   if (!pid) {
+    // an unmapped host (e.g. a stray custom domain) is not a way into the admin
+    if (!isPublicPath(pathname) && !adminAuthorized(req)) return adminChallenge();
     if (hasSlash) return stripSlash();
     if (pathname.startsWith('/mirror')) {
       const res = NextResponse.next();
@@ -198,7 +267,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.rewrite(new URL(`/m/live/${pid}/${slug}.html`, req.url));
   }
 
-  // assets, /api/* etc. pass through
+  // website app routes and static files pass through; never the admin
+  if (!isSiteAppPath(pathname)) return notFound(req);
   return hasSlash ? stripSlash() : NextResponse.next();
 }
 

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import { publicHost } from '@/lib/sites';
 import { notFound } from 'next/navigation';
 import { Cormorant_Garamond, Jost } from 'next/font/google';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -59,7 +60,7 @@ async function getPage(
 /** On a property's own domain the site nav uses clean URLs; on Decra's app
  *  host it links back through /site/annie-may. Same test as middleware.ts. */
 async function isStandaloneHost(): Promise<boolean> {
-  const host = ((await headers()).get('host') ?? '').toLowerCase().split(':')[0];
+  const host = publicHost(await headers());
   const appHost = (() => {
     try {
       return new URL(process.env.NEXT_PUBLIC_APP_URL ?? '').hostname.toLowerCase();

@@ -28,7 +28,7 @@ Decra is **not** a property-management system. Lodgify continues to own bookings
 
 ## Architecture (target)
 
-One multi-tenant **Vercel** deployment serving all three custom domains · **Supabase** for content, users, events and media · **Lodgify** as the booking source of truth (server-side API calls only, well below rate limits, cached + queued) · **Decra admin** for editing, approval and publishing.
+The **Decra admin** on **Vercel** (password protected); the three property sites on a free **Cloudflare worker** (`sites-worker/`) that serves static files itself and asks Decra for each page, falling back to its own copy if Decra is down. Setup: [`docs/cloudflare-cutover.md`](docs/cloudflare-cutover.md). · **Supabase** for content, users, events and media · **Lodgify** as the booking source of truth (server-side API calls only, well below rate limits, cached + queued) · **Decra admin** for editing, approval and publishing.
 
 Key rules from the brief:
 
@@ -51,6 +51,7 @@ Key rules from the brief:
 ```
 docs/                     Product brief (PDF) + DESIGN.md (Stripe-style design tokens)
 assets/logo/              Brand assets
+sites-worker/             Cloudflare worker serving the three property domains
 packages/event-monitor/   Module 1 — event scraper + per-property opportunity scoring
 supabase/migrations/      Database schema (applied once Supabase is connected)
 ```

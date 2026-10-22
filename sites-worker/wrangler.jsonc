@@ -1,0 +1,24 @@
+{
+  // The three property websites (tenfiftybakers.com.au, theprescriptionpad.com.au,
+  // anniemay.com.au) on one Cloudflare worker, free plan. The Decra admin stays
+  // on Vercel; this worker forwards page requests to it and falls back to its
+  // own copy of each page if Decra doesn't answer. See docs/cloudflare-cutover.md.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "decra-sites",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    // Images, fonts, CSS and scripts are served straight from Cloudflare
+    // (free, unmetered). Everything else runs the worker.
+    "run_worker_first": ["/*", "!/mirror-assets/*", "!/mirror-editor.js", "!/mirror-enquiry.js"]
+  },
+  // Keep variables set in the dashboard (WEB3FORMS_KEYS) across deploys
+  "keep_vars": true,
+  "vars": {
+    // Where the Decra admin runs (Vercel)
+    "DECRA_ORIGIN": "https://decra-stays.vercel.app"
+  },
+  "observability": { "enabled": true }
+}

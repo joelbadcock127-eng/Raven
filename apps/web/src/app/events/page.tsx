@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabase';
-import { SITES } from '@/lib/sites';
+import { SITES, publicHost } from '@/lib/sites';
 import { AnnieMayChromeV2 } from '@/components/anniemay/AnnieMaySiteV2';
 
 export const revalidate = 300;
@@ -29,7 +29,7 @@ interface Row {
 }
 
 async function hostProperty(): Promise<string | null> {
-  const host = ((await headers()).get('host') ?? '').toLowerCase().split(':')[0].replace(/^www\./, '');
+  const host = publicHost(await headers()).replace(/^www\./, '');
   return SITES.find((s) => s.domain === host)?.propertyId ?? null;
 }
 

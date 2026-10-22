@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { appUrl } from '@/lib/links';
-import { SITES } from '@/lib/sites';
+import { SITES, publicHost } from '@/lib/sites';
 
 export const dynamic = 'force-dynamic';
 
@@ -128,7 +128,7 @@ export async function GET(
   }
   if (html === null) return new NextResponse('Not found', { status: 404 });
 
-  const host = (req.headers.get('host') ?? '').toLowerCase().split(':')[0];
+  const host = publicHost(req.headers);
   const publicSite = !isOwnHost(host);
   return new NextResponse(transform(html, property, slug, variant as 'live' | 'sandbox', publicSite), {
     headers: {

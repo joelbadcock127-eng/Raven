@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { publicHost } from '@/lib/sites';
 
 export const dynamic = 'force-dynamic';
 
 /** robots.txt for a property site served on its own domain. */
 export async function GET(req: NextRequest) {
-  const host = (req.headers.get('host') ?? '').split(':')[0];
+  const host = publicHost(req.headers);
   const body = [
     'User-agent: *',
     'Allow: /',

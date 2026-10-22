@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SITES } from '@/lib/sites';
+import { SITES, publicHost } from '@/lib/sites';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 /** sitemap.xml for a property site served on its own domain. */
 export async function GET(req: NextRequest) {
-  const host = (req.headers.get('host') ?? '').toLowerCase().split(':')[0];
+  const host = publicHost(req.headers);
   const bare = host.replace(/^www\./, '');
   const site =
     SITES.find((s) => s.domain === bare) ??

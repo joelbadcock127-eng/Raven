@@ -44,7 +44,7 @@ system underneath. WordPress and the old host are then no longer needed.
 - **Contact forms rewired**: the Forminator forms on the `/contact-us/`
   pages (Ten Fifty's too) used to post to WordPress. The visitor's
   browser now sends each message to **Web3Forms** (free, emails it to
-  you; keys set in the `WEB3FORMS_KEYS` env var, see `dns-cutover.md`
+  you; keys set in the `WEB3FORMS_KEYS` env var, see `cloudflare-cutover.md`
   Step 0) and to Decra, which keeps a copy under **Reservations →
   Website enquiries**. The Google Maps embeds on those pages load too.
 - **Booking**: Annie May's `/book-now/` uses Preno's Swiftbook widget
@@ -77,18 +77,10 @@ system underneath. WordPress and the old host are then no longer needed.
 
 ## Cutover [you]
 
-**Follow `dns-cutover.md`**: every step with exact values. In short:
-
-1. Add both domains (and their `www`) to the Decra project in Vercel,
-   choosing Vercel nameservers.
-2. Add the email and verification records in Vercel DNS **before**
-   switching, so email keeps flowing.
-3. At Crazy Domains, change the nameservers from `greg` / `sneh`
-   (`.ns.cloudflare.com`, the old agency's account) to
-   `ns1.vercel-dns.com` and `ns2.vercel-dns.com`. That's the moment each
-   site goes live. Prescription Pad first is a good warm up.
-4. Wait for Vercel to show each domain as configured with SSL issued
-   (minutes, occasionally a few hours).
+**Follow `cloudflare-cutover.md`**: every step with exact values. The
+three sites run on a free Cloudflare worker (`sites-worker/`) that asks
+Decra on Vercel for each page; DNS moves into your own Cloudflare
+account; the Decra admin stays on Vercel behind a password.
 
 ## Post cutover tests
 

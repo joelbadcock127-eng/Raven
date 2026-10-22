@@ -38,3 +38,15 @@ export const SITES: SiteDef[] = [
     bespoke: false,
   },
 ];
+
+/**
+ * The hostname a request is for. The property sites are served by the
+ * Cloudflare worker (sites-worker/), which forwards to Decra and names the
+ * site in `x-decra-host`; only a known property domain is accepted there.
+ * Anything else is the plain Host header.
+ */
+export function publicHost(headers: { get(name: string): string | null }): string {
+  const forwarded = (headers.get('x-decra-host') ?? '').toLowerCase().trim();
+  if (forwarded && SITES.some((s) => s.domain === forwarded)) return forwarded;
+  return (headers.get('host') ?? '').toLowerCase().split(':')[0];
+}
