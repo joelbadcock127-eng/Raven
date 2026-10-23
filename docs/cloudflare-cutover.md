@@ -123,16 +123,14 @@ Ten Fifty. Pick a quiet hour for each.
 
 ### Records per domain (what the import adds)
 
-**theprescriptionpad.com.au** and **tenfiftybakers.com.au**: no email
-inboxes any more, so no MX record. Only MailerLite (so newsletters sent
-from these domains still deliver) and DMARC:
+**theprescriptionpad.com.au** and **tenfiftybakers.com.au**: no email at
+all. Two records that tell other mail servers to reject anything
+pretending to come from these domains (stops spoofing):
 
 | Type | Name | Content |
 | --- | --- | --- |
-| TXT | `@` | `v=spf1 include:_spf.mlsend.com ~all` |
-| TXT | `@` | Prescription Pad: `mailerlite-domain-verification=29cabab3d8cac074632d7153fdf64bbf88862c0b` · Ten Fifty: `mailerlite-domain-verification=a03098d4706c022785712c309001ffcc29ff965b` |
-| TXT | `_dmarc` | `v=DMARC1; p=none;` |
-| CNAME | `litesrv._domainkey` | `litesrv._domainkey.mlsend.com` |
+| TXT | `@` | `v=spf1 -all` |
+| TXT | `_dmarc` | `v=DMARC1; p=reject;` |
 
 **anniemay.com.au** (Microsoft 365 email, unchanged):
 
@@ -140,15 +138,14 @@ from these domains still deliver) and DMARC:
 | --- | --- | --- | --- |
 | MX | `@` | `anniemay-com-au.mail.protection.outlook.com` | 0 |
 | CNAME | `autodiscover` | `autodiscover.outlook.com` | |
-| TXT | `@` | `v=spf1 include:_spf.mlsend.com include:spf.protection.outlook.com -all` | |
-| TXT | `@` | `mailerlite-domain-verification=d2f207c538a1e4ad88745de4dc20f2909d44a862` | |
+| TXT | `@` | `v=spf1 include:spf.protection.outlook.com -all` | |
 | TXT | `@` | `mscid=Su9g3Kw3MwbA/DPq68OpD49HiMOcQqcHGWCkyIMhdpxMYMBvkQHMrs27i2a4Ci778LtL7hiKCcChOQqjeWNqjA==` | |
-| TXT | `_dmarc` | `v=DMARC1; p=none;` (new: Gmail and Yahoo expect one for MailerLite sends) | |
-| CNAME | `litesrv._domainkey` | `litesrv._domainkey.mlsend.com` | |
+| TXT | `_dmarc` | `v=DMARC1; p=none;` | |
 
 Dropped on purpose: the old `mail` / `webmail` / `MX` records for
-Prescription Pad and Ten Fifty (inboxes retired), and the `smtp2go`
-records on all three (WordPress's mail sender, gone with WordPress).
+Prescription Pad and Ten Fifty (inboxes retired), all MailerLite records
+(no longer used for sending from these domains), and the `smtp2go`
+records (WordPress's mail sender, gone with WordPress).
 
 ## Part D: attach the domain to the worker (as soon as it's Active)
 
@@ -207,7 +204,12 @@ records on all three (WordPress's mail sender, gone with WordPress).
   working without paying for a mailbox, turn on **Cloudflare → the domain
   → Email → Email Routing**, add a rule forwarding it to
   `tenfiftybakers@gmail.com`, and let Cloudflare add its MX records.
-  Receiving only; you'd still reply from Gmail.
+  Receiving only; you'd still reply from Gmail. If you do, change the
+  SPF record to the one Cloudflare suggests.
 - Before the move, check nothing still logs in to or sends from those
-  mailboxes (phones, Lodgify or Preno notification addresses, MailerLite
-  sender addresses) and point them at Gmail.
+  mailboxes (phones, Lodgify or Preno notification addresses) and point
+  them at Gmail.
+- **MailerLite**: no DNS records any more. The competition sign up forms
+  on the sites still work (they don't depend on DNS); sending newsletters
+  *from* these domains through MailerLite won't verify, so send from the
+  Gmail address instead.

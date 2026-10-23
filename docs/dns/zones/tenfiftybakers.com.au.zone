@@ -1,11 +1,8 @@
 ;; tenfiftybakers.com.au: import into Cloudflare (DNS → Records → Import and Export → Import).
 ;; UNTICK "Proxy imported DNS records": every record here must be DNS only.
 ;; Website records (root and www) are NOT here: adding the domain as a Custom
-;; Domain on the decra-sites worker creates them. Everything below is email and
-;; verification, copied from the old agency's DNS (checked 22 Oct 2026).
-;; No email inboxes on this domain (retired 23 Oct 2026; enquiries go to Gmail via Web3Forms).
-;; Kept: MailerLite sending (verification, DKIM, SPF) and DMARC.
-litesrv._domainkey.tenfiftybakers.com.au.	3600	IN	CNAME	litesrv._domainkey.mlsend.com. ; cf_tags=cf-proxied:false
-_dmarc.tenfiftybakers.com.au.	3600	IN	TXT	"v=DMARC1; p=none;"
-tenfiftybakers.com.au.	3600	IN	TXT	"mailerlite-domain-verification=a03098d4706c022785712c309001ffcc29ff965b"
-tenfiftybakers.com.au.	3600	IN	TXT	"v=spf1 include:_spf.mlsend.com ~all"
+;; Domain on the decra-sites worker creates them.
+;; No email on this domain (23 Oct 2026): it sends and receives nothing, so
+;; these two records tell receivers to reject any mail claiming to be from it.
+tenfiftybakers.com.au.	3600	IN	TXT	"v=spf1 -all"
+_dmarc.tenfiftybakers.com.au.	3600	IN	TXT	"v=DMARC1; p=reject;"
