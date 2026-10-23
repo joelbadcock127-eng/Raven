@@ -11,7 +11,8 @@ live DNS on 22 Oct 2026.
 | DNS (where website and email live) | **Cloudflare**, your account | free |
 | The three websites | **Cloudflare worker `decra-sites`** (`sites-worker/` in the repo) | free |
 | Decra admin (editing, events, bookings, AI) | **Vercel**, as today | free (Hobby) |
-| Contact form emails | Web3Forms | free |
+| Contact form emails | Web3Forms, to your Gmail | free |
+| Email inboxes | Annie May: Microsoft 365 (unchanged). Prescription Pad and Ten Fifty: **none** (retired; enquiries reach Gmail via the forms) | as now |
 
 - Visitors only ever reach Cloudflare. The worker serves images, fonts
   and scripts itself, and asks Decra on Vercel for each page, so your
@@ -46,10 +47,10 @@ Until you set the password, the admin shows
    | `ADMIN_PASSWORD` | a long password of your choice |
    | `WEB3FORMS_KEYS` | `annie-may=KEY1,prescription-pad=KEY2,ten-fifty-bakers=KEY3` |
 
-   For the Web3Forms keys: at web3forms.com, enter the email address that
-   should get each property's enquiries and they email you a key. Use an
-   inbox that doesn't depend on the old agency's server (a Gmail address,
-   or Annie May's Microsoft 365 mailbox) until Part H is done.
+   For the Web3Forms keys: in web3forms.com, one form per property
+   (Annie May, The Prescription Pad, Ten Fifty Bakers), each sending to
+   the inbox you want; copy each form's full access key. Leave captcha
+   off in the form settings (the site forms don't send one).
 2. **Deployments → the latest → ⋯ → Redeploy**, so the variables apply.
 3. Open `https://decra-stays.vercel.app`. The browser asks for a username
    and password: any username, your `ADMIN_PASSWORD` as the password.
@@ -122,22 +123,18 @@ Ten Fifty. Pick a quiet hour for each.
 
 ### Records per domain (what the import adds)
 
-**theprescriptionpad.com.au**
+**theprescriptionpad.com.au** and **tenfiftybakers.com.au**: no email
+inboxes any more, so no MX record. Only MailerLite (so newsletters sent
+from these domains still deliver) and DMARC:
 
-| Type | Name | Content | Priority |
-| --- | --- | --- | --- |
-| A | `mail` | `110.232.143.129` | |
-| MX | `@` | `mail.theprescriptionpad.com.au` | 0 |
-| TXT | `@` | `v=spf1 a mx include:_spf.mlsend.com ?all` | |
-| TXT | `@` | `mailerlite-domain-verification=29cabab3d8cac074632d7153fdf64bbf88862c0b` | |
-| TXT | `_dmarc` | `v=DMARC1; p=none;` | |
-| TXT | `default._domainkey` | the long `v=DKIM1; ...` value in the zone file | |
-| CNAME | `litesrv._domainkey` | `litesrv._domainkey.mlsend.com` | |
-| CNAME | `em931085` | `return.smtp2go.net` | |
-| CNAME | `link` | `track.smtp2go.net` | |
-| CNAME | `s931085._domainkey` | `dkim.smtp2go.net` | |
+| Type | Name | Content |
+| --- | --- | --- |
+| TXT | `@` | `v=spf1 include:_spf.mlsend.com ~all` |
+| TXT | `@` | Prescription Pad: `mailerlite-domain-verification=29cabab3d8cac074632d7153fdf64bbf88862c0b` · Ten Fifty: `mailerlite-domain-verification=a03098d4706c022785712c309001ffcc29ff965b` |
+| TXT | `_dmarc` | `v=DMARC1; p=none;` |
+| CNAME | `litesrv._domainkey` | `litesrv._domainkey.mlsend.com` |
 
-**anniemay.com.au**
+**anniemay.com.au** (Microsoft 365 email, unchanged):
 
 | Type | Name | Content | Priority |
 | --- | --- | --- | --- |
@@ -148,30 +145,10 @@ Ten Fifty. Pick a quiet hour for each.
 | TXT | `@` | `mscid=Su9g3Kw3MwbA/DPq68OpD49HiMOcQqcHGWCkyIMhdpxMYMBvkQHMrs27i2a4Ci778LtL7hiKCcChOQqjeWNqjA==` | |
 | TXT | `_dmarc` | `v=DMARC1; p=none;` (new: Gmail and Yahoo expect one for MailerLite sends) | |
 | CNAME | `litesrv._domainkey` | `litesrv._domainkey.mlsend.com` | |
-| CNAME | `em944325` | `return.smtp2go.net` | |
-| CNAME | `link` | `track.smtp2go.net` | |
-| CNAME | `s944325._domainkey` | `dkim.smtp2go.net` | |
 
-**tenfiftybakers.com.au**
-
-| Type | Name | Content | Priority |
-| --- | --- | --- | --- |
-| A | `mail` | `110.232.143.129` | |
-| A | `webmail` | `110.232.143.129` | |
-| MX | `@` | `mail.tenfiftybakers.com.au` | 0 |
-| TXT | `@` | `v=spf1 a mx include:_spf.mlsend.com ?all` | |
-| TXT | `@` | `mailerlite-domain-verification=a03098d4706c022785712c309001ffcc29ff965b` | |
-| TXT | `_dmarc` | `v=DMARC1; p=none;` | |
-| TXT | `default._domainkey` | the long `v=DKIM1; ...` value in the zone file | |
-| CNAME | `litesrv._domainkey` | `litesrv._domainkey.mlsend.com` | |
-| CNAME | `em931085` | `return.smtp2go.net` | |
-| CNAME | `link` | `track.smtp2go.net` | |
-| CNAME | `s931085._domainkey` | `dkim.smtp2go.net` | |
-
-The `mail` / `webmail` / `MX` records for Prescription Pad and Ten Fifty
-point at the old agency's server, because those inboxes still live there
-(Part H). The `smtp2go` records were for WordPress's mail; keep them
-until you've confirmed nothing uses them, then delete.
+Dropped on purpose: the old `mail` / `webmail` / `MX` records for
+Prescription Pad and Ten Fifty (inboxes retired), and the `smtp2go`
+records on all three (WordPress's mail sender, gone with WordPress).
 
 ## Part D: attach the domain to the worker (as soon as it's Active)
 
@@ -195,8 +172,8 @@ until you've confirmed nothing uses them, then delete.
 - booking page: the booking widget loads and takes dates
 - `/robots.txt` allows crawling; `/sitemap.xml` lists the pages
 - `/settings` and a nonsense URL return 404
-- https://dnschecker.org, type MX: unchanged (Outlook for Annie May,
-  `mail.` for the others). Send a test email to each inbox.
+- Annie May only: https://dnschecker.org, type MX, shows Outlook; send a
+  test email to her inbox.
 
 ## Part F: tidy up
 
@@ -218,11 +195,19 @@ until you've confirmed nothing uses them, then delete.
    sitemaps.
 4. Watch Search Console → Pages for a week for new 404s.
 
-## Part H: still to do, email for Prescription Pad and Ten Fifty
+## Part H: email (decided 23 Oct)
 
-Their mailboxes (`hello@...`) live on the old agency's server
-(`110.232.143.129`). It runs today, but if it's switched off those
-inboxes stop receiving mail. Move them (Microsoft 365 Business Basic,
-like Annie May, or Google Workspace), then in **your Cloudflare** replace
-the `MX`, `mail`, `webmail` and SPF records with the new provider's.
-Full steps: `hosting-migration-oct1.md`, Step 3.
+- **Annie May**: Microsoft 365, unchanged. Its records move with the
+  domain (above).
+- **Prescription Pad and Ten Fifty**: the `hello@` inboxes on the old
+  agency's server are retired. Mail sent to those addresses will bounce
+  once the nameservers move. Enquiries reach you through the website
+  forms (Web3Forms → your Gmail).
+- **Optional, free:** to keep old addresses like `hello@tenfiftybakers.com.au`
+  working without paying for a mailbox, turn on **Cloudflare → the domain
+  → Email → Email Routing**, add a rule forwarding it to
+  `tenfiftybakers@gmail.com`, and let Cloudflare add its MX records.
+  Receiving only; you'd still reply from Gmail.
+- Before the move, check nothing still logs in to or sends from those
+  mailboxes (phones, Lodgify or Preno notification addresses, MailerLite
+  sender addresses) and point them at Gmail.

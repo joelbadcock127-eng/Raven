@@ -10,8 +10,8 @@ passwords; do not commit them).
 
 | | Website | Email | DNS |
 | --- | --- | --- | --- |
-| Ten Fifty Bakers | ✅ LIVE on Vercel (28 Aug) | ⚠️ hello@ mailbox on her cPanel | ⚠️ her Cloudflare → moving to ours |
-| The Prescription Pad | ⚠️ still her server; clone ready in Decra, see `anniemay-prescriptionpad-go-live.md` | ⚠️ mailbox(es) on her cPanel | ⚠️ her Cloudflare → moving to ours |
+| Ten Fifty Bakers | ✅ LIVE on Vercel (28 Aug) | retired (forms → Gmail) | ⚠️ her Cloudflare → moving to ours |
+| The Prescription Pad | ⚠️ still her server; clone ready in Decra, see `anniemay-prescriptionpad-go-live.md` | retired (forms → Gmail) | ⚠️ her Cloudflare → moving to ours |
 | Annie May | ⚠️ still her server (WP); clone ready in Decra, see `anniemay-prescriptionpad-go-live.md` | ✅ Microsoft 365 — safe, nothing to do | ⚠️ her Cloudflare → moving to ours |
 
 ## Step 1 — Backups NOW (while cPanel access works)
@@ -37,22 +37,12 @@ Note: switching Annie May's and Prescription Pad's nameservers to our
 Cloudflare (and attaching them to the worker) is ALSO their website cutover — the new sites go live at that
 moment. Do the pre-cutover checks in `anniemay-prescriptionpad-go-live.md` first.
 
-## Step 3 — Email migration (TFB + Prescription Pad only)
+## Step 3 — Email (decided 23 Oct: no migration)
 
-The `hello@` mailboxes live on Erica's cPanel and die 1 Oct.
-
-1. Choose a provider — recommended: **Microsoft 365 Business Basic**
-   (matches Annie May's setup) or Google Workspace, one licence per
-   mailbox.
-2. Create the mailboxes; the provider gives MX/SPF/DKIM records — add
-   them in our Cloudflare (replacing `MX 0 mail.<domain>` and updating
-   the SPF include; remove the `mail.`/`webmail.` A records once done).
-3. Migrate old mail via the provider's IMAP migration tool
-   (server `syn02ce.syd7.hostyourservices.net`, port 993; mailbox
-   passwords from cPanel → Email Accounts, or ask Erica).
-4. Update anything that logs into the old mailbox (phones, laptops,
-   MailerLite sender verification, booking-engine notification
-   addresses).
+The TFB and Prescription Pad `hello@` inboxes are retired, not moved:
+enquiries reach Gmail through the website forms. Annie May stays on
+Microsoft 365. Details and an optional free forwarding setup:
+`cloudflare-cutover.md`, Part H.
 
 ## Step 4 — Third-party accounts to confirm with Erica
 
@@ -68,7 +58,7 @@ The `hello@` mailboxes live on Erica's cPanel and die 1 Oct.
 ## Step 5 — Confirm completion to Erica
 
 Once all three sites serve from the Cloudflare worker, DNS resolves from
-OUR Cloudflare nameservers, and the two mailboxes work at the new provider:
+OUR Cloudflare nameservers, and nothing still relies on the retired mailboxes:
 email Erica confirming the server and DNS are migrated, and ask her to
 confirm the hosting/maintenance plan is cancelled with nothing further
 billed.
