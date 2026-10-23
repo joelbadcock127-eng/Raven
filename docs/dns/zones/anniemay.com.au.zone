@@ -3,13 +3,11 @@
 ;; Website records (root and www) are NOT here: adding the domain as a Custom
 ;; Domain on the decra-sites worker creates them. Everything below is email and
 ;; verification, copied from the old agency's DNS (checked 22 Oct 2026).
+;; WordPress mail sending (smtp2go) records dropped with WordPress.
 ;; ADDED: _dmarc (monitoring only; Gmail/Yahoo expect one from MailerLite senders).
 ;; Email is Microsoft 365 — MX/SPF/autodiscover preserved exactly; no email migration needed.
 autodiscover.anniemay.com.au.	3600	IN	CNAME	autodiscover.outlook.com. ; cf_tags=cf-proxied:false
-em944325.anniemay.com.au.	3600	IN	CNAME	return.smtp2go.net. ; cf_tags=cf-proxied:false
-link.anniemay.com.au.	3600	IN	CNAME	track.smtp2go.net. ; cf_tags=cf-proxied:false
 litesrv._domainkey.anniemay.com.au.	3600	IN	CNAME	litesrv._domainkey.mlsend.com. ; cf_tags=cf-proxied:false
-s944325._domainkey.anniemay.com.au.	3600	IN	CNAME	dkim.smtp2go.net. ; cf_tags=cf-proxied:false
 anniemay.com.au.	3600	IN	MX	0 anniemay-com-au.mail.protection.outlook.com.
 anniemay.com.au.	3600	IN	TXT	"mailerlite-domain-verification=d2f207c538a1e4ad88745de4dc20f2909d44a862"
 anniemay.com.au.	3600	IN	TXT	"v=spf1 include:_spf.mlsend.com include:spf.protection.outlook.com -all"
