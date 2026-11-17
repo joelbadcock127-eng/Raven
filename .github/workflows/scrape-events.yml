@@ -1,8 +1,9 @@
 name: Scrape demand events
 
 on:
-  schedule:
-    - cron: '10 18 * * *' # daily ~4:10am Tasmania time
+  # Daily schedule turned off. To re enable, restore:
+  # schedule:
+  #   - cron: '10 18 * * *' # daily ~4:10am Tasmania time
   workflow_dispatch: {}
 
 jobs:
